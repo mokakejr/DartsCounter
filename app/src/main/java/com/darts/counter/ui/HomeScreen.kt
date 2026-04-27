@@ -19,7 +19,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import android.view.HapticFeedbackConstants
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,6 +40,8 @@ fun HomeScreen(
     var isDart by remember { mutableStateOf(false) }
     var rotation by remember { mutableStateOf(0f) }
     var angularVelocity by remember { mutableStateOf(0f) }
+    val view = LocalView.current
+    val lastHapticAt = remember { floatArrayOf(0f) }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -45,6 +49,10 @@ fun HomeScreen(
             if (abs(angularVelocity) > 0.15f) {
                 rotation += angularVelocity
                 angularVelocity *= 0.97f
+                if (abs(rotation - lastHapticAt[0]) >= 25f) {
+                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    lastHapticAt[0] = rotation
+                }
             } else {
                 angularVelocity = 0f
             }
@@ -78,13 +86,17 @@ fun HomeScreen(
                         .pointerInput(Unit) {
                             var totalDrag = 0f
                             detectDragGestures(
-                                onDragStart = { totalDrag = 0f },
+                                onDragStart = { totalDrag = 0f; lastHapticAt[0] = rotation },
                                 onDragEnd = { if (totalDrag < 14f) isDart = false },
                                 onDrag = { change, delta ->
                                     change.consume()
                                     totalDrag += abs(delta.x) + abs(delta.y)
                                     angularVelocity = delta.x * 0.9f
                                     rotation += delta.x * 0.5f
+                                    if (abs(rotation - lastHapticAt[0]) >= 25f) {
+                                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                        lastHapticAt[0] = rotation
+                                    }
                                 }
                             )
                         }
@@ -114,7 +126,7 @@ fun HomeScreen(
 
         // Fixed-height box: always occupies the same space, no layout shift
         Box(
-            modifier = Modifier.fillMaxWidth().height(84.dp),
+            modifier = Modifier.fillMaxWidth().height(152.dp),
             contentAlignment = Alignment.TopStart
         ) {
             if (selectedMode == "cricket") {
@@ -125,6 +137,11 @@ fun HomeScreen(
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         ModeButton("NORMAL", selectedCricketVariant == "normal", Modifier.weight(1f)) { selectedCricketVariant = "normal" }
                         ModeButton("CUT THROAT", selectedCricketVariant == "cutthroat", Modifier.weight(1f)) { selectedCricketVariant = "cutthroat" }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ModeButton("SUPER", selectedCricketVariant == "super", Modifier.weight(1f)) { selectedCricketVariant = "super" }
+                        ModeButton("SUPER CUT", selectedCricketVariant == "superct", Modifier.weight(1f)) { selectedCricketVariant = "superct" }
                     }
                 }
             }

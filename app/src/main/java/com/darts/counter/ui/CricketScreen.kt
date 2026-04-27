@@ -1,8 +1,6 @@
 package com.darts.counter.ui
 
-import android.media.AudioManager
 import android.media.MediaPlayer
-import android.media.ToneGenerator
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,18 +33,25 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
 
     val context = LocalContext.current
 
-    val toneGen = remember { ToneGenerator(AudioManager.STREAM_MUSIC, ToneGenerator.MAX_VOLUME) }
-
     val mexicainePlayers = remember {
         listOf(R.raw.mexicaine1, R.raw.mexicaine2).mapNotNull { res ->
             try { MediaPlayer.create(context, res) } catch (e: Exception) { null }
         }
     }
 
+    val missPlayer = remember {
+        try { MediaPlayer.create(context, R.raw.miss) } catch (e: Exception) { null }
+    }
+
+    val gaufrePlayer = remember {
+        try { MediaPlayer.create(context, R.raw.gaufre) } catch (e: Exception) { null }
+    }
+
     DisposableEffect(Unit) {
         onDispose {
-            toneGen.release()
             mexicainePlayers.forEach { it.release() }
+            missPlayer?.release()
+            gaufrePlayer?.release()
         }
     }
 
@@ -132,7 +137,12 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
                         .clip(RoundedCornerShape(10.dp))
                         .background(Color(0xFF2A0A0A))
                         .border(1.dp, Color(0xFFCC2222), RoundedCornerShape(10.dp))
-                        .clickable { toneGen.startTone(ToneGenerator.TONE_PROP_NACK, 250) },
+                        .clickable {
+                            missPlayer?.let {
+                                if (it.isPlaying) { it.pause(); it.seekTo(0) }
+                                it.start()
+                            }
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Text("MISS", fontSize = 15.sp, fontWeight = FontWeight.Bold,
@@ -169,7 +179,12 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
                         .clip(RoundedCornerShape(10.dp))
                         .background(Color(0xFF1A1200))
                         .border(1.dp, Color(0xFF997700), RoundedCornerShape(10.dp))
-                        .clickable { toneGen.startTone(ToneGenerator.TONE_PROP_BEEP2, 400) },
+                        .clickable {
+                            gaufrePlayer?.let {
+                                if (it.isPlaying) { it.pause(); it.seekTo(0) }
+                                it.start()
+                            }
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Text("GAUFRE", fontSize = 13.sp, fontWeight = FontWeight.Bold,

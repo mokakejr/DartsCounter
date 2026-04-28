@@ -31,7 +31,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun HomeScreen(
     onStartCricket: (players: Int, mode: String) -> Unit,
-    onStartShanghai: (Int) -> Unit
+    onStartShanghai: (Int) -> Unit,
+    onStartFiftyOne: (Int) -> Unit
 ) {
     var selectedMode by remember { mutableStateOf<String?>(null) }
     var selectedCricketVariant by remember { mutableStateOf("normal") }
@@ -122,6 +123,7 @@ fun HomeScreen(
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             ModeButton("CRICKET", selectedMode == "cricket", Modifier.weight(1f)) { selectedMode = "cricket" }
             ModeButton("SHANGHAI", selectedMode == "shanghai", Modifier.weight(1f)) { selectedMode = "shanghai" }
+            ModeButton("51", selectedMode == "fiftyone", Modifier.weight(1f)) { selectedMode = "fiftyone" }
         }
 
         // Fixed-height box: always occupies the same space, no layout shift
@@ -168,6 +170,7 @@ fun HomeScreen(
                     when (selectedMode) {
                         "cricket" -> onStartCricket(selectedPlayers, selectedCricketVariant)
                         "shanghai" -> onStartShanghai(selectedPlayers)
+                        "fiftyone" -> onStartFiftyOne(selectedPlayers)
                     }
                 },
             contentAlignment = Alignment.Center

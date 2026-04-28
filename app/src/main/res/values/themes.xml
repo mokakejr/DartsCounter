@@ -1,4 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!-- Main window theme used by Compose (no action bar) -->
     <style name="Theme.DartsCounter" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!--
+        Splash screen theme.
+        • windowSplashScreenAnimatedIcon  : dart fly-in AVD (108×108 dp)
+        • windowSplashScreenIconBackgroundColor: dark circle behind the icon
+        • windowSplashScreenAnimationDuration : matches total AVD duration (1000 ms)
+        • postSplashScreenTheme           : theme applied once splash is dismissed
+    -->
+    <style name="Theme.DartsCounter.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_dart_impact</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/splash_icon_background</item>
+        <item name="windowSplashScreenAnimationDuration">1000</item>
+        <item name="postSplashScreenTheme">@style/Theme.DartsCounter</item>
+    </style>
+
 </resources>

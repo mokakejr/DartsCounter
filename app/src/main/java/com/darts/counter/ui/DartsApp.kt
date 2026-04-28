@@ -22,6 +22,9 @@ fun DartsApp() {
                 },
                 onStartShanghai = { players ->
                     navController.navigate("setup/$players/shanghai")
+                },
+                onStartFiftyOne = { players ->
+                    navController.navigate("setup/$players/fiftyone")
                 }
             )
         }
@@ -48,6 +51,11 @@ fun DartsApp() {
                         gameMode.startsWith("cricket_") -> {
                             val mode = gameMode.removePrefix("cricket_")
                             navController.navigate("cricket/$count/$mode?n=$encoded") {
+                                popUpTo("home") { inclusive = false }
+                            }
+                        }
+                        gameMode == "fiftyone" -> {
+                            navController.navigate("fiftyone/$count?n=$encoded") {
                                 popUpTo("home") { inclusive = false }
                             }
                         }
@@ -113,6 +121,23 @@ fun DartsApp() {
             val playerNames = if (namesStr.isBlank()) List(players) { "J${it + 1}" }
                               else Uri.decode(namesStr).split("|")
             ShanghaiScreen(
+                playerNames = playerNames,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = "fiftyone/{players}?n={n}",
+            arguments = listOf(
+                navArgument("players") { type = NavType.StringType },
+                navArgument("n") { type = NavType.StringType; defaultValue = "" }
+            )
+        ) { back ->
+            val players = back.arguments?.getString("players")?.toInt() ?: 2
+            val namesStr = back.arguments?.getString("n") ?: ""
+            val playerNames = if (namesStr.isBlank()) List(players) { "J${it + 1}" }
+                              else Uri.decode(namesStr).split("|")
+            FiftyOneScreen(
                 playerNames = playerNames,
                 onBack = { navController.popBackStack() }
             )

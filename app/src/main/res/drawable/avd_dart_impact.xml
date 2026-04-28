@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AnimatedVectorDrawable — Dartboard + dart fly-in.
+
+    Viewport : 160×160 dp (larger canvas so the dart travels visibly across the board).
+    Center   : (80, 80).
+
+    Animation timeline:
+      0–750 ms  : dart group slides from upper-right (translateX=85, translateY=-30)
+                  to bullseye (0, 0)  — decelerate_cubic, like a real throw
+      750–850 ms: cyan glow ring flashes on impact
+      850–1100ms: glow ring fades out
+-->
+<animated-vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+
+    <aapt:attr name="android:drawable">
+        <vector
+            android:width="160dp"
+            android:height="160dp"
+            android:viewportWidth="160"
+            android:viewportHeight="160">
+
+            <!-- ── DARTBOARD RINGS ────────────────────────────────────────────── -->
+            <!-- All circles: M (cx-r),cy  A r,r 0 1,0 (cx+r),cy  A r,r 0 1,0 (cx-r),cy  Z -->
+            <!-- Center: (80, 80) -->
+
+            <!-- Outer border — dark navy -->
+            <path
+                android:pathData="M 28,80 A 52,52 0 1,0 132,80 A 52,52 0 1,0 28,80 Z"
+                android:fillColor="#1C1C2E"/>
+
+            <!-- Black scoring ring -->
+            <path
+                android:pathData="M 36,80 A 44,44 0 1,0 124,80 A 44,44 0 1,0 36,80 Z"
+                android:fillColor="#111128"/>
+
+            <!-- Red scoring ring -->
+            <path
+                android:pathData="M 44,80 A 36,36 0 1,0 116,80 A 36,36 0 1,0 44,80 Z"
+                android:fillColor="#B22222"/>
+
+            <!-- Green scoring ring -->
+            <path
+                android:pathData="M 52,80 A 28,28 0 1,0 108,80 A 28,28 0 1,0 52,80 Z"
+                android:fillColor="#1A6B3C"/>
+
+            <!-- Black inner ring -->
+            <path
+                android:pathData="M 60,80 A 20,20 0 1,0 100,80 A 20,20 0 1,0 60,80 Z"
+                android:fillColor="#1C1C2E"/>
+
+            <!-- Red outer bull -->
+            <path
+                android:pathData="M 67,80 A 13,13 0 1,0 93,80 A 13,13 0 1,0 67,80 Z"
+                android:fillColor="#C41230"/>
+
+            <!-- Green inner bull -->
+            <path
+                android:pathData="M 73,80 A 7,7 0 1,0 87,80 A 7,7 0 1,0 73,80 Z"
+                android:fillColor="#00C853"/>
+
+            <!-- Double bull (black centre) -->
+            <path
+                android:pathData="M 77,80 A 3,3 0 1,0 83,80 A 3,3 0 1,0 77,80 Z"
+                android:fillColor="#0D0D1A"/>
+
+            <!-- ── IMPACT GLOW (initially invisible) ──────────────────────────── -->
+            <group
+                android:name="glow_group"
+                android:alpha="0">
+                <path
+                    android:pathData="M 65,80 A 15,15 0 1,0 95,80 A 15,15 0 1,0 65,80 Z"
+                    android:fillColor="#00E5FF"/>
+            </group>
+
+            <!-- ── DART ───────────────────────────────────────────────────────── -->
+            <!--
+                Paths defined with tip at (80, 80); body extends rightward (+x).
+                translateX=85, translateY=-30 → tip starts at world (165, 50), off-screen.
+                translateX=0,  translateY=0   → tip lands at world (80, 80) = bullseye.
+                Diagonal trajectory (upper-right → centre) = realistic dart throw angle.
+            -->
+            <group
+                android:name="dart_group"
+                android:translateX="85"
+                android:translateY="-30">
+
+                <!-- Metal tip -->
+                <path
+                    android:pathData="M 80,80 L 85,78 L 85,82 Z"
+                    android:fillColor="#E8E8E8"/>
+
+                <!-- Barrel (gold) -->
+                <path
+                    android:pathData="M 85,78 L 98,78 L 98,82 L 85,82 Z"
+                    android:fillColor="#D4AF37"/>
+
+                <!-- Shaft (grey) -->
+                <path
+                    android:pathData="M 98,79 L 109,79 L 109,81 L 98,81 Z"
+                    android:fillColor="#888888"/>
+
+                <!-- Upper flight — cyan neon -->
+                <path
+                    android:pathData="M 109,79 L 125,68 L 125,79 Z"
+                    android:fillColor="#00E5FF"/>
+
+                <!-- Lower flight — cyan neon -->
+                <path
+                    android:pathData="M 109,81 L 125,92 L 125,81 Z"
+                    android:fillColor="#00E5FF"/>
+
+                <!-- Upper flight inner — deep blue -->
+                <path
+                    android:pathData="M 109,79 L 120,73 L 120,79 Z"
+                    android:fillColor="#0080FF"
+                    android:fillAlpha="0.7"/>
+
+                <!-- Lower flight inner — deep blue -->
+                <path
+                    android:pathData="M 109,81 L 120,87 L 120,81 Z"
+                    android:fillColor="#0080FF"
+                    android:fillAlpha="0.7"/>
+            </group>
+
+        </vector>
+    </aapt:attr>
+
+    <!-- Dart: diagonal fly-in from upper-right over 750 ms -->
+    <target android:name="dart_group">
+        <aapt:attr name="android:animation">
+            <set android:ordering="together">
+                <objectAnimator
+                    android:propertyName="translateX"
+                    android:valueFrom="85"
+                    android:valueTo="0"
+                    android:valueType="floatType"
+                    android:duration="750"
+                    android:interpolator="@android:interpolator/decelerate_cubic"/>
+                <objectAnimator
+                    android:propertyName="translateY"
+                    android:valueFrom="-30"
+                    android:valueTo="0"
+                    android:valueType="floatType"
+                    android:duration="750"
+                    android:interpolator="@android:interpolator/decelerate_cubic"/>
+            </set>
+        </aapt:attr>
+    </target>
+
+    <!-- Glow: flashes at dart-impact (750 ms) then fades -->
+    <target android:name="glow_group">
+        <aapt:attr name="android:animation">
+            <set android:ordering="sequentially">
+                <!-- Hold invisible while dart is in flight -->
+                <objectAnimator
+                    android:propertyName="alpha"
+                    android:valueFrom="0"
+                    android:valueTo="0"
+                    android:valueType="floatType"
+                    android:duration="750"/>
+                <!-- Flash on impact -->
+                <objectAnimator
+                    android:propertyName="alpha"
+                    android:valueFrom="0"
+                    android:valueTo="0.85"
+                    android:valueType="floatType"
+                    android:duration="100"
+                    android:interpolator="@android:interpolator/linear"/>
+                <!-- Fade out -->
+                <objectAnimator
+                    android:propertyName="alpha"
+                    android:valueFrom="0.85"
+                    android:valueTo="0"
+                    android:valueType="floatType"
+                    android:duration="250"
+                    android:interpolator="@android:interpolator/accelerate_quad"/>
+            </set>
+        </aapt:attr>
+    </target>
+
+</animated-vector>

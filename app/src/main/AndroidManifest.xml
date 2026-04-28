@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Required for the haptic impact pulse on dart hit -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -12,6 +15,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="portrait"
+            android:theme="@style/Theme.DartsCounter.Starting"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

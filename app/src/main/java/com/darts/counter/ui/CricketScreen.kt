@@ -60,7 +60,7 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
     if (state.winner != null) {
         WinnerDialog(
             playerName = state.playerNames[state.winner!!],
-            isCutThroat = mode == CricketMode.CUT_THROAT,
+            subtitle = if (mode == CricketMode.CUT_THROAT) "avec le moins de points" else null,
             onRematch = {
                 state = initialCricketState(playerNames, mode)
                 history = listOf()
@@ -196,7 +196,7 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(44.dp)
+                    .height(54.dp)
                     .padding(bottom = 10.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(if (history.isNotEmpty()) Color(0xFF1E1E1E) else Color(0xFF141414))
@@ -328,7 +328,7 @@ fun MarkDisplay(count: Int, closed: Boolean, globalClosed: Boolean) {
 @Composable
 fun WinnerDialog(
     playerName: String,
-    isCutThroat: Boolean = false,
+    subtitle: String? = null,
     isShanghaiWin: Boolean = false,
     onRematch: () -> Unit,
     onQuit: () -> Unit
@@ -339,7 +339,7 @@ fun WinnerDialog(
                 .background(Color(0xFF1E1E1E)).padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(if (isShanghaiWin) "🎯" else "🎯", fontSize = 48.sp)
+            Text("🎯", fontSize = 48.sp)
             Spacer(modifier = Modifier.height(16.dp))
             if (isShanghaiWin) {
                 Text("SHANGHAI !", fontSize = 22.sp, fontWeight = FontWeight.Bold,
@@ -347,10 +347,10 @@ fun WinnerDialog(
                 Spacer(modifier = Modifier.height(6.dp))
             }
             Text(text = "$playerName gagne !", fontSize = 20.sp, fontWeight = FontWeight.Bold,
-                color = Color(0xFFE8E8E8), textAlign = TextAlign.Center)
-            if (isCutThroat) {
+                color = Color(0xFFE6EDF3), textAlign = TextAlign.Center)
+            if (subtitle != null) {
                 Spacer(modifier = Modifier.height(6.dp))
-                Text("avec le moins de points", fontSize = 13.sp, color = Color(0xFF888888),
+                Text(subtitle, fontSize = 13.sp, color = Color(0xFF888888),
                     textAlign = TextAlign.Center)
             }
             Spacer(modifier = Modifier.height(24.dp))
@@ -358,11 +358,11 @@ fun WinnerDialog(
                 TextButton(onClick = onQuit) { Text("Quitter", color = Color(0xFF888888)) }
                 Box(
                     modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFE8E8E8))
+                        .background(Color(0xFFE61E2A))
                         .clickable(onClick = onRematch)
                         .padding(horizontal = 20.dp, vertical = 10.dp)
                 ) {
-                    Text("Revanche", color = Color(0xFF121212), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("Revanche", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }

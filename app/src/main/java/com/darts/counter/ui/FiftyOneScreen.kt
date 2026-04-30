@@ -342,7 +342,7 @@ fun FiftyOneScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(44.dp)
+                    .height(54.dp)
                     .padding(bottom = 10.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(
@@ -370,33 +370,15 @@ fun FiftyOneScreen(
 
     // ── Winner dialog ────────────────────────────────────────────────────────
     if (state.winner != null) {
-        AlertDialog(
-            onDismissRequest = {},
-            title = {
-                Text(
-                    "🎯  ${state.playerNames[state.winner!!]}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
+        WinnerDialog(
+            playerName = state.playerNames[state.winner!!],
+            subtitle = "51 cinqs atteints — victoire !",
+            onRematch = {
+                state = initialFiftyOneState(playerNames)
+                history.clear()
+                input = ""
             },
-            text = {
-                Text(
-                    "51 cinqs atteints — victoire !",
-                    fontSize = 15.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    state = initialFiftyOneState(playerNames)
-                    history.clear()
-                    input = ""
-                }) { Text("REVANCHE") }
-            },
-            dismissButton = {
-                TextButton(onClick = onBack) { Text("QUITTER") }
-            },
-            containerColor = MaterialTheme.colorScheme.surface
+            onQuit = onBack
         )
     }
 
@@ -405,11 +387,12 @@ fun FiftyOneScreen(
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
             title = { Text("Quitter la partie ?") },
+            text = { Text("La partie en cours sera perdue.", color = Color(0xFF888888), fontSize = 13.sp) },
             confirmButton = {
-                TextButton(onClick = onBack) { Text("QUITTER") }
+                TextButton(onClick = onBack) { Text("Quitter", color = Color(0xFFE57373)) }
             },
             dismissButton = {
-                TextButton(onClick = { showExitDialog = false }) { Text("CONTINUER") }
+                TextButton(onClick = { showExitDialog = false }) { Text("Continuer") }
             },
             containerColor = MaterialTheme.colorScheme.surface
         )

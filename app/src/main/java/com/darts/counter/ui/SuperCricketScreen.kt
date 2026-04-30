@@ -274,7 +274,7 @@ fun SuperCricketScreen(playerNames: List<String>, mode: SuperCricketMode = Super
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(44.dp)
+                    .height(54.dp)
                     .padding(bottom = 10.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(if (history.isNotEmpty()) Color(0xFF1E1E1E) else Color(0xFF141414))

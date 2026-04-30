@@ -182,7 +182,7 @@ fun PlayerSetupScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(MaterialTheme.colorScheme.primary)
                     .clickable {
                         val finalNames = names.mapIndexed { i, n -> n.trim().ifBlank { "J${i + 1}" } }

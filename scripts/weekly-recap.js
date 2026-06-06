@@ -8,7 +8,7 @@ const url  = require('url');
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const WEBHOOK     = process.env.GOOGLE_CHAT_WEBHOOK;
+const WEBHOOK     = (process.env.GOOGLE_CHAT_WEBHOOK || '').trim();
 const GAMES_FILE  = 'docs/data/games.json';
 const STATS_URL   = `https://${process.env.GITHUB_REPOSITORY_OWNER || 'mokakejr'}.github.io/DartsCounter`;
 
@@ -53,7 +53,10 @@ function modeLabel(m) {
 // ── Send webhook ──────────────────────────────────────────────────────────────
 
 function sendCard(body) {
-  if (!WEBHOOK) { console.error('GOOGLE_CHAT_WEBHOOK not set'); process.exit(1); }
+  if (!WEBHOOK) {
+    console.error(`GOOGLE_CHAT_WEBHOOK is empty (length=${process.env.GOOGLE_CHAT_WEBHOOK?.length ?? 0}). Check repo Settings → Secrets → Actions.`);
+    process.exit(1);
+  }
 
   const parsed  = new url.URL(WEBHOOK);
   const options = {

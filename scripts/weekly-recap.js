@@ -109,8 +109,9 @@ function buildWeeklyCard(games, monDate, friDate) {
   for (const g of games) {
     const names = Array.isArray(g.players) ? g.players : parseNames(g.players);
     for (const name of names) {
-      if (!players[name]) players[name] = { wins: 0, played: 0 };
+      if (!players[name]) players[name] = { wins: 0, played: 0, duration: 0 };
       players[name].played++;
+      players[name].duration += g.duration ?? 0;
       if (g.winner === name) players[name].wins++;
     }
   }
@@ -146,7 +147,7 @@ function buildWeeklyCard(games, monDate, friDate) {
     ...shanghaiKills.map(g => `💥 Shanghai Kill : ${g.winner} !`)
   ].join('\n');
 
-  // ── Ranking rows (one columns widget per player) ──
+  // ── Ranking rows ──
   const rankingWidgets = [
     {
       columns: {
@@ -173,6 +174,32 @@ function buildWeeklyCard(games, monDate, friDate) {
     })
   ];
 
+  // ── Per-player time rows ──
+  const timeWidgets = [
+    {
+      columns: {
+        columnItems: [
+          { widgets: [{ textParagraph: { text: '*JOUEUR*' } }] },
+          { widgets: [{ textParagraph: { text: '*TEMPS JOUÉ*' } }] },
+          { widgets: [{ textParagraph: { text: '*MOY. / PARTIE*' } }] }
+        ]
+      }
+    },
+    { divider: {} },
+    ...ranked.map(([name, s]) => {
+      const avg = Math.round(s.duration / s.played);
+      return {
+        columns: {
+          columnItems: [
+            { widgets: [{ textParagraph: { text: name } }] },
+            { widgets: [{ textParagraph: { text: fmtDuration(s.duration) } }] },
+            { widgets: [{ textParagraph: { text: fmtDuration(avg) } }] }
+          ]
+        }
+      };
+    })
+  ];
+
   return JSON.stringify({
     cardsV2: [{
       cardId: 'weekly_recap',
@@ -187,6 +214,10 @@ function buildWeeklyCard(games, monDate, friDate) {
           {
             header: '🏅 CLASSEMENT',
             widgets: rankingWidgets
+          },
+          {
+            header: '⏱️ TEMPS DE JEU',
+            widgets: timeWidgets
           },
           {
             header: '📊 EN CHIFFRES',

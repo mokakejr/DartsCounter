@@ -2,7 +2,7 @@ name: Weekly Darts Recap
 
 on:
   schedule:
-    - cron: '0 17 * * 5'   # Vendredi 17h00 UTC
+    - cron: '0 15 * * 5'   # Vendredi 15h00 UTC = 17h00 France (CEST)
   workflow_dispatch:         # Déclenchement manuel pour tester
 
 jobs:

@@ -2,6 +2,13 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'org.jetbrains.kotlin.plugin.compose'
+    id 'com.google.devtools.ksp'
+}
+
+def localProps = new Properties()
+def localPropsFile = project.rootProject.file('local.properties')
+if (localPropsFile.exists()) {
+    localProps.load(localPropsFile.newDataInputStream())
 }
 
 android {
@@ -14,6 +21,11 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
+
+        buildConfigField "String", "GITHUB_TOKEN", "\"${localProps['GITHUB_TOKEN'] ?: ''}\""
+        buildConfigField "String", "GITHUB_REPO_OWNER", "\"${localProps['GITHUB_REPO_OWNER'] ?: ''}\""
+        buildConfigField "String", "GITHUB_REPO_NAME", "\"${localProps['GITHUB_REPO_NAME'] ?: ''}\""
+        buildConfigField "String", "GOOGLE_CHAT_WEBHOOK", "\"${localProps['GOOGLE_CHAT_WEBHOOK'] ?: ''}\""
     }
 
     buildTypes {
@@ -33,6 +45,7 @@ android {
 
     buildFeatures {
         compose true
+        buildConfig true
     }
 
 }
@@ -47,5 +60,14 @@ dependencies {
     implementation 'androidx.navigation:navigation-compose:2.7.6'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0'
     implementation 'androidx.core:core-splashscreen:1.0.1'
+
+    // Room
+    implementation 'androidx.room:room-runtime:2.7.2'
+    implementation 'androidx.room:room-ktx:2.7.2'
+    ksp 'androidx.room:room-compiler:2.7.2'
+
+    // Coroutines
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+
     debugImplementation 'androidx.compose.ui:ui-tooling'
 }

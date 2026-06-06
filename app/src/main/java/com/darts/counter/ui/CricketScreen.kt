@@ -23,6 +23,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.darts.counter.model.*
 import com.darts.counter.R
+import com.darts.counter.data.GameRepository
+import com.darts.counter.data.GameSyncService
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,8 +33,29 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
     var state by remember { mutableStateOf(initialCricketState(playerNames, mode)) }
     var history by remember { mutableStateOf(listOf<CricketState>()) }
     var showBackConfirm by remember { mutableStateOf(false) }
+    var elapsedSeconds by remember { mutableStateOf(0L) }
+    var gameKey by remember { mutableStateOf(0) }
 
     val context = LocalContext.current
+
+    LaunchedEffect(gameKey) {
+        elapsedSeconds = 0L
+        while (true) { delay(1000L); elapsedSeconds++ }
+    }
+
+    LaunchedEffect(state.winner) {
+        val winner = state.winner ?: return@LaunchedEffect
+        val repo = GameRepository(context)
+        val saved = repo.saveGame(
+            mode = "Cricket",
+            variant = if (mode == CricketMode.CUT_THROAT) "CutThroat" else "Normal",
+            playerNames = playerNames,
+            scores = state.points.toList(),
+            winnerName = state.playerNames[winner],
+            durationSeconds = elapsedSeconds
+        )
+        GameSyncService.sync(saved)
+    }
 
     val mexicainePlayers = remember {
         listOf(R.raw.mexicaine1, R.raw.mexicaine2).mapNotNull { res ->
@@ -64,6 +88,7 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
             onRematch = {
                 state = initialCricketState(playerNames, mode)
                 history = listOf()
+                gameKey++
             },
             onQuit = onBack
         )
@@ -101,6 +126,14 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
                         Icon(Icons.Default.ArrowBack, null, tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
+                actions = {
+                    Text(
+                        formatElapsed(elapsedSeconds),
+                        fontSize = 12.sp,
+                        color = Color(0xFF8B949E),
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
@@ -129,7 +162,6 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
                     .padding(top = 10.dp, bottom = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // MISS
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -149,7 +181,6 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
                         color = Color(0xFFFF4444), letterSpacing = 3.sp)
                 }
 
-                // MEXICAINE
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -171,7 +202,6 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
                         color = Color(0xFF42A5F5), letterSpacing = 2.sp)
                 }
 
-                // GAUFRE
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -193,10 +223,11 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
             }
 
             // Annuler
+            Spacer(Modifier.height(12.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(44.dp)
+                    .height(52.dp)
                     .padding(bottom = 10.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(if (history.isNotEmpty()) Color(0xFF1E1E1E) else Color(0xFF141414))

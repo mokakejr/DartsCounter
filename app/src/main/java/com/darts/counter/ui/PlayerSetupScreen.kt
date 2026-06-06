@@ -24,6 +24,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+private val DEFAULT_PLAYERS = listOf("Junior", "Léo", "Théo", "Gaétan")
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PlayerSetupScreen(
@@ -32,7 +34,7 @@ fun PlayerSetupScreen(
     onConfirm: (List<String>) -> Unit
 ) {
     val context = LocalContext.current
-    var names by remember { mutableStateOf(List(playerCount) { "J${it + 1}" }) }
+    var names by remember { mutableStateOf(List(playerCount) { DEFAULT_PLAYERS.getOrElse(it) { "J${it + 1}" } }) }
     var focusedIndex by remember { mutableStateOf(0) }
     val knownPlayers = remember { loadKnownPlayers(context) }
 
@@ -140,7 +142,7 @@ fun PlayerSetupScreen(
             // Known players section
             if (knownPlayers.isNotEmpty()) {
                 Spacer(Modifier.height(20.dp))
-                Text("RÉCENTS", fontSize = 10.sp, color = Color(0xFF444444), letterSpacing = 2.sp)
+                Text("JOUEURS", fontSize = 10.sp, color = Color(0xFF444444), letterSpacing = 2.sp)
                 Spacer(Modifier.height(10.dp))
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
@@ -208,7 +210,8 @@ fun PlayerSetupScreen(
 private fun loadKnownPlayers(context: Context): List<String> {
     val prefs = context.getSharedPreferences("darts_prefs", Context.MODE_PRIVATE)
     val str = prefs.getString("known_players", "") ?: ""
-    return if (str.isBlank()) emptyList() else str.split("|").filter { it.isNotBlank() }
+    val saved = if (str.isBlank()) emptyList() else str.split("|").filter { it.isNotBlank() }
+    return (saved + DEFAULT_PLAYERS).distinct()
 }
 
 private fun addToKnownPlayers(context: Context, newNames: List<String>) {

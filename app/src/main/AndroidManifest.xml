@@ -3,6 +3,7 @@
 
     <!-- Required for the haptic impact pulse on dart hit -->
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
         android:allowBackup="true"

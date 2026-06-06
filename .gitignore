@@ -19,6 +19,9 @@ local.properties
 # Kotlin
 *.class
 
+# JVM crash dumps
+*.hprof
+
 # Gradle zip (trop lourd)
 gradle-wrapper/
 

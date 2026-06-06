@@ -1,8 +1,10 @@
 package com.darts.counter.data
 
 import android.util.Base64
+import android.util.Log
 import com.darts.counter.BuildConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
@@ -17,11 +19,11 @@ object GameSyncService {
         timeZone = TimeZone.getTimeZone("UTC")
     }
 
-    suspend fun sync(game: GameResultEntity) = withContext(Dispatchers.IO) {
-        runCatching {
-            updateGitHubPages(game)
-            sendGoogleChatMessage(game)
-        }
+    suspend fun sync(game: GameResultEntity) = withContext(Dispatchers.IO + NonCancellable) {
+        runCatching { updateGitHubPages(game) }
+            .onFailure { Log.e("GameSync", "GitHub update failed", it) }
+        runCatching { sendGoogleChatMessage(game) }
+            .onFailure { Log.e("GameSync", "Google Chat webhook failed", it) }
     }
 
     // --- GitHub Contents API ---
@@ -39,16 +41,17 @@ object GameSyncService {
 
         // Decode + parse existing games list
         val decoded = if (currentContent.isNotBlank())
-            String(Base64.decode(currentContent.replace("\n", ""), Base64.DEFAULT))
+            String(Base64.decode(currentContent.replace("\\n", "").replace("\n", ""), Base64.DEFAULT))
         else "[]"
 
         val newEntry = gameToJson(game)
         val updatedJson = insertEntry(decoded, newEntry)
 
-        // PUT updated file
+        // PUT updated file (omit sha when creating a new file)
+        val shaField = if (sha.isNotBlank()) ""","sha":"$sha"""" else ""
         val body = """{"message":"chore: add game result","content":"${
             Base64.encodeToString(updatedJson.toByteArray(), Base64.NO_WRAP)
-        }","sha":"$sha"}"""
+        }"$shaField}"""
 
         putFile(apiUrl, token, body)
     }
@@ -80,6 +83,11 @@ object GameSyncService {
             doOutput = true
         }
         conn.outputStream.bufferedWriter().use { it.write(body) }
+        val code = conn.responseCode
+        if (code >= 400) {
+            val error = conn.errorStream?.bufferedReader()?.readText() ?: "HTTP $code"
+            throw RuntimeException("GitHub PUT failed ($code): $error")
+        }
         conn.inputStream.close()
     }
 
@@ -91,8 +99,11 @@ object GameSyncService {
 
         val players = parseJsonArray(game.playerNames)
         val scores = parseJsonArray(game.scores)
-        val modeLabel = if (game.variant.isNotBlank() && game.variant != "Normal")
-            "${game.mode} · ${game.variant}" else game.mode
+        val isShanghai = game.mode == "Shanghai"
+        val isShanghaiKill = isShanghai && game.variant == "Shanghai Kill"
+        val modeLabel = if (isShanghaiKill) "SHANGHAI KILL 🎯"
+            else if (game.variant.isNotBlank() && game.variant != "Normal") "${game.mode} · ${game.variant}"
+            else game.mode
         val isCutThroat = game.variant.contains("CutThroat", ignoreCase = true)
 
         val entries = players.zip(scores).map { (n, s) -> Pair(n, s) }
@@ -115,9 +126,10 @@ object GameSyncService {
                 else              -> { statusText = "QUALIFIE";  colorJson = """"red":0,"green":0.5,"blue":1,"alpha":1""" }
             }
             val safeName = jsonEscape(name)
+            val scoreText = if (isShanghaiKill && rank == 0) "SHANGHAI!" else "$score pts"
             """{"columns":{"columnItems":[""" +
-            """{"widgets":[{"textParagraph":{"text":"$emoji *$safeName*"}}]},""" +
-            """{"widgets":[{"textParagraph":{"text":"$score pts"}}]},""" +
+            """{"widgets":[{"textParagraph":{"text":"$emoji $safeName"}}]},""" +
+            """{"widgets":[{"textParagraph":{"text":"$scoreText"}}]},""" +
             """{"widgets":[{"buttonList":{"buttons":[{"text":"$statusText","color":{$colorJson}}]}}]}""" +
             """]}}"""
         }.joinToString(",")
@@ -131,9 +143,9 @@ object GameSyncService {
             """"imageUrl":"https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/emoji_events/default/48px.svg",""" +
             """"imageType":"CIRCLE"},"sections":[{"widgets":[""" +
             """{"columns":{"columnItems":[""" +
-            """{"widgets":[{"textParagraph":{"text":"*JOUEUR*"}}]},""" +
-            """{"widgets":[{"textParagraph":{"text":"*SCORE*"}}]},""" +
-            """{"widgets":[{"textParagraph":{"text":"*STATUT*"}}]}""" +
+            """{"widgets":[{"textParagraph":{"text":"JOUEUR"}}]},""" +
+            """{"widgets":[{"textParagraph":{"text":"SCORE"}}]},""" +
+            """{"widgets":[{"textParagraph":{"text":"STATUT"}}]}""" +
             """]}},""" +
             """{"divider":{}},""" +
             playerRows +
@@ -147,6 +159,11 @@ object GameSyncService {
             doOutput = true
         }
         conn.outputStream.bufferedWriter().use { it.write(card) }
+        val code = conn.responseCode
+        if (code >= 400) {
+            val error = conn.errorStream?.bufferedReader()?.readText() ?: "HTTP $code"
+            throw RuntimeException("Google Chat webhook failed ($code): $error")
+        }
         conn.inputStream.close()
     }
 

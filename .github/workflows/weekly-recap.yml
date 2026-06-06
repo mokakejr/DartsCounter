@@ -1,0 +1,20 @@
+name: Weekly Darts Recap
+
+on:
+  schedule:
+    - cron: '0 17 * * 5'   # Vendredi 17h00 UTC
+  workflow_dispatch:         # Déclenchement manuel pour tester
+
+jobs:
+  recap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Send weekly recap
+        run: node scripts/weekly-recap.js
+        env:
+          GOOGLE_CHAT_WEBHOOK: ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}

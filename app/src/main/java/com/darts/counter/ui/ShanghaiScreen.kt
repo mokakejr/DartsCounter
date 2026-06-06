@@ -50,7 +50,7 @@ fun ShanghaiScreen(playerNames: List<String>, onBack: () -> Unit) {
         val repo = GameRepository(context)
         val saved = repo.saveGame(
             mode = "Shanghai",
-            variant = "Normal",
+            variant = if (state.shanghaiWinner != null) "Shanghai Kill" else "Normal",
             playerNames = playerNames,
             scores = (0 until state.playerCount).map { state.totalScore(it) },
             winnerName = winnerName,

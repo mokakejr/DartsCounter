@@ -28,9 +28,19 @@ android {
         buildConfigField "String", "GOOGLE_CHAT_WEBHOOK", "\"${localProps['GOOGLE_CHAT_WEBHOOK'] ?: ''}\""
     }
 
+    signingConfigs {
+        release {
+            storeFile file(localProps['KEYSTORE_PATH'] ?: 'darts-release.jks')
+            storePassword localProps['KEYSTORE_PASS'] ?: ''
+            keyAlias localProps['KEY_ALIAS'] ?: 'darts'
+            keyPassword localProps['KEY_PASS'] ?: ''
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.release
         }
     }
 

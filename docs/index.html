@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DartsCounter — Classement & Historique</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0D1117;
+      --surface:    #161B22;
+      --surface2:   #1E1E1E;
+      --border:     #30363D;
+      --primary:    #E61E2A;
+      --gold:       #FFD700;
+      --green:      #4CAF50;
+      --blue:       #42A5F5;
+      --text:       #E6EDF3;
+      --muted:      #8B949E;
+      --disabled:   #444444;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    header .dart { font-size: 28px; }
+    header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--text);
+    }
+    header .subtitle {
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--primary);
+      margin-top: 2px;
+    }
+    header .updated {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    section h2 {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    /* ---------- LEADERBOARD ---------- */
+    #leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #leaderboard-table th {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    #leaderboard-table th:not(:first-child) { text-align: center; }
+    #leaderboard-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #1A1A1A;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+    #leaderboard-table td:not(:first-child) { text-align: center; }
+    #leaderboard-table tr:hover td { background: var(--surface2); }
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .rank-1 { background: var(--gold); color: #000; }
+    .rank-2 { background: #AAAAAA; color: #000; }
+    .rank-3 { background: #CD7F32; color: #000; }
+    .rank-n { background: var(--surface2); color: var(--muted); }
+    .player-name { font-weight: 600; color: var(--text); margin-left: 10px; }
+    .wins-count { font-weight: 700; font-size: 16px; color: var(--gold); }
+    .winrate { color: var(--green); font-size: 12px; }
+    .total-games { color: var(--muted); font-size: 12px; }
+
+    /* ---------- HISTORY ---------- */
+    #history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .game-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .game-card:hover { border-color: #444; }
+    .game-date {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      min-width: 90px;
+    }
+    .game-mode {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      min-width: 100px;
+      text-align: center;
+    }
+    .mode-cricket    { background: #1A2E1A; color: var(--green); border: 1px solid #2A4A2A; }
+    .mode-supercricket { background: #1A1A06; color: var(--gold); border: 1px solid #3A3010; }
+    .mode-shanghai   { background: #061428; color: var(--blue); border: 1px solid #1565C0; }
+    .mode-fiftyone   { background: #2A0A0A; color: #FF6B6B; border: 1px solid #CC2222; }
+    .game-players {
+      flex: 1;
+      font-size: 13px;
+      color: var(--muted);
+      min-width: 0;
+    }
+    .game-players .winner { color: var(--text); font-weight: 600; }
+    .game-players .winner::after { content: ' 🏆'; }
+    .game-duration {
+      font-size: 11px;
+      color: var(--disabled);
+      min-width: 48px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+
+    /* ---------- FILTERS ---------- */
+    .filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .filter-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 11px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .filter-btn:hover { border-color: #555; color: var(--text); }
+    .filter-btn.active { border-color: var(--primary); color: var(--primary); background: #2A0A0A; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="dart">🎯</span>
+  <div>
+    <h1>DARTSCOUNTER</h1>
+    <div class="subtitle">CLASSEMENT &amp; HISTORIQUE</div>
+  </div>
+  <div class="updated" id="last-updated"></div>
+</header>
+
+<main>
+
+  <!-- LEADERBOARD -->
+  <section>
+    <h2>Classement Global</h2>
+    <div class="filters" id="lb-filters">
+      <button class="filter-btn active" data-mode="all">TOUS</button>
+      <button class="filter-btn" data-mode="Cricket">CRICKET</button>
+      <button class="filter-btn" data-mode="SuperCricket">SUPER CRICKET</button>
+      <button class="filter-btn" data-mode="Shanghai">SHANGHAI</button>
+      <button class="filter-btn" data-mode="FiftyOne">51</button>
+    </div>
+    <table id="leaderboard-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Victoires</th>
+          <th>Parties</th>
+          <th>Win rate</th>
+          <th>Durée moy.</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboard-body">
+        <tr><td colspan="5" class="empty-state">Aucune partie enregistrée</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- HISTORY -->
+  <section>
+    <h2>Historique des Parties</h2>
+    <div class="filters" id="hist-filters">
+      <button class="filter-btn active" data-mode="all">TOUS</button>
+      <button class="filter-btn" data-mode="Cricket">CRICKET</button>
+      <button class="filter-btn" data-mode="SuperCricket">SUPER CRICKET</button>
+      <button class="filter-btn" data-mode="Shanghai">SHANGHAI</button>
+      <button class="filter-btn" data-mode="FiftyOne">51</button>
+    </div>
+    <div id="history-list"><div class="empty-state">Aucune partie enregistrée</div></div>
+  </section>
+
+</main>
+
+<script>
+const DATA_URL = 'data/games.json';
+
+let allGames = [];
+let lbFilter = 'all';
+let histFilter = 'all';
+
+// --- Helpers ---
+function formatDuration(secs) {
+  if (!secs) return '--';
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  return h > 0
+    ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+    : `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' })
+    + ' ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+}
+
+function modeCssClass(mode) {
+  const map = { Cricket:'mode-cricket', SuperCricket:'mode-supercricket', Shanghai:'mode-shanghai', FiftyOne:'mode-fiftyone' };
+  return map[mode] || 'mode-cricket';
+}
+
+function modeLabel(mode, variant) {
+  const names = { Cricket:'CRICKET', SuperCricket:'SUPER', Shanghai:'SHANGHAI', FiftyOne:'51' };
+  const base = names[mode] || mode.toUpperCase();
+  if (variant && variant !== 'Normal') return `${base} · ${variant.toUpperCase()}`;
+  return base;
+}
+
+// --- Leaderboard ---
+function buildLeaderboard(games) {
+  const stats = {};
+  games.forEach(g => {
+    g.players.forEach(p => {
+      if (!stats[p]) stats[p] = { wins: 0, games: 0, totalDuration: 0 };
+      stats[p].games++;
+      stats[p].totalDuration += (g.duration || 0);
+      if (g.winner === p) stats[p].wins++;
+    });
+  });
+
+  const sorted = Object.entries(stats)
+    .sort((a, b) => b[1].wins - a[1].wins || b[1].games - a[1].games);
+
+  const tbody = document.getElementById('leaderboard-body');
+  if (sorted.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Aucune partie enregistrée</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = sorted.map(([name, s], i) => {
+    const rank = i + 1;
+    const badgeClass = rank <= 3 ? `rank-${rank}` : 'rank-n';
+    const wr = s.games > 0 ? Math.round(s.wins / s.games * 100) : 0;
+    const avgDur = s.games > 0 ? Math.round(s.totalDuration / s.games) : 0;
+    return `<tr>
+      <td><span class="rank-badge ${badgeClass}">${rank}</span><span class="player-name">${name}</span></td>
+      <td><span class="wins-count">${s.wins}</span></td>
+      <td><span class="total-games">${s.games}</span></td>
+      <td><span class="winrate">${wr}%</span></td>
+      <td><span class="game-duration">${formatDuration(avgDur)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// --- History ---
+function buildHistory(games) {
+  const el = document.getElementById('history-list');
+  const shown = games.slice(0, 50);
+  if (shown.length === 0) {
+    el.innerHTML = '<div class="empty-state">Aucune partie enregistrée</div>';
+    return;
+  }
+  el.innerHTML = shown.map(g => {
+    const playersHtml = g.players.map((p, i) => {
+      const score = g.scores && g.scores[i] !== undefined ? ` (${g.scores[i]})` : '';
+      const isWinner = p === g.winner;
+      return isWinner
+        ? `<span class="winner">${p}${score}</span>`
+        : `${p}${score}`;
+    }).join(' · ');
+
+    return `<div class="game-card">
+      <div class="game-date">${formatDate(g.date)}</div>
+      <div class="game-mode ${modeCssClass(g.mode)}">${modeLabel(g.mode, g.variant)}</div>
+      <div class="game-players">${playersHtml}</div>
+      <div class="game-duration">${formatDuration(g.duration)}</div>
+    </div>`;
+  }).join('');
+}
+
+// --- Filters ---
+function setupFilters(containerId, callback) {
+  document.getElementById(containerId).addEventListener('click', e => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    document.querySelectorAll(`#${containerId} .filter-btn`).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    callback(btn.dataset.mode);
+  });
+}
+
+function filteredGames(mode) {
+  return mode === 'all' ? allGames : allGames.filter(g => g.mode === mode);
+}
+
+// --- Init ---
+async function init() {
+  try {
+    const res = await fetch(DATA_URL + '?t=' + Date.now());
+    allGames = await res.json();
+  } catch { allGames = []; }
+
+  if (allGames.length > 0) {
+    const newest = new Date(allGames[0].date);
+    document.getElementById('last-updated').textContent =
+      'MÀJ ' + newest.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+  }
+
+  buildLeaderboard(filteredGames(lbFilter));
+  buildHistory(filteredGames(histFilter));
+
+  setupFilters('lb-filters', mode => { lbFilter = mode; buildLeaderboard(filteredGames(mode)); });
+  setupFilters('hist-filters', mode => { histFilter = mode; buildHistory(filteredGames(mode)); });
+}
+
+init();
+</script>
+</body>
+</html>

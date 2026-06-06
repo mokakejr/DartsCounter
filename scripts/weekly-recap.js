@@ -219,7 +219,8 @@ function main() {
     process.exit(0);
   }
 
-  const all  = JSON.parse(fs.readFileSync(GAMES_FILE, 'utf8'));
+  const raw  = fs.readFileSync(GAMES_FILE, 'utf8').replace(/^﻿/, '');
+  const all  = JSON.parse(raw);
   const { from, to, monDate, friDate } = weekBounds();
 
   const games = all.filter(g => {

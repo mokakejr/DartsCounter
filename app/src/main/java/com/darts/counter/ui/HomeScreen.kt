@@ -1,38 +1,30 @@
 package com.darts.counter.ui
 
-import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import android.view.HapticFeedbackConstants
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.darts.counter.R
-import com.darts.counter.ui.theme.DartsColors
 import kotlin.math.abs
 import kotlinx.coroutines.delay
 
@@ -72,36 +64,25 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp)
-            .padding(top = 24.dp, bottom = 16.dp),
+            .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        // ── Logo / Dart ───────────────────────────────────────────────────────
-        // The Image always occupies its natural space — zero layout shift.
-        // The dart overlays on top when isDart = true.
+        // Icon — tap 🎯 to get dart, tap/barely-drag dart to return
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 340.dp),
+            modifier = Modifier.size(72.dp),
             contentAlignment = Alignment.Center
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.logo_dartboard),
-                contentDescription = "Fléchettes",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer { alpha = if (isDart) 0f else 1f }
-                    .then(if (!isDart) Modifier.clickable {
-                        view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-                        isDart = true
-                    } else Modifier),
-                contentScale = ContentScale.Fit
-            )
-            if (isDart) {
+            if (!isDart) {
+                Text(
+                    text = "🎯",
+                    fontSize = 56.sp,
+                    modifier = Modifier.clickable { isDart = true }
+                )
+            } else {
                 Canvas(
                     modifier = Modifier
-                        .size(100.dp)
+                        .size(64.dp)
                         .rotate(rotation)
                         .pointerInput(Unit) {
                             var totalDrag = 0f
@@ -124,97 +105,99 @@ fun HomeScreen(
             }
         }
 
-        Spacer(Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = "FLÉCHETTES",
             fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
             letterSpacing = 4.sp
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(40.dp))
 
-        // ── Game mode ─────────────────────────────────────────────────────────
-        SectionLabel("MODE DE JEU")
-        Spacer(Modifier.height(10.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ModeButton("CRICKET",  selectedMode == "cricket",  Modifier.weight(1f)) { selectedMode = "cricket" }
+        Text(text = "MODE DE JEU", fontSize = 11.sp, color = Color(0xFF666666),
+            letterSpacing = 2.sp, modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            ModeButton("CRICKET", selectedMode == "cricket", Modifier.weight(1f)) { selectedMode = "cricket" }
             ModeButton("SHANGHAI", selectedMode == "shanghai", Modifier.weight(1f)) { selectedMode = "shanghai" }
-            ModeButton("51",       selectedMode == "fiftyone", Modifier.weight(1f)) { selectedMode = "fiftyone" }
+            ModeButton("51", selectedMode == "fiftyone", Modifier.weight(1f)) { selectedMode = "fiftyone" }
         }
 
-        // ── Variants (fixed slot) + Players — no layout shift when cricket selected ─
-        // Outer box absorbs variant height so JOUEURS never moves
+        // Fixed-height box: always occupies the same space, no layout shift
         Box(
-            modifier = Modifier.fillMaxWidth().height(236.dp),
+            modifier = Modifier.fillMaxWidth().height(152.dp),
             contentAlignment = Alignment.TopStart
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                // Variant slot: always 138dp, only populated for cricket
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(138.dp),
-                    contentAlignment = Alignment.TopStart
-                ) {
-                    if (selectedMode == "cricket") {
-                        Column(modifier = Modifier.padding(top = 12.dp).fillMaxWidth()) {
-                            SectionLabel("VARIANTE")
-                            Spacer(Modifier.height(10.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                ModeButton("NORMAL",     selectedCricketVariant == "normal",    Modifier.weight(1f)) { selectedCricketVariant = "normal" }
-                                ModeButton("CUT THROAT", selectedCricketVariant == "cutthroat", Modifier.weight(1f)) { selectedCricketVariant = "cutthroat" }
-                            }
-                            Spacer(Modifier.height(8.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                ModeButton("SUPER",     selectedCricketVariant == "super",   Modifier.weight(1f)) { selectedCricketVariant = "super" }
-                                ModeButton("SUPER CUT", selectedCricketVariant == "superct", Modifier.weight(1f)) { selectedCricketVariant = "superct" }
-                            }
-                        }
+            if (selectedMode == "cricket") {
+                Column(modifier = Modifier.padding(top = 14.dp).fillMaxWidth()) {
+                    Text(text = "VARIANTE", fontSize = 11.sp, color = Color(0xFF666666),
+                        letterSpacing = 2.sp, modifier = Modifier.fillMaxWidth())
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ModeButton("NORMAL", selectedCricketVariant == "normal", Modifier.weight(1f)) { selectedCricketVariant = "normal" }
+                        ModeButton("CUT THROAT", selectedCricketVariant == "cutthroat", Modifier.weight(1f)) { selectedCricketVariant = "cutthroat" }
                     }
-                }
-
-                Spacer(Modifier.height(20.dp))
-
-                // ── Players ───────────────────────────────────────────────────
-                SectionLabel("JOUEURS")
-                Spacer(Modifier.height(10.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(2, 3, 4, 5).forEach { count ->
-                        PlayerButton(count, selectedPlayers == count, Modifier.weight(1f)) { selectedPlayers = count }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ModeButton("SUPER", selectedCricketVariant == "super", Modifier.weight(1f)) { selectedCricketVariant = "super" }
+                        ModeButton("SUPER CUT", selectedCricketVariant == "superct", Modifier.weight(1f)) { selectedCricketVariant = "superct" }
                     }
                 }
             }
         }
 
-        Spacer(Modifier.height(20.dp))
-        Spacer(Modifier.weight(1f))
-
-        // ── Start ─────────────────────────────────────────────────────────────
-        StartButton(
-            enabled = selectedMode != null,
-            onClick = {
-                when (selectedMode) {
-                    "cricket"  -> onStartCricket(selectedPlayers, selectedCricketVariant)
-                    "shanghai" -> onStartShanghai(selectedPlayers)
-                    "fiftyone" -> onStartFiftyOne(selectedPlayers)
-                }
+        Text(text = "JOUEURS", fontSize = 11.sp, color = Color(0xFF666666),
+            letterSpacing = 2.sp, modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(2, 3, 4, 5).forEach { count ->
+                PlayerButton(count, selectedPlayers == count, Modifier.weight(1f)) { selectedPlayers = count }
             }
-        )
+        }
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(if (selectedMode != null) MaterialTheme.colorScheme.primary else Color(0xFF2A2A2A))
+                .clickable(enabled = selectedMode != null) {
+                    when (selectedMode) {
+                        "cricket" -> onStartCricket(selectedPlayers, selectedCricketVariant)
+                        "shanghai" -> onStartShanghai(selectedPlayers)
+                        "fiftyone" -> onStartFiftyOne(selectedPlayers)
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "COMMENCER",
+                color = if (selectedMode != null) MaterialTheme.colorScheme.onPrimary else Color(0xFF444444),
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                letterSpacing = 3.sp
+            )
+        }
     }
 }
 
 private fun DrawScope.drawDart() {
     val cx = size.width / 2f
-    val h  = size.height
+    val h = size.height
 
     // Tip — silver
-    drawPath(Path().apply {
+    val tip = Path().apply {
         moveTo(cx, 0f)
         lineTo(cx - size.width * 0.055f, h * 0.16f)
         lineTo(cx + size.width * 0.055f, h * 0.16f)
         close()
-    }, Color(0xFFCCCCCC))
+    }
+    drawPath(tip, Color(0xFFCCCCCC))
 
     // Barrel — brass
     drawRoundRect(
@@ -224,52 +207,29 @@ private fun DrawScope.drawDart() {
         cornerRadius = CornerRadius(size.width * 0.04f)
     )
 
-    // Shaft
-    drawLine(Color(0xFF444444), Offset(cx, h * 0.58f), Offset(cx, h * 0.72f), strokeWidth = size.width * 0.055f)
-
-    // Flights — rouge Primary
-    drawPath(Path().apply {
-        moveTo(cx, h * 0.72f); lineTo(cx - size.width * 0.30f, h * 0.98f); lineTo(cx, h * 0.89f); close()
-    }, Color(0xFFE61E2A))
-    drawPath(Path().apply {
-        moveTo(cx, h * 0.72f); lineTo(cx + size.width * 0.30f, h * 0.98f); lineTo(cx, h * 0.89f); close()
-    }, Color(0xFFE61E2A))
-}
-
-// ── Shared atoms ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text = text,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Medium,
-        color = DartsColors.Muted,
-        letterSpacing = 2.sp,
-        modifier = Modifier.fillMaxWidth()
+    // Shaft — dark grey line
+    drawLine(
+        color = Color(0xFF444444),
+        start = Offset(cx, h * 0.58f),
+        end = Offset(cx, h * 0.72f),
+        strokeWidth = size.width * 0.055f
     )
-}
 
-@Composable
-private fun StartButton(enabled: Boolean, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (enabled) MaterialTheme.colorScheme.primary else DartsColors.SurfaceDeep)
-            .border(1.dp, if (enabled) Color.Transparent else DartsColors.OutlineDim, RoundedCornerShape(16.dp))
-            .clickable(enabled = enabled, onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "COMMENCER",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 3.sp,
-            color = if (enabled) Color.White else DartsColors.Disabled
-        )
+    // Flights — blue triangles
+    val flightL = Path().apply {
+        moveTo(cx, h * 0.72f)
+        lineTo(cx - size.width * 0.30f, h * 0.98f)
+        lineTo(cx, h * 0.89f)
+        close()
     }
+    val flightR = Path().apply {
+        moveTo(cx, h * 0.72f)
+        lineTo(cx + size.width * 0.30f, h * 0.98f)
+        lineTo(cx, h * 0.89f)
+        close()
+    }
+    drawPath(flightL, Color(0xFF2266CC))
+    drawPath(flightR, Color(0xFF2266CC))
 }
 
 @Composable
@@ -277,18 +237,18 @@ fun ModeButton(label: String, selected: Boolean, modifier: Modifier = Modifier, 
     Box(
         modifier = modifier
             .height(52.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (selected) MaterialTheme.colorScheme.primary else DartsColors.SurfaceAlt)
-            .border(1.dp, if (selected) MaterialTheme.colorScheme.primary else DartsColors.Outline, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (selected) MaterialTheme.colorScheme.primary else Color(0xFF1E1E1E))
+            .border(1.dp, if (selected) MaterialTheme.colorScheme.primary else Color(0xFF333333), RoundedCornerShape(8.dp))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
+            color = if (selected) MaterialTheme.colorScheme.onPrimary else Color(0xFF888888),
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             fontSize = 13.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            letterSpacing = 2.sp,
-            color = if (selected) Color.White else DartsColors.OnSurface
+            letterSpacing = 2.sp
         )
     }
 }
@@ -298,17 +258,17 @@ fun PlayerButton(count: Int, selected: Boolean, modifier: Modifier = Modifier, o
     Box(
         modifier = modifier
             .height(52.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (selected) MaterialTheme.colorScheme.primary else DartsColors.SurfaceAlt)
-            .border(1.dp, if (selected) MaterialTheme.colorScheme.primary else DartsColors.Outline, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (selected) MaterialTheme.colorScheme.primary else Color(0xFF1E1E1E))
+            .border(1.dp, if (selected) MaterialTheme.colorScheme.primary else Color(0xFF333333), RoundedCornerShape(8.dp))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = "$count",
-            fontSize = 18.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            color = if (selected) Color.White else DartsColors.OnSurface
+            color = if (selected) MaterialTheme.colorScheme.onPrimary else Color(0xFF888888),
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            fontSize = 18.sp
         )
     }
 }

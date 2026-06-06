@@ -24,6 +24,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.darts.counter.R
 import com.darts.counter.model.*
+import com.darts.counter.data.GameRepository
+import com.darts.counter.data.GameSyncService
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +39,27 @@ fun FiftyOneScreen(
     val history = remember { mutableStateListOf<FiftyOneState>() }
     var input by remember { mutableStateOf("") }
     var showExitDialog by remember { mutableStateOf(false) }
+    var elapsedSeconds by remember { mutableStateOf(0L) }
+    var gameKey by remember { mutableStateOf(0) }
+
+    LaunchedEffect(gameKey) {
+        elapsedSeconds = 0L
+        while (true) { delay(1000L); elapsedSeconds++ }
+    }
+
+    LaunchedEffect(state.winner) {
+        val winner = state.winner ?: return@LaunchedEffect
+        val repo = GameRepository(context)
+        val saved = repo.saveGame(
+            mode = "FiftyOne",
+            variant = "Normal",
+            playerNames = playerNames,
+            scores = state.fives.toList(),
+            winnerName = state.playerNames[winner],
+            durationSeconds = elapsedSeconds
+        )
+        GameSyncService.sync(saved)
+    }
 
     BackHandler { showExitDialog = true }
 
@@ -96,6 +120,14 @@ fun FiftyOneScreen(
                             tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
+                actions = {
+                    Text(
+                        formatElapsed(elapsedSeconds),
+                        fontSize = 12.sp,
+                        color = Color(0xFF8B949E),
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
@@ -108,7 +140,6 @@ fun FiftyOneScreen(
                 .padding(horizontal = 12.dp)
         ) {
 
-            // ── Score input display (turn info) ───────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -156,7 +187,6 @@ fun FiftyOneScreen(
                 }
             }
 
-            // ── Scoreboard (scrollable) ───────────────────────────────────────
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -170,10 +200,7 @@ fun FiftyOneScreen(
                             .fillMaxWidth()
                             .padding(vertical = 2.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(
-                                if (isCurrent) Color(0xFF2A2A3E)
-                                else Color(0xFF1E1E1E)
-                            )
+                            .background(if (isCurrent) Color(0xFF2A2A3E) else Color(0xFF1E1E1E))
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -188,19 +215,14 @@ fun FiftyOneScreen(
                             text = name,
                             fontSize = 13.sp,
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isCurrent) MaterialTheme.colorScheme.onBackground
-                                    else Color(0xFF777777),
+                            color = if (isCurrent) MaterialTheme.colorScheme.onBackground else Color(0xFF777777),
                             modifier = Modifier.weight(1f)
                         )
                         Spacer(Modifier.width(12.dp))
                         LinearProgressIndicator(
                             progress = state.fives[i].toFloat() / FIFTY_ONE_TARGET,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            color = if (isCurrent) MaterialTheme.colorScheme.secondary
-                                    else Color(0xFF444444),
+                            modifier = Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)),
+                            color = if (isCurrent) MaterialTheme.colorScheme.secondary else Color(0xFF444444),
                             trackColor = Color(0xFF252525)
                         )
                         Spacer(Modifier.width(12.dp))
@@ -208,8 +230,7 @@ fun FiftyOneScreen(
                             text = "${state.fives[i]}/51",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isCurrent) MaterialTheme.colorScheme.onBackground
-                                    else Color(0xFF666666),
+                            color = if (isCurrent) MaterialTheme.colorScheme.onBackground else Color(0xFF666666),
                             textAlign = TextAlign.End,
                             modifier = Modifier.width(48.dp)
                         )
@@ -217,18 +238,15 @@ fun FiftyOneScreen(
                 }
             }
 
-            // ── Sound buttons ─────────────────────────────────────────────────
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 10.dp, bottom = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // MISS
                 Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .height(54.dp)
+                        .weight(1f).height(54.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(Color(0xFF2A0A0A))
                         .border(1.dp, Color(0xFFCC2222), RoundedCornerShape(10.dp))
@@ -239,11 +257,9 @@ fun FiftyOneScreen(
                         color = Color(0xFFFF4444), letterSpacing = 3.sp)
                 }
 
-                // MEXICAINE
                 Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .height(54.dp)
+                        .weight(1f).height(54.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(Color(0xFF061428))
                         .border(1.dp, Color(0xFF1565C0), RoundedCornerShape(10.dp))
@@ -257,11 +273,9 @@ fun FiftyOneScreen(
                         color = Color(0xFF42A5F5), letterSpacing = 2.sp)
                 }
 
-                // GAUFRE
                 Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .height(54.dp)
+                        .weight(1f).height(54.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(Color(0xFF1A1200))
                         .border(1.dp, Color(0xFF997700), RoundedCornerShape(10.dp))
@@ -273,11 +287,8 @@ fun FiftyOneScreen(
                 }
             }
 
-            // ── Numpad ────────────────────────────────────────────────────────
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 listOf(
@@ -286,38 +297,18 @@ fun FiftyOneScreen(
                     listOf("1", "2", "3"),
                     listOf("⌫", "0", "✓")
                 ).forEach { row ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         row.forEach { key ->
                             val isOk  = key == "✓"
                             val isDel = key == "⌫"
-                            val bgColor = when {
-                                isOk && isDivisible -> MaterialTheme.colorScheme.secondary
-                                isOk                -> Color(0xFF1E1E1E)
-                                isDel               -> Color(0xFF1E1E1E)
-                                else                -> Color(0xFF1E1E1E)
-                            }
-                            val borderColor = when {
-                                isOk && isDivisible -> MaterialTheme.colorScheme.secondary
-                                isOk                -> Color(0xFF333333)
-                                isDel               -> Color(0xFF333333)
-                                else                -> Color(0xFF333333)
-                            }
                             Box(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .height(52.dp)
+                                    .weight(1f).height(52.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(bgColor)
-                                    .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+                                    .background(if (isOk && isDivisible) MaterialTheme.colorScheme.secondary else Color(0xFF1E1E1E))
+                                    .border(1.dp, if (isOk && isDivisible) MaterialTheme.colorScheme.secondary else Color(0xFF333333), RoundedCornerShape(8.dp))
                                     .clickable {
-                                        when {
-                                            isOk  -> confirmTurn()
-                                            isDel -> deleteDigit()
-                                            else  -> appendDigit(key)
-                                        }
+                                        when { isOk -> confirmTurn(); isDel -> deleteDigit(); else -> appendDigit(key) }
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -327,9 +318,9 @@ fun FiftyOneScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = when {
                                         isOk && isDivisible -> MaterialTheme.colorScheme.onPrimary
-                                        isOk                -> Color(0xFF555555)
-                                        isDel               -> Color(0xFF777777)
-                                        else                -> MaterialTheme.colorScheme.onBackground
+                                        isOk -> Color(0xFF555555)
+                                        isDel -> Color(0xFF777777)
+                                        else -> MaterialTheme.colorScheme.onBackground
                                     }
                                 )
                             }
@@ -338,23 +329,13 @@ fun FiftyOneScreen(
                 }
             }
 
-            // ── Undo button ───────────────────────────────────────────────────
+            Spacer(Modifier.height(12.dp))
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp)
-                    .padding(bottom = 10.dp)
+                    .fillMaxWidth().height(52.dp).padding(bottom = 10.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        if (history.isNotEmpty()) Color(0xFF1E1E1E)
-                        else Color(0xFF141414)
-                    )
-                    .border(
-                        1.dp,
-                        if (history.isNotEmpty()) Color(0xFF333333)
-                        else Color(0xFF1A1A1A),
-                        RoundedCornerShape(8.dp)
-                    )
+                    .background(if (history.isNotEmpty()) Color(0xFF1E1E1E) else Color(0xFF141414))
+                    .border(1.dp, if (history.isNotEmpty()) Color(0xFF333333) else Color(0xFF1A1A1A), RoundedCornerShape(8.dp))
                     .clickable(enabled = history.isNotEmpty(), onClick = ::undo),
                 contentAlignment = Alignment.Center
             ) {
@@ -368,34 +349,41 @@ fun FiftyOneScreen(
         }
     }
 
-    // ── Winner dialog ────────────────────────────────────────────────────────
     if (state.winner != null) {
-        WinnerDialog(
-            playerName = state.playerNames[state.winner!!],
-            subtitle = "51 cinqs atteints — victoire !",
-            onRematch = {
-                state = initialFiftyOneState(playerNames)
-                history.clear()
-                input = ""
+        AlertDialog(
+            onDismissRequest = {},
+            title = {
+                Text("🎯  ${state.playerNames[state.winner!!]}", fontWeight = FontWeight.Bold, fontSize = 20.sp)
             },
-            onQuit = onBack
+            text = {
+                Text("51 cinqs atteints — victoire !", fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    state = initialFiftyOneState(playerNames)
+                    history.clear()
+                    input = ""
+                    gameKey++
+                }) { Text("REVANCHE") }
+            },
+            dismissButton = {
+                TextButton(onClick = onBack) { Text("QUITTER") }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
-    // ── Exit confirmation ────────────────────────────────────────────────────
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
             title = { Text("Quitter la partie ?") },
-            text = { Text("La partie en cours sera perdue.", color = Color(0xFF888888), fontSize = 13.sp) },
             confirmButton = {
-                TextButton(onClick = onBack) { Text("Quitter", color = Color(0xFFE57373)) }
+                TextButton(onClick = onBack) { Text("QUITTER") }
             },
             dismissButton = {
-                TextButton(onClick = { showExitDialog = false }) { Text("Continuer") }
+                TextButton(onClick = { showExitDialog = false }) { Text("CONTINUER") }
             },
             containerColor = MaterialTheme.colorScheme.surface
         )
     }
 }
-

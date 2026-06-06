@@ -24,6 +24,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.darts.counter.R
 import com.darts.counter.model.*
+import com.darts.counter.data.GameRepository
+import com.darts.counter.data.GameSyncService
+import kotlinx.coroutines.delay
 
 private val STANDARD_LABELS = listOf("20", "19", "18", "17", "16", "15", "BULL")
 private val SPECIAL_LABELS = listOf("DBL", "TPL", "BED")
@@ -44,8 +47,30 @@ fun SuperCricketScreen(playerNames: List<String>, mode: SuperCricketMode = Super
     var history by remember { mutableStateOf(listOf<SuperCricketState>()) }
     var showBackConfirm by remember { mutableStateOf(false) }
     var scoringDialog by remember { mutableStateOf<ScoringDialogType?>(null) }
+    var elapsedSeconds by remember { mutableStateOf(0L) }
+    var gameKey by remember { mutableStateOf(0) }
 
     val context = LocalContext.current
+
+    LaunchedEffect(gameKey) {
+        elapsedSeconds = 0L
+        while (true) { delay(1000L); elapsedSeconds++ }
+    }
+
+    LaunchedEffect(state.winner) {
+        val winner = state.winner ?: return@LaunchedEffect
+        val repo = GameRepository(context)
+        val saved = repo.saveGame(
+            mode = "SuperCricket",
+            variant = if (mode == SuperCricketMode.CUT_THROAT) "CutThroat" else "Normal",
+            playerNames = playerNames,
+            scores = state.points.toList(),
+            winnerName = state.playerNames[winner],
+            durationSeconds = elapsedSeconds
+        )
+        GameSyncService.sync(saved)
+    }
+
     val mexicainePlayers = remember {
         listOf(R.raw.mexicaine1, R.raw.mexicaine2).mapNotNull { res ->
             try { MediaPlayer.create(context, res) } catch (e: Exception) { null }
@@ -76,6 +101,7 @@ fun SuperCricketScreen(playerNames: List<String>, mode: SuperCricketMode = Super
             onRematch = {
                 state = initialSuperCricketState(playerNames, mode)
                 history = listOf()
+                gameKey++
             },
             onQuit = onBack
         )
@@ -124,7 +150,8 @@ fun SuperCricketScreen(playerNames: List<String>, mode: SuperCricketMode = Super
         is ScoringDialogType.BedPickNumber -> {
             NumberPickerDialog(
                 title = "BED : quel nombre ?",
-                includeBull = false,
+                includeBull = true,
+                bullLabel = "BULL  —  25",
                 onSelect = { number ->
                     scoringDialog = ScoringDialogType.BedPickMultiplier(dialog.player, number)
                 },
@@ -167,6 +194,14 @@ fun SuperCricketScreen(playerNames: List<String>, mode: SuperCricketMode = Super
                     IconButton(onClick = { showBackConfirm = true }) {
                         Icon(Icons.Default.ArrowBack, null, tint = MaterialTheme.colorScheme.onBackground)
                     }
+                },
+                actions = {
+                    Text(
+                        formatElapsed(elapsedSeconds),
+                        fontSize = 12.sp,
+                        color = Color(0xFF8B949E),
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
@@ -271,10 +306,11 @@ fun SuperCricketScreen(playerNames: List<String>, mode: SuperCricketMode = Super
                 }
             }
 
+            Spacer(Modifier.height(12.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp)
+                    .height(52.dp)
                     .padding(bottom = 10.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(if (history.isNotEmpty()) Color(0xFF1E1E1E) else Color(0xFF141414))
@@ -383,7 +419,6 @@ fun SuperCricketGrid(
                 }
             }
 
-            // Thicker gold divider separates standard targets from the special Super Cricket categories
             Divider(color = Color(0xFF3A3010), thickness = 2.dp)
 
             SPECIAL_LABELS.forEachIndexed { si, label ->
@@ -441,6 +476,7 @@ fun SuperCricketGrid(
 private fun NumberPickerDialog(
     title: String,
     includeBull: Boolean,
+    bullLabel: String = "BULL  —  50 pts",
     onSelect: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -494,7 +530,7 @@ private fun NumberPickerDialog(
                         .clickable { onSelect(25) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("BULL  —  50 pts", fontSize = 18.sp, color = Color(0xFFE0E0E0), fontWeight = FontWeight.Bold)
+                    Text(bullLabel, fontSize = 18.sp, color = Color(0xFFE0E0E0), fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }

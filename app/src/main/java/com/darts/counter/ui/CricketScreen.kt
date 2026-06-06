@@ -23,6 +23,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.darts.counter.model.*
 import com.darts.counter.R
+import com.darts.counter.data.GameRepository
+import com.darts.counter.data.GameSyncService
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,8 +33,29 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
     var state by remember { mutableStateOf(initialCricketState(playerNames, mode)) }
     var history by remember { mutableStateOf(listOf<CricketState>()) }
     var showBackConfirm by remember { mutableStateOf(false) }
+    var elapsedSeconds by remember { mutableStateOf(0L) }
+    var gameKey by remember { mutableStateOf(0) }
 
     val context = LocalContext.current
+
+    LaunchedEffect(gameKey) {
+        elapsedSeconds = 0L
+        while (true) { delay(1000L); elapsedSeconds++ }
+    }
+
+    LaunchedEffect(state.winner) {
+        val winner = state.winner ?: return@LaunchedEffect
+        val repo = GameRepository(context)
+        val saved = repo.saveGame(
+            mode = "Cricket",
+            variant = if (mode == CricketMode.CUT_THROAT) "CutThroat" else "Normal",
+            playerNames = playerNames,
+            scores = state.points.toList(),
+            winnerName = state.playerNames[winner],
+            durationSeconds = elapsedSeconds
+        )
+        GameSyncService.sync(saved)
+    }
 
     val mexicainePlayers = remember {
         listOf(R.raw.mexicaine1, R.raw.mexicaine2).mapNotNull { res ->
@@ -60,10 +84,11 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
     if (state.winner != null) {
         WinnerDialog(
             playerName = state.playerNames[state.winner!!],
-            subtitle = if (mode == CricketMode.CUT_THROAT) "avec le moins de points" else null,
+            isCutThroat = mode == CricketMode.CUT_THROAT,
             onRematch = {
                 state = initialCricketState(playerNames, mode)
                 history = listOf()
+                gameKey++
             },
             onQuit = onBack
         )
@@ -101,6 +126,14 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
                         Icon(Icons.Default.ArrowBack, null, tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
+                actions = {
+                    Text(
+                        formatElapsed(elapsedSeconds),
+                        fontSize = 12.sp,
+                        color = Color(0xFF8B949E),
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
@@ -129,7 +162,6 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
                     .padding(top = 10.dp, bottom = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // MISS
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -149,7 +181,6 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
                         color = Color(0xFFFF4444), letterSpacing = 3.sp)
                 }
 
-                // MEXICAINE
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -171,7 +202,6 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
                         color = Color(0xFF42A5F5), letterSpacing = 2.sp)
                 }
 
-                // GAUFRE
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -193,10 +223,11 @@ fun CricketScreen(playerNames: List<String>, mode: CricketMode = CricketMode.NOR
             }
 
             // Annuler
+            Spacer(Modifier.height(12.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp)
+                    .height(52.dp)
                     .padding(bottom = 10.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(if (history.isNotEmpty()) Color(0xFF1E1E1E) else Color(0xFF141414))
@@ -328,7 +359,7 @@ fun MarkDisplay(count: Int, closed: Boolean, globalClosed: Boolean) {
 @Composable
 fun WinnerDialog(
     playerName: String,
-    subtitle: String? = null,
+    isCutThroat: Boolean = false,
     isShanghaiWin: Boolean = false,
     onRematch: () -> Unit,
     onQuit: () -> Unit
@@ -339,7 +370,7 @@ fun WinnerDialog(
                 .background(Color(0xFF1E1E1E)).padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("🎯", fontSize = 48.sp)
+            Text(if (isShanghaiWin) "🎯" else "🎯", fontSize = 48.sp)
             Spacer(modifier = Modifier.height(16.dp))
             if (isShanghaiWin) {
                 Text("SHANGHAI !", fontSize = 22.sp, fontWeight = FontWeight.Bold,
@@ -347,10 +378,10 @@ fun WinnerDialog(
                 Spacer(modifier = Modifier.height(6.dp))
             }
             Text(text = "$playerName gagne !", fontSize = 20.sp, fontWeight = FontWeight.Bold,
-                color = Color(0xFFE6EDF3), textAlign = TextAlign.Center)
-            if (subtitle != null) {
+                color = Color(0xFFE8E8E8), textAlign = TextAlign.Center)
+            if (isCutThroat) {
                 Spacer(modifier = Modifier.height(6.dp))
-                Text(subtitle, fontSize = 13.sp, color = Color(0xFF888888),
+                Text("avec le moins de points", fontSize = 13.sp, color = Color(0xFF888888),
                     textAlign = TextAlign.Center)
             }
             Spacer(modifier = Modifier.height(24.dp))
@@ -358,11 +389,11 @@ fun WinnerDialog(
                 TextButton(onClick = onQuit) { Text("Quitter", color = Color(0xFF888888)) }
                 Box(
                     modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFE61E2A))
+                        .background(Color(0xFFE8E8E8))
                         .clickable(onClick = onRematch)
                         .padding(horizontal = 20.dp, vertical = 10.dp)
                 ) {
-                    Text("Revanche", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("Revanche", color = Color(0xFF121212), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }

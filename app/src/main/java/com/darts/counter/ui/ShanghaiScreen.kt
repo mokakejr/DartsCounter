@@ -11,6 +11,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
+import androidx.compose.ui.platform.LocalContext
+import com.darts.counter.data.GameRepository
+import com.darts.counter.data.GameSyncService
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +33,31 @@ fun ShanghaiScreen(playerNames: List<String>, onBack: () -> Unit) {
     var pendingDarts by remember { mutableStateOf(listOf<Int>()) }
     var showReset by remember { mutableStateOf(false) }
     var showBackConfirm by remember { mutableStateOf(false) }
+    var elapsedSeconds by remember { mutableStateOf(0L) }
+    var gameKey by remember { mutableStateOf(0) }
+
+    val context = LocalContext.current
+
+    LaunchedEffect(gameKey) {
+        elapsedSeconds = 0L
+        while (true) { delay(1000L); elapsedSeconds++ }
+    }
+
+    LaunchedEffect(state.finished) {
+        if (!state.finished) return@LaunchedEffect
+        val leader = state.leader()
+        val winnerName = if (leader != null) state.playerNames[leader] else "Égalité"
+        val repo = GameRepository(context)
+        val saved = repo.saveGame(
+            mode = "Shanghai",
+            variant = "Normal",
+            playerNames = playerNames,
+            scores = (0 until state.playerCount).map { state.totalScore(it) },
+            winnerName = winnerName,
+            durationSeconds = elapsedSeconds
+        )
+        GameSyncService.sync(saved)
+    }
 
     BackHandler { showBackConfirm = true }
 
@@ -71,6 +100,7 @@ fun ShanghaiScreen(playerNames: List<String>, onBack: () -> Unit) {
             onRematch = {
                 state = initialShanghaiState(playerNames)
                 pendingDarts = listOf()
+                gameKey++
             },
             onQuit = onBack
         )
@@ -89,6 +119,12 @@ fun ShanghaiScreen(playerNames: List<String>, onBack: () -> Unit) {
                     }
                 },
                 actions = {
+                    Text(
+                        formatElapsed(elapsedSeconds),
+                        fontSize = 12.sp,
+                        color = Color(0xFF8B949E),
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
                     TextButton(onClick = { showReset = true }) {
                         Text("↺", fontSize = 20.sp, color = Color(0xFF888888))
                     }

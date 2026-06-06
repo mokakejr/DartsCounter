@@ -39,9 +39,10 @@ object GameSyncService {
         // GET current file
         val (currentContent, sha) = getFile(apiUrl, token)
 
-        // Decode + parse existing games list
+        // Decode + parse existing games list (strip BOM if present)
         val decoded = if (currentContent.isNotBlank())
             String(Base64.decode(currentContent.replace("\\n", "").replace("\n", ""), Base64.DEFAULT))
+                .trimStart('﻿')
         else "[]"
 
         val newEntry = gameToJson(game)

@@ -158,6 +158,7 @@
     .kpi .val.text { font-size: clamp(18px, 3.5vw, 26px); }
     .kpi .lbl { font-size: 9.5px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-top: 8px; }
     .kpi.win .val { color: var(--gold); }
+    .kpi.king .val { color: var(--orange); }
 
     .scroll-cue {
       position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 2;
@@ -428,6 +429,79 @@
     .reveal { opacity: 0; }
     .reveal.shown { opacity: 1; }
 
+    /* ───────── NOMS CLIQUABLES ───────── */
+    .plink { color: inherit; text-decoration: none; cursor: pointer; border-bottom: 1px dotted transparent; transition: border-color .15s, color .15s; }
+    .plink:hover { border-bottom-color: currentColor; }
+
+    /* ───────── VUE PROFIL ───────── */
+    #profile-view { display: none; padding-top: var(--nav-h); }
+    body.profile-open #hero, body.profile-open main, body.profile-open > footer { display: none; }
+    body.profile-open #profile-view { display: block; }
+
+    .prof-hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--border); }
+    .prof-hero .glow { position: absolute; inset: 0; pointer-events: none; opacity: .5; }
+    .prof-hero .inner { position: relative; max-width: 1100px; margin: 0 auto; padding: 28px 20px 32px; }
+    .prof-back {
+      display: inline-flex; align-items: center; gap: 6px; background: var(--surface2);
+      border: 1px solid var(--border); color: var(--muted); border-radius: 999px;
+      padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; margin-bottom: 22px;
+    }
+    .prof-back:hover { color: var(--text); border-color: #555; }
+    .prof-id { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .prof-ava {
+      width: 84px; height: 84px; border-radius: 24px; display: flex; align-items: center; justify-content: center;
+      font-size: 40px; font-weight: 900; color: #fff; flex-shrink: 0; box-shadow: var(--shadow);
+    }
+    .prof-id .meta { flex: 1; min-width: 220px; }
+    .prof-rankbadge { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+    .prof-name { font-size: clamp(30px, 6vw, 48px); font-weight: 900; letter-spacing: -1px; line-height: 1.05; margin: 2px 0 6px; }
+    .prof-title { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .5px; padding: 4px 12px; border-radius: 999px; background: var(--surface3); border: 1px solid var(--border); }
+    .prof-lvl { margin-top: 16px; max-width: 440px; }
+    .prof-lvl .row { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; margin-bottom: 6px; }
+    .prof-lvl .lv { font-weight: 700; color: var(--gold); letter-spacing: .5px; }
+    .prof-lvl .xptxt { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    .prof-body { max-width: 1100px; margin: 0 auto; padding: 32px 20px 8px; display: flex; flex-direction: column; gap: 40px; }
+    .prof-sec-label { font-size: 11px; font-weight: 700; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 14px; }
+
+    .prof-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    @media (min-width: 700px) { .prof-tiles { grid-template-columns: repeat(6, 1fr); } }
+    .prof-tile { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 10px; text-align: center; }
+    .prof-tile .v { font-size: 24px; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .prof-tile .k { font-size: 9px; font-weight: 600; letter-spacing: .5px; color: var(--muted); text-transform: uppercase; margin-top: 5px; }
+    .prof-tile .v.gold { color: var(--gold); } .prof-tile .v.green { color: var(--green); } .prof-tile .v.orange { color: var(--orange); }
+
+    .prof-charts { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 860px) { .prof-charts { grid-template-columns: 1fr 1fr; } }
+
+    .prof-h2h { width: 100%; border-collapse: collapse; }
+    .prof-h2h th { font-size: 9px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .prof-h2h th:not(:first-child), .prof-h2h td:not(:first-child) { text-align: center; }
+    .prof-h2h td { padding: 10px; font-size: 13px; border-bottom: 1px solid #1a2029; }
+    .prof-h2h .tag { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 999px; letter-spacing: .5px; }
+    .prof-h2h .tag.lead { background: #14331c; color: var(--green); }
+    .prof-h2h .tag.trail { background: #331414; color: #ff6b6b; }
+    .prof-h2h .tag.even { background: var(--surface3); color: var(--muted); }
+    .prof-nemesis { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .prof-nemesis .nb { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; border-left-width: 3px; }
+    .prof-nemesis .nb .lbl { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+    .prof-nemesis .nb .who { font-size: 18px; font-weight: 800; margin-top: 4px; }
+    .prof-nemesis .nb .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .prof-facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    .prof-fact { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+    .prof-fact .ico { font-size: 22px; }
+    .prof-fact .k { font-size: 9.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 8px 0 3px; }
+    .prof-fact .v { font-size: 15px; font-weight: 700; }
+
+    .prof-recent { display: flex; flex-direction: column; gap: 8px; }
+    .prof-recent .g { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--surface2); border: 1px solid var(--border); border-left-width: 3px; border-radius: 10px; padding: 11px 14px; }
+    .prof-recent .res { font-size: 11px; font-weight: 800; letter-spacing: 1px; width: 26px; text-align: center; border-radius: 6px; padding: 3px 0; }
+    .prof-recent .res.w { background: var(--gold-dim); color: var(--gold); }
+    .prof-recent .res.l { background: #2a1416; color: #ff6b6b; }
+    .prof-recent .rd { font-size: 11px; color: var(--muted); min-width: 100px; font-variant-numeric: tabular-nums; }
+    .prof-recent .ro { flex: 1; font-size: 12px; color: var(--muted); min-width: 0; }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .001s !important; transition-duration: .001s !important; }
       html { scroll-behavior: auto; }
@@ -468,13 +542,13 @@
   <div id="tsparticles"></div>
   <div class="hero-inner">
     <div class="hero-logo">🎯</div>
-    <h1>FLÉCHETTES</h1>
+    <h1>DARTS-BOARD</h1>
     <div class="typed-wrap"><span id="typed"></span></div>
     <div class="hero-kpis">
       <div class="kpi"><div class="val" id="kpi-games">0</div><div class="lbl">Parties</div></div>
-      <div class="kpi"><div class="val" id="kpi-players">0</div><div class="lbl">Joueurs</div></div>
-      <div class="kpi"><div class="val" id="kpi-winrate">0%</div><div class="lbl">Meilleur taux</div></div>
-      <div class="kpi win"><div class="val text" id="kpi-last">—</div><div class="lbl">Dernier vainqueur</div></div>
+      <div class="kpi"><div class="val" id="kpi-avg">—</div><div class="lbl">Durée moyenne</div></div>
+      <div class="kpi king"><div class="val text" id="kpi-king">—</div><div class="lbl" id="kpi-king-lbl">Roi actuel</div></div>
+      <div class="kpi"><div class="val text" id="kpi-mode">—</div><div class="lbl" id="kpi-mode-lbl">Mode le plus joué</div></div>
     </div>
   </div>
   <a href="#classement" class="scroll-cue" id="scroll-cue" aria-label="Défiler">▼</a>
@@ -571,6 +645,73 @@
     <button class="load-more" id="load-more" style="display:none">CHARGER PLUS</button>
   </section>
 </main>
+
+<!-- ══════════ VUE PROFIL JOUEUR ══════════ -->
+<div id="profile-view">
+  <div class="prof-hero">
+    <div class="glow" id="prof-glow"></div>
+    <div class="inner">
+      <button class="prof-back" id="prof-back">← Retour</button>
+      <div class="prof-id">
+        <div class="prof-ava" id="prof-ava"></div>
+        <div class="meta">
+          <div class="prof-rankbadge" id="prof-rank"></div>
+          <div class="prof-name" id="prof-name"></div>
+          <span class="prof-title" id="prof-title"></span>
+          <div class="prof-lvl">
+            <div class="row"><span class="lv" id="prof-lv"></span><span class="xptxt" id="prof-xp"></span></div>
+            <div class="xp-track"><div class="xp-fill" id="prof-xpfill"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prof-body">
+    <div>
+      <div class="prof-sec-label">Statistiques</div>
+      <div class="prof-tiles" id="prof-tiles"></div>
+    </div>
+
+    <div>
+      <div class="prof-sec-label">🏆 Vitrine des trophées · <span id="prof-ach-count"></span></div>
+      <div class="ach-grid" id="prof-ach-grid"></div>
+    </div>
+
+    <div>
+      <div class="prof-sec-label">Performances</div>
+      <div class="prof-charts">
+        <div class="chart-card">
+          <h3>Évolution du win rate</h3><div class="hint">Taux de victoire cumulé partie après partie</div>
+          <div class="chart-canvas-wrap"><canvas id="prof-chart-winrate" role="img" aria-label="Évolution du win rate"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Win rate par mode</h3><div class="hint">Pourcentage de victoires dans chaque mode</div>
+          <div class="chart-canvas-wrap"><canvas id="prof-chart-modes" role="img" aria-label="Win rate par mode"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="prof-sec-label">Face à face</div>
+      <div class="prof-nemesis" id="prof-nemesis"></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:8px 14px">
+        <table class="prof-h2h"><thead><tr><th>Adversaire</th><th>Duels</th><th>V</th><th>D</th><th>Bilan</th></tr></thead>
+        <tbody id="prof-h2h-body"></tbody></table>
+      </div>
+    </div>
+
+    <div>
+      <div class="prof-sec-label">Records &amp; faits marquants</div>
+      <div class="prof-facts" id="prof-facts"></div>
+    </div>
+
+    <div>
+      <div class="prof-sec-label">Parties récentes</div>
+      <div class="prof-recent" id="prof-recent"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ══════════ FOOTER ══════════ -->
 <footer>
@@ -852,6 +993,13 @@ function levelForXP(xp) {
 function daysSince(iso) {
   return Math.floor((Date.now() - new Date(iso)) / 864e5);
 }
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+// Nom de joueur cliquable → ouvre sa page profil (#joueur/<nom>)
+function playerLink(name, cls = '') {
+  return `<a class="plink ${cls}" href="#joueur/${encodeURIComponent(name)}">${escapeHtml(name)}</a>`;
+}
 
 /* ════════════════════════ 5. SECTION RENDERERS ════════════════════════ */
 function rankedPlayers(stats) {
@@ -886,7 +1034,7 @@ function renderLeaderboard(mode) {
       <div class="pc-top ${rcls}">
         <div class="pc-rank ${rcls}">${rank}</div>
         <div class="pc-avatar" style="background:${col}">${s.name.charAt(0)}</div>
-        <div class="pc-name">${s.name}${hot}</div>
+        <div class="pc-name">${playerLink(s.name)}${hot}</div>
         <div class="pc-level">LVL ${lvl.lv} · ${lvl.name}</div>
         <div class="xp-track"><div class="xp-fill" style="width:${lvl.pct}%"></div></div>
         <div class="pc-xp-text">${lvl.isMax ? `${s.xp} XP · MAX` : `${s.xp} / ${lvl.nextXP} XP`}</div>
@@ -912,7 +1060,7 @@ function renderRivalries() {
     const total = aw + bw || 1;
     const leader = aw === bw ? 'Égalité' : (aw > bw ? `${r.a} mène ${aw}–${bw}` : `${r.b} mène ${bw}–${aw}`);
     return `<div class="rivalry-row">
-      <div class="rivalry-vs">${r.a}<span class="sep">vs</span>${r.b}</div>
+      <div class="rivalry-vs">${playerLink(r.a)}<span class="sep">vs</span>${playerLink(r.b)}</div>
       <div class="rivalry-meta">${r.games} duels · ${leader}</div>
       <div class="rivalry-bar">
         <div class="a" style="width:${aw/total*100}%"></div>
@@ -932,13 +1080,13 @@ function renderRecords() {
   el.innerHTML =
     card(MODE_COLORS.Shanghai, '⏱️', 'Plus longue',
       longest ? formatDuration(longest.duration) : '—',
-      longest ? `${longest.winner} 🏆 · ${modeLabel(longest.mode, longest.variant)}` : 'Aucune donnée') +
+      longest ? `${playerLink(longest.winner)} 🏆 · ${modeLabel(longest.mode, longest.variant)}` : 'Aucune donnée') +
     card(MODE_COLORS.SuperCricket, '⚡', 'Plus courte',
       shortest ? formatDuration(shortest.duration) : '—',
-      shortest ? `${shortest.winner} 🏆 · ${modeLabel(shortest.mode, shortest.variant)}` : 'Aucune donnée') +
+      shortest ? `${playerLink(shortest.winner)} 🏆 · ${modeLabel(shortest.mode, shortest.variant)}` : 'Aucune donnée') +
     card('#FF9800', '🔥', 'Plus longue série',
       topStreak.maxStreak || 0,
-      topStreak.maxStreak ? `${topStreak.name} · victoires d'affilée` : 'Aucune donnée');
+      topStreak.maxStreak ? `${playerLink(topStreak.name)} · victoires d'affilée` : 'Aucune donnée');
 }
 
 function renderXpRows() {
@@ -951,7 +1099,7 @@ function renderXpRows() {
       <div class="ava" style="background:${col}">${s.name.charAt(0)}</div>
       <div class="body">
         <div class="line1">
-          <span class="nm">${s.name}</span>
+          <span class="nm">${playerLink(s.name)}</span>
           <span class="lv">LVL ${lvl.lv} · ${lvl.name.toUpperCase()}</span>
           <span class="xptxt">${lvl.isMax ? s.xp + ' XP · MAX' : s.xp + ' / ' + lvl.nextXP + ' XP'}</span>
         </div>
@@ -968,7 +1116,7 @@ function renderStreaks() {
   el.innerHTML = players.map((s, i) => {
     const hot = s.curStreak >= 3;
     return `<div class="streak-card ${hot ? 'hot' : ''}">
-      <div class="nm">${s.name}</div>
+      <div class="nm">${playerLink(s.name)}</div>
       <div class="big" style="color:${hot ? 'var(--orange)' : 'var(--text)'}">${s.curStreak || '–'}</div>
       <div class="fire">${hot ? '🔥' : ''}</div>
       <div class="tag">${hot ? 'EN FEU !' : (s.curStreak === 0 ? '' : 'série en cours')}</div>
@@ -1009,7 +1157,7 @@ function renderModeLeaderboards() {
       inner = `<table><thead><tr><th>#</th><th>Joueur</th><th>V</th><th>Parties</th><th>%</th></tr></thead><tbody>` +
         ranked.map((s, i) => {
           const wr = s.games ? Math.round(s.wins / s.games * 100) : 0;
-          return `<tr><td>${i+1}</td><td class="mn">${s.name}</td><td>${s.wins}</td><td>${s.games}</td><td>${wr}%</td></tr>`;
+          return `<tr><td>${i+1}</td><td class="mn">${playerLink(s.name)}</td><td>${s.wins}</td><td>${s.games}</td><td>${wr}%</td></tr>`;
         }).join('') + `</tbody></table>`;
     }
     return `<div class="mode-card">
@@ -1045,13 +1193,13 @@ function renderHistory() {
     const scores = g.players.map((p, i) => {
       const sc = g.scores && g.scores[i] !== undefined ? g.scores[i] : '';
       const win = p === g.winner;
-      return `<span class="score-pill ${win ? 'win' : ''}">${p}${sc !== '' ? ' · ' + sc : ''}</span>`;
+      return `<span class="score-pill ${win ? 'win' : ''}">${playerLink(p)}${sc !== '' ? ' · ' + sc : ''}</span>`;
     }).join('');
     return `<div class="game-card bl-${cls}">
       <div class="gc-row1">
         <span class="gc-date">${formatDate(g.date)}</span>
         <span class="gc-mode mode-${cls}">${modeLabel(g.mode, g.variant)}</span>
-        <span class="gc-winner"><span class="crown">🏆</span>${g.winner || '—'}</span>
+        <span class="gc-winner"><span class="crown">🏆</span>${g.winner ? playerLink(g.winner) : '—'}</span>
         <span class="gc-duration">${formatDuration(g.duration)}</span>
       </div>
       <div class="gc-scores">${scores}</div>
@@ -1062,16 +1210,44 @@ function renderHistory() {
 
 function renderHero() {
   const ranked = rankedPlayers(statsCache);
-  const best = ranked.reduce((m, s) => {
-    const wr = s.games ? s.wins / s.games : 0;
-    return wr > m.wr ? { wr, name: s.name } : m;
-  }, { wr: 0, name: '—' });
-  const last = allGames.length ? [...allGames].sort((a,b)=>new Date(b.date)-new Date(a.date))[0] : null;
+
+  // durée moyenne (sur les parties chronométrées)
+  const timed = allGames.filter(g => (g.duration || 0) > 0);
+  const avg = timed.length ? Math.round(timed.reduce((a, g) => a + g.duration, 0) / timed.length) : 0;
+
+  // mode le plus joué
+  const modeCounts = {};
+  allGames.forEach(g => modeCounts[g.mode] = (modeCounts[g.mode] || 0) + 1);
+  const topMode = Object.entries(modeCounts).sort((a, b) => b[1] - a[1])[0];
+  const modeEl = document.getElementById('kpi-mode');
+  const modeLbl = document.getElementById('kpi-mode-lbl');
+  if (topMode) {
+    const [mode, n] = topMode;
+    modeEl.textContent = MODE_LABELS[mode] || mode;
+    modeEl.style.color = MODE_COLORS[mode] || 'var(--text)';
+    modeLbl.textContent = `Mode le plus joué · ${Math.round(n / allGames.length * 100)}%`;
+  } else {
+    modeEl.textContent = '—';
+    modeLbl.textContent = 'Mode le plus joué';
+  }
+
+  // roi actuel : plus longue série de victoires en cours (fallback : leader au nb de victoires)
+  const king = ranked.reduce((m, s) => s.curStreak > m.curStreak ? s : m, { curStreak: 0, name: null });
+  const kingEl = document.getElementById('kpi-king');
+  const kingLbl = document.getElementById('kpi-king-lbl');
+  if (king.curStreak >= 2) {
+    kingEl.textContent = king.name + ' 🔥';
+    kingLbl.textContent = `En feu · ${king.curStreak} victoires de suite`;
+  } else if (ranked.length && ranked[0].wins > 0) {
+    kingEl.textContent = ranked[0].name + ' 👑';
+    kingLbl.textContent = 'Leader au classement';
+  } else {
+    kingEl.textContent = '—';
+    kingLbl.textContent = 'Roi actuel';
+  }
 
   animateCount('kpi-games', allGames.length);
-  animateCount('kpi-players', ranked.length);
-  document.getElementById('kpi-winrate').textContent = Math.round(best.wr * 100) + '%';
-  document.getElementById('kpi-last').textContent = last ? (last.winner || '—') + ' 👑' : '—';
+  document.getElementById('kpi-avg').textContent = formatDuration(avg);
 }
 
 function renderNavAndFooter() {
@@ -1241,6 +1417,197 @@ function renderCharts() {
   buildDonut(); buildWins(); buildActivity(); buildWinRate(); buildRadar();
 }
 
+/* ════════════════════════ 6b. PAGE PROFIL JOUEUR ════════════════════════ */
+function profileRank(name) {
+  const idx = rankedPlayers(statsCache).findIndex(s => s.name === name);
+  return idx < 0 ? 0 : idx;
+}
+
+// Bilan tête-à-tête du joueur face à chaque autre (sur les parties communes)
+function computeH2H(name) {
+  const h = {};
+  allGames.forEach(g => {
+    if (!g.players.includes(name)) return;
+    g.players.forEach(o => {
+      if (o === name) return;
+      if (!h[o]) h[o] = { opp: o, games: 0, wins: 0, oppWins: 0 };
+      h[o].games++;
+      if (g.winner === name) h[o].wins++;
+      else if (g.winner === o) h[o].oppWins++;
+    });
+  });
+  return Object.values(h).sort((a, b) => b.games - a.games);
+}
+
+function renderProfile(name) {
+  const s = statsCache[name];
+  if (!s) { location.hash = ''; return; }
+  const rank = profileRank(name);
+  const col = playerColor(name, rank);
+  const ranked = rankedPlayers(statsCache);
+  const lvl = s.level;
+  const wr = s.games ? Math.round(s.wins / s.games * 100) : 0;
+  const avg = s.games ? Math.round(s.totalDuration / s.games) : 0;
+
+  // ── en-tête ──
+  document.getElementById('prof-glow').style.background =
+    `radial-gradient(ellipse 70% 90% at 18% 0%, ${col}33 0%, transparent 70%)`;
+  const ava = document.getElementById('prof-ava');
+  ava.textContent = name.charAt(0);
+  ava.style.background = col;
+  document.getElementById('prof-rank').textContent = `#${rank + 1} sur ${ranked.length}`;
+  document.getElementById('prof-name').textContent = name;
+
+  let title;
+  if (rank === 0 && s.wins > 0) title = '🐐 GOAT du groupe';
+  else if (s.curStreak >= 3) title = `🔥 En feu · ${s.curStreak} de suite`;
+  else if (s.curStreak > 0) title = '✅ En forme';
+  else title = `🎯 ${lvl.name}`;
+  document.getElementById('prof-title').textContent = title;
+
+  document.getElementById('prof-lv').textContent = `LVL ${lvl.lv} · ${lvl.name.toUpperCase()}`;
+  document.getElementById('prof-xp').textContent = lvl.isMax ? `${s.xp} XP · MAX` : `${s.xp} / ${lvl.nextXP} XP`;
+  document.getElementById('prof-xpfill').style.width = lvl.pct + '%';
+
+  // ── tuiles stats ──
+  const tile = (v, k, c = '') => `<div class="prof-tile"><div class="v ${c}">${v}</div><div class="k">${k}</div></div>`;
+  document.getElementById('prof-tiles').innerHTML =
+    tile(s.wins, 'Victoires', 'gold') + tile(s.games, 'Parties') + tile(wr + '%', 'Win rate', 'green') +
+    tile(formatDuration(avg), 'Durée moy.') + tile(s.maxStreak, 'Série max', 'orange') +
+    tile(s.curStreak || '–', 'Série actuelle', 'orange');
+
+  // ── vitrine trophées ──
+  const unlocked = ACHIEVEMENTS.filter(a => a.cond(s, statsCache));
+  document.getElementById('prof-ach-count').textContent = `${unlocked.length} / ${ACHIEVEMENTS.length}`;
+  document.getElementById('prof-ach-grid').innerHTML = ACHIEVEMENTS.map(a => {
+    const got = a.cond(s, statsCache);
+    return `<div class="ach-card ${got ? 'unlocked' : 'locked'}">
+      ${got ? '' : '<span class="lock">🔒</span>'}
+      <div class="ico">${a.ico}</div><div class="nm">${a.name}</div><div class="ds">${a.desc}</div>
+    </div>`;
+  }).join('');
+
+  // ── face à face ──
+  const h2h = computeH2H(name);
+  const nemEl = document.getElementById('prof-nemesis');
+  const bodyEl = document.getElementById('prof-h2h-body');
+  if (h2h.length === 0) {
+    nemEl.innerHTML = '';
+    bodyEl.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Aucun adversaire</td></tr>';
+  } else {
+    const ratio = x => (x.wins + x.oppWins) ? x.wins / (x.wins + x.oppWins) : 0.5;
+    const nemesis = [...h2h].sort((a, b) => ratio(a) - ratio(b) || b.games - a.games)[0];
+    const victim = [...h2h].sort((a, b) => ratio(b) - ratio(a) || b.games - a.games)[0];
+    nemEl.innerHTML =
+      `<div class="nb" style="border-left-color:#ff6b6b"><div class="lbl">😤 Bête noire</div><div class="who">${playerLink(nemesis.opp)}</div><div class="sub">${nemesis.wins}–${nemesis.oppWins} sur ${nemesis.games} parties</div></div>` +
+      `<div class="nb" style="border-left-color:var(--green)"><div class="lbl">😎 Tête de turc</div><div class="who">${playerLink(victim.opp)}</div><div class="sub">${victim.wins}–${victim.oppWins} sur ${victim.games} parties</div></div>`;
+    bodyEl.innerHTML = h2h.map(x => {
+      let tag;
+      if (x.wins > x.oppWins) tag = `<span class="tag lead">MÈNE</span>`;
+      else if (x.wins < x.oppWins) tag = `<span class="tag trail">MENÉ</span>`;
+      else tag = `<span class="tag even">ÉGALITÉ</span>`;
+      return `<tr><td>${playerLink(x.opp)}</td><td>${x.games}</td><td>${x.wins}</td><td>${x.oppWins}</td><td>${tag}</td></tr>`;
+    }).join('');
+  }
+
+  // ── records / faits marquants ──
+  const mine = allGames.filter(g => g.players.includes(name));
+  const myWins = mine.filter(g => g.winner === name);
+  const fastest = myWins.filter(g => (g.duration || 0) > 0).reduce((m, g) => !m || g.duration < m.duration ? g : m, null);
+  const longest = mine.filter(g => (g.duration || 0) > 0).reduce((m, g) => !m || g.duration > m.duration ? g : m, null);
+  const nightCount = mine.filter(g => new Date(g.date).getHours() >= 22).length;
+  const topOpp = h2h[0];
+  const fact = (ico, k, v) => `<div class="prof-fact"><div class="ico">${ico}</div><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  document.getElementById('prof-facts').innerHTML =
+    fact('🎯', 'Mode favori', s.favoriteMode ? MODE_LABELS[s.favoriteMode] : '—') +
+    fact('⚡', 'Victoire éclair', fastest ? formatDuration(fastest.duration) : '—') +
+    fact('⏱️', 'Plus longue partie', longest ? formatDuration(longest.duration) : '—') +
+    fact('👥', 'Adversaire n°1', topOpp ? topOpp.opp + ` (${topOpp.games})` : '—') +
+    fact('💥', 'Shanghai Kills', s.shanghaiKillWins) +
+    fact('🦉', 'Parties de nuit', nightCount) +
+    fact('📅', 'Meilleure journée', s.maxWinsInDay + ' V') +
+    fact('🗓️', 'Meilleure semaine', s.maxWinsInWeek + ' V');
+
+  // ── parties récentes ──
+  const recent = [...mine].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+  document.getElementById('prof-recent').innerHTML = recent.map(g => {
+    const won = g.winner === name;
+    const cls = modeCssClass(g.mode);
+    const others = g.players.filter(p => p !== name).map(p => playerLink(p)).join(', ');
+    return `<div class="g bl-${cls}">
+      <span class="res ${won ? 'w' : 'l'}">${won ? 'V' : 'D'}</span>
+      <span class="rd">${formatDate(g.date)}</span>
+      <span class="gc-mode mode-${cls}">${modeLabel(g.mode, g.variant)}</span>
+      <span class="ro">vs ${others}</span>
+    </div>`;
+  }).join('');
+
+  // ── graphiques ──
+  buildProfileWinrate(name, col);
+  buildProfileModes(name);
+}
+
+function buildProfileWinrate(name, col) {
+  const cv = document.getElementById('prof-chart-winrate');
+  if (!cv || typeof Chart === 'undefined') return;
+  if (charts.profWinrate) { charts.profWinrate.destroy(); charts.profWinrate = null; }
+  try {
+    const evo = computeWinRateEvolution(allGames, name);
+    const opts = CHART_BASE();
+    opts.scales = {
+      x: { ticks: { color: TICK, maxTicksLimit: 10 }, grid: { display: false } },
+      y: { beginAtZero: true, max: 100, ticks: { color: TICK, callback: v => v + '%' }, grid: { color: GRID } },
+    };
+    opts.plugins.tooltip.callbacks = { label: ctx => ` ${ctx.parsed.y}%` };
+    charts.profWinrate = new Chart(cv, {
+      type: 'line',
+      data: { labels: evo.map((_, i) => 'P' + (i + 1)), datasets: [{ data: evo, borderColor: col, backgroundColor: col + '1A', fill: true, tension: 0.35, pointRadius: evo.length > 20 ? 0 : 3, borderWidth: 2 }] },
+      options: opts,
+    });
+  } catch (e) {}
+}
+
+function buildProfileModes(name) {
+  const cv = document.getElementById('prof-chart-modes');
+  if (!cv || typeof Chart === 'undefined') return;
+  if (charts.profModes) { charts.profModes.destroy(); charts.profModes = null; }
+  try {
+    const s = statsCache[name];
+    const modes = ALL_MODES.filter(m => (s.modeGames[m] || 0) > 0);
+    if (modes.length === 0) return;
+    const data = modes.map(m => Math.round((s.modeWins[m] || 0) / s.modeGames[m] * 100));
+    const opts = CHART_BASE();
+    opts.scales = {
+      x: { ticks: { color: TICK }, grid: { display: false } },
+      y: { beginAtZero: true, max: 100, ticks: { color: TICK, callback: v => v + '%' }, grid: { color: GRID } },
+    };
+    opts.plugins.tooltip.callbacks = { label: ctx => ` ${ctx.parsed.y}% de victoires` };
+    charts.profModes = new Chart(cv, {
+      type: 'bar',
+      data: { labels: modes.map(m => MODE_LABELS[m]), datasets: [{ data, backgroundColor: modes.map(m => MODE_COLORS[m]), borderRadius: 6 }] },
+      options: opts,
+    });
+  } catch (e) {}
+}
+
+/* ── routage profil (hash) ── */
+function showProfile(name) {
+  if (!statsCache[name]) { location.hash = ''; return; }
+  document.body.classList.add('profile-open');
+  window.scrollTo(0, 0);
+  renderProfile(name);
+}
+function hideProfile() {
+  document.body.classList.remove('profile-open');
+  if (charts.profWinrate) { charts.profWinrate.destroy(); charts.profWinrate = null; }
+  if (charts.profModes) { charts.profModes.destroy(); charts.profModes = null; }
+}
+function handleRoute() {
+  const m = location.hash.match(/^#joueur\/(.+)$/);
+  if (m) showProfile(decodeURIComponent(m[1]));
+  else hideProfile();
+}
+
 /* ════════════════════════ 7. INTERACTIONS ════════════════════════ */
 function setupFilters(containerId, cb) {
   const c = document.getElementById(containerId);
@@ -1376,17 +1743,20 @@ function initTyped() {
   if (typeof Typed === 'undefined') return;
   new Typed('#typed', {
     strings: [
-      'Le compteur de fléchettes entre amis.',
+      'Chaque fléchette compte.',
       'Qui règne sur le cricket ?',
       `${allGames.length} parties jouées. Qui domine ?`,
-      'Statistiques. Classements. Légende.',
+      'Le tableau ne ment jamais.',
+      'Sur la ligne, prêt à lancer.',
+      'Pas de chance ici, que des stats.',
+      'La revanche commence maintenant.',
     ],
     typeSpeed: 38, backSpeed: 18, backDelay: 2200, startDelay: 400, loop: true, smartBackspace: true,
   });
 }
 
 function initReveal() {
-  const els = document.querySelectorAll('section.block, .chart-card, .player-card');
+  const els = document.querySelectorAll('main section.block, main .chart-card, main .player-card');
   els.forEach(el => el.classList.add('reveal'));
   const obs = new IntersectionObserver((entries, o) => {
     entries.forEach(en => {
@@ -1454,10 +1824,19 @@ async function init() {
   setupModeExpander();
   setupAchievementModals();
 
+  // routage profil joueur (#joueur/<nom>)
+  document.getElementById('prof-back').addEventListener('click', () => {
+    if (history.length > 1) history.back(); else location.hash = '';
+  });
+  window.addEventListener('hashchange', handleRoute);
+
   // animations (libs may still be loading — guarded inside)
   initParticles();
   initTyped();
   initReveal();
+
+  // applique la route initiale (deep-link éventuel ?demo=1#joueur/Nom)
+  handleRoute();
 }
 
 window.addEventListener('DOMContentLoaded', init);

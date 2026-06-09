@@ -136,7 +136,7 @@ object GameSyncService {
         }.joinToString(",")
 
         val duration = formatDuration(game.durationSeconds)
-        val statsUrl = "https://${BuildConfig.GITHUB_REPO_OWNER}.github.io/${BuildConfig.GITHUB_REPO_NAME}"
+        val statsUrl = "https://${BuildConfig.GITHUB_REPO_OWNER}.github.io/${BuildConfig.GITHUB_REPO_NAME}/#classement"
 
         val card = """{"cardsV2":[{"cardId":"darts_result","card":{"header":{""" +
             """"title":"🎯 ${modeLabel.uppercase()} - LE VERDICT",""" +

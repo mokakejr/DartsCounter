@@ -139,6 +139,10 @@
       background: linear-gradient(180deg, #fff 0%, #c9d1d9 100%);
       -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
     }
+    /* caractères "cryptés" pendant l'effet glitch du titre */
+    #hero h1 .dud { -webkit-text-fill-color: var(--primary); color: var(--primary); opacity: .9; }
+    #hero h1.glitching { animation: titleFlicker .18s steps(2) infinite; }
+    @keyframes titleFlicker { 0%,100%{opacity:1;} 45%{opacity:.78;} 70%{opacity:.92;} }
     #hero .typed-wrap {
       font-size: clamp(14px, 2.6vw, 19px); font-weight: 500; color: var(--muted);
       min-height: 28px; margin-bottom: 36px;
@@ -590,7 +594,7 @@
   <div id="tsparticles"></div>
   <div class="hero-inner">
     <div class="hero-logo">🎯</div>
-    <h1>DARTS-BOARD</h1>
+    <h1 id="hero-title">DARTS-BOARD</h1>
     <div class="typed-wrap"><span id="typed"></span></div>
     <div class="hero-kpis">
       <div class="kpi"><div class="val" id="kpi-games">0</div><div class="lbl">Parties</div></div>
@@ -1951,6 +1955,62 @@ function initTyped() {
   });
 }
 
+/* Effet "glitch / crypté" du titre : DASHBOARD → (scramble) → DARTS-BOARD, toutes les minutes */
+class TextScramble {
+  constructor(el) {
+    this.el = el;
+    this.chars = '!<>-_\\/[]{}=+*^?#01ﾊﾐﾋｦｱｲｳｴｵﾘﾝ▓▒░§';
+    this.update = this.update.bind(this);
+  }
+  setText(newText) {
+    const oldText = this.el.textContent;
+    const length = Math.max(oldText.length, newText.length);
+    const done = new Promise(res => this.resolve = res);
+    this.queue = [];
+    for (let i = 0; i < length; i++) {
+      const from = oldText[i] || '';
+      const to = newText[i] || '';
+      const start = Math.floor(Math.random() * 40);
+      const end = start + Math.floor(Math.random() * 40) + 10;
+      this.queue.push({ from, to, start, end, char: '' });
+    }
+    cancelAnimationFrame(this.frameRequest);
+    this.frame = 0;
+    this.update();
+    return done;
+  }
+  update() {
+    let output = '', complete = 0;
+    for (const q of this.queue) {
+      if (this.frame >= q.end) { complete++; output += q.to; }
+      else if (this.frame >= q.start) {
+        if (!q.char || Math.random() < 0.28) q.char = this.chars[Math.floor(Math.random() * this.chars.length)];
+        output += `<span class="dud">${q.char}</span>`;
+      } else { output += q.from; }
+    }
+    this.el.innerHTML = output;
+    if (complete === this.queue.length) { this.resolve(); }
+    else { this.frame++; this.frameRequest = requestAnimationFrame(this.update); }
+  }
+}
+
+function initTitleScramble() {
+  const el = document.getElementById('hero-title');
+  if (!el) return;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) { el.textContent = 'DARTS-BOARD'; return; }
+  const fx = new TextScramble(el);
+  const run = () => {
+    el.textContent = 'DASHBOARD';
+    setTimeout(() => {
+      el.classList.add('glitching');
+      fx.setText('DARTS-BOARD').then(() => el.classList.remove('glitching'));
+    }, 900);
+  };
+  run();
+  setInterval(run, 60000);
+}
+
 function initReveal() {
   const els = document.querySelectorAll('main section.block, main .chart-card, main .player-card');
   els.forEach(el => el.classList.add('reveal'));
@@ -2031,6 +2091,7 @@ async function init() {
   // animations (libs may still be loading — guarded inside)
   initParticles();
   initTyped();
+  initTitleScramble();
   initReveal();
 
   // applique la route initiale (deep-link éventuel ?demo=1#joueur/Nom)

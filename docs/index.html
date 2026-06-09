@@ -153,6 +153,7 @@
     .kpi {
       background: rgba(30,37,48,0.7); border: 1px solid var(--border);
       border-radius: 14px; padding: 18px 14px; backdrop-filter: blur(8px);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
     }
     .kpi .val { font-size: clamp(28px, 5vw, 42px); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
     .kpi .val.text { font-size: clamp(18px, 3.5vw, 26px); }
@@ -344,7 +345,7 @@
     .modal .ds { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
     .modal .earners-title { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
     .modal .earner-list { display: flex; flex-direction: column; gap: 6px; }
-    .modal .earner-list .e { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 12px; background: var(--surface2); border-radius: 8px; }
+    .modal .earner-list .e { display: flex; justify-content: center; font-size: 13px; padding: 8px 12px; background: var(--surface2); border-radius: 8px; }
     .modal .none { font-size: 12px; color: var(--muted); }
     .modal .close { position: absolute; top: 14px; right: 16px; background: none; border: none; color: var(--muted); font-size: 24px; cursor: pointer; line-height: 1; }
     .modal .close:hover { color: var(--text); }
@@ -432,6 +433,8 @@
     /* ───────── NOMS CLIQUABLES ───────── */
     .plink { color: inherit; text-decoration: none; cursor: pointer; border-bottom: 1px dotted transparent; transition: border-color .15s, color .15s; }
     .plink:hover { border-bottom-color: currentColor; }
+    a.pc-avatar, a.ava { cursor: pointer; transition: transform .15s, box-shadow .15s; }
+    a.pc-avatar:hover, a.ava:hover { transform: scale(1.07); box-shadow: 0 0 14px rgba(0,0,0,.4); }
 
     /* ───────── VUE PROFIL ───────── */
     #profile-view { display: none; padding-top: var(--nav-h); }
@@ -502,6 +505,47 @@
     .prof-recent .rd { font-size: 11px; color: var(--muted); min-width: 100px; font-variant-numeric: tabular-nums; }
     .prof-recent .ro { flex: 1; font-size: 12px; color: var(--muted); min-width: 0; }
 
+    /* ───────── VUE PROFILS (annuaire) ───────── */
+    #profils-view { display: none; padding-top: var(--nav-h); }
+    body.list-open #hero, body.list-open main, body.list-open > footer { display: none; }
+    body.list-open #profils-view { display: block; }
+    .plist { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 600px) { .plist { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 980px) { .plist { grid-template-columns: 1fr 1fr; } }
+    .plist-card {
+      display: flex; align-items: center; gap: 16px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px;
+      transition: transform .18s, border-color .18s, box-shadow .18s;
+    }
+    .plist-card:hover { transform: translateY(-3px); border-color: var(--border-glow); box-shadow: var(--shadow); }
+    .plist-card .ava { width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; color: #fff; flex-shrink: 0; }
+    .plist-card .info { flex: 1; min-width: 0; }
+    .plist-card .nm { font-size: 18px; font-weight: 800; }
+    .plist-card .lv { font-size: 11px; font-weight: 700; color: var(--gold); letter-spacing: .5px; margin-top: 2px; }
+    .plist-card .sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .plist-card .rank { font-size: 22px; font-weight: 900; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .plist-card .chev { color: var(--muted); font-size: 18px; }
+
+    /* ───────── VUE AIDE XP ───────── */
+    #xp-view { display: none; padding-top: var(--nav-h); }
+    body.help-open #hero, body.help-open main, body.help-open > footer { display: none; }
+    body.help-open #xp-view { display: block; }
+    .xp-sources { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 700px) { .xp-sources { grid-template-columns: 1fr 1fr; } }
+    .xp-source { display: flex; align-items: center; gap: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+    .xp-source .ico { font-size: 26px; flex-shrink: 0; }
+    .xp-source .txt { flex: 1; min-width: 0; }
+    .xp-source .t { font-size: 14px; font-weight: 700; }
+    .xp-source .d { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .xp-source .pts { font-size: 15px; font-weight: 900; color: var(--gold); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .xp-levels { width: 100%; border-collapse: collapse; }
+    .xp-levels th { font-size: 9px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .xp-levels th:last-child, .xp-levels td:last-child { text-align: right; }
+    .xp-levels td { padding: 10px; font-size: 13px; border-bottom: 1px solid #1a2029; }
+    .xp-levels td .lvnum { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--surface3); font-weight: 800; font-size: 12px; margin-right: 8px; }
+    .xp-levels td .nm { font-weight: 700; }
+    .xp-levels td .xp { color: var(--gold); font-weight: 700; font-variant-numeric: tabular-nums; }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .001s !important; transition-duration: .001s !important; }
       html { scroll-behavior: auto; }
@@ -515,14 +559,16 @@
   <a href="#hero" class="brand">
     <span class="logo">🎯</span>
     <span>
-      <div class="word">FLÉCHETTES</div>
+      <div class="word">DARTS-BOARD</div>
       <div class="sub">PAR DARTSCOUNTER</div>
     </span>
   </a>
   <div class="links" id="nav-links">
     <a href="#classement">Classement</a>
+    <a href="#profils">Profils</a>
     <a href="#stats">Stats</a>
     <a href="#trophees">Trophées</a>
+    <a href="#xp">XP</a>
     <a href="#par-mode">Par mode</a>
     <a href="#historique">Historique</a>
   </div>
@@ -531,8 +577,10 @@
 </nav>
 <div id="mobile-menu">
   <a href="#classement">Classement</a>
+  <a href="#profils">Profils</a>
   <a href="#stats">Statistiques</a>
   <a href="#trophees">Trophées</a>
+  <a href="#xp">Comment gagner de l'XP</a>
   <a href="#par-mode">Par mode</a>
   <a href="#historique">Historique</a>
 </div>
@@ -608,7 +656,10 @@
   <section class="block container" id="trophees">
     <div class="head"><h2>🏆 Trophées</h2><span class="count" id="ach-count"></span></div>
 
-    <div class="section-label" style="margin-bottom:14px">Niveau &amp; expérience</div>
+    <div class="section-label" style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span>Niveau &amp; expérience</span>
+      <a href="#xp" style="color:var(--primary);border-bottom:1px dotted currentColor;letter-spacing:.5px">Comment gagner de l'XP&nbsp;?</a>
+    </div>
     <div class="xp-rows" id="xp-rows"></div>
 
     <div class="section-label" style="margin-bottom:14px">Séries en cours</div>
@@ -709,6 +760,68 @@
     <div>
       <div class="prof-sec-label">Parties récentes</div>
       <div class="prof-recent" id="prof-recent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ VUE PROFILS (annuaire) ══════════ -->
+<div id="profils-view">
+  <div class="prof-hero">
+    <div class="glow" style="background:radial-gradient(ellipse 70% 90% at 18% 0%, #42A5F533 0%, transparent 70%)"></div>
+    <div class="inner">
+      <button class="prof-back" id="profils-back">← Retour</button>
+      <div class="prof-id">
+        <div class="prof-ava" style="background:linear-gradient(135deg,#42A5F5,#9C27B0)">👥</div>
+        <div class="meta">
+          <div class="prof-rankbadge">Annuaire</div>
+          <div class="prof-name">Profils des joueurs</div>
+          <span class="prof-title">Clique sur un joueur pour voir sa page</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="prof-body">
+    <div class="plist" id="plist"></div>
+  </div>
+</div>
+
+<!-- ══════════ VUE AIDE XP ══════════ -->
+<div id="xp-view">
+  <div class="prof-hero">
+    <div class="glow" style="background:radial-gradient(ellipse 70% 90% at 18% 0%, #E61E2A33 0%, transparent 70%)"></div>
+    <div class="inner">
+      <button class="prof-back" id="xp-back">← Retour</button>
+      <div class="prof-id">
+        <div class="prof-ava" style="background:linear-gradient(135deg,var(--primary),#ff6b6b)">⭐</div>
+        <div class="meta">
+          <div class="prof-rankbadge">Guide</div>
+          <div class="prof-name">Comment gagner de l'XP&nbsp;?</div>
+          <span class="prof-title">Plus tu joues, plus tu montes en niveau</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prof-body">
+    <div>
+      <p style="color:var(--muted);font-size:14px;line-height:1.6;max-width:680px">
+        Chaque partie te rapporte des points d'expérience (XP). En cumulant de l'XP, tu grimpes les
+        <strong style="color:var(--text)">14 niveaux</strong>, de <em>Débutant</em> à <em>Immortel</em>.
+        Ton niveau s'affiche sur ta carte du classement et sur ta page profil.
+      </p>
+    </div>
+
+    <div>
+      <div class="prof-sec-label">Sources d'XP</div>
+      <div class="xp-sources" id="xp-sources"></div>
+    </div>
+
+    <div>
+      <div class="prof-sec-label">Les 14 niveaux</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:8px 14px">
+        <table class="xp-levels"><thead><tr><th>Niveau</th><th>Titre</th><th>XP requis</th></tr></thead>
+        <tbody id="xp-levels-body"></tbody></table>
+      </div>
     </div>
   </div>
 </div>
@@ -953,14 +1066,13 @@ function computeWinRateEvolution(games, player) {
 
 function computeRecords(games, stats) {
   const valid = games.filter(g => (g.duration || 0) > 0);
-  let longest = null, shortest = null;
-  valid.forEach(g => {
-    if (!longest || g.duration > longest.duration) longest = g;
-    if (!shortest || g.duration < shortest.duration) shortest = g;
-  });
-  let topStreak = { name: '—', maxStreak: 0 };
-  Object.values(stats).forEach(s => { if (s.maxStreak > topStreak.maxStreak) topStreak = s; });
-  return { longest, shortest, topStreak };
+  const maxDur = valid.reduce((m, g) => Math.max(m, g.duration), 0);
+  const minDur = valid.reduce((m, g) => Math.min(m, g.duration), Infinity);
+  const longest = valid.filter(g => g.duration === maxDur);   // parties à égalité
+  const shortest = valid.filter(g => g.duration === minDur);
+  const maxStreak = Object.values(stats).reduce((m, s) => Math.max(m, s.maxStreak), 0);
+  const streakHolders = maxStreak > 0 ? Object.values(stats).filter(s => s.maxStreak === maxStreak) : [];
+  return { longest, shortest, maxStreak, streakHolders };
 }
 
 /* ════════════════════════ 4. FORMATTERS ════════════════════════ */
@@ -1033,7 +1145,7 @@ function renderLeaderboard(mode) {
     return `<div class="player-card rank-${rank}">
       <div class="pc-top ${rcls}">
         <div class="pc-rank ${rcls}">${rank}</div>
-        <div class="pc-avatar" style="background:${col}">${s.name.charAt(0)}</div>
+        <a class="pc-avatar" href="#joueur/${encodeURIComponent(s.name)}" style="background:${col}" aria-label="Profil de ${escapeHtml(s.name)}">${s.name.charAt(0)}</a>
         <div class="pc-name">${playerLink(s.name)}${hot}</div>
         <div class="pc-level">LVL ${lvl.lv} · ${lvl.name}</div>
         <div class="xp-track"><div class="xp-fill" style="width:${lvl.pct}%"></div></div>
@@ -1071,22 +1183,34 @@ function renderRivalries() {
 }
 
 function renderRecords() {
-  const { longest, shortest, topStreak } = computeRecords(allGames, statsCache);
+  const { longest, shortest, maxStreak, streakHolders } = computeRecords(allGames, statsCache);
   const el = document.getElementById('records');
   const card = (color, ico, k, v, m) =>
     `<div class="record-card" style="border-left-color:${color}">
       <div class="ico">${ico}</div><div class="rk">${k}</div><div class="rv">${v}</div><div class="rm">${m}</div>
     </div>`;
+
+  // Méta pour un record de durée : liste les vainqueurs (distincts) des parties à égalité.
+  const durMeta = (gamesList) => {
+    if (!gamesList.length) return 'Aucune donnée';
+    const winners = [...new Set(gamesList.map(g => g.winner).filter(Boolean))];
+    const names = winners.map(w => playerLink(w)).join(', ');
+    // mode affiché seulement si une seule partie détient le record
+    return gamesList.length === 1
+      ? `${names} 🏆 · ${modeLabel(gamesList[0].mode, gamesList[0].variant)}`
+      : `${names} 🏆 · ${gamesList.length} parties à égalité`;
+  };
+
   el.innerHTML =
     card(MODE_COLORS.Shanghai, '⏱️', 'Plus longue',
-      longest ? formatDuration(longest.duration) : '—',
-      longest ? `${playerLink(longest.winner)} 🏆 · ${modeLabel(longest.mode, longest.variant)}` : 'Aucune donnée') +
+      longest.length ? formatDuration(longest[0].duration) : '—',
+      durMeta(longest)) +
     card(MODE_COLORS.SuperCricket, '⚡', 'Plus courte',
-      shortest ? formatDuration(shortest.duration) : '—',
-      shortest ? `${playerLink(shortest.winner)} 🏆 · ${modeLabel(shortest.mode, shortest.variant)}` : 'Aucune donnée') +
+      shortest.length ? formatDuration(shortest[0].duration) : '—',
+      durMeta(shortest)) +
     card('#FF9800', '🔥', 'Plus longue série',
-      topStreak.maxStreak || 0,
-      topStreak.maxStreak ? `${playerLink(topStreak.name)} · victoires d'affilée` : 'Aucune donnée');
+      maxStreak || 0,
+      maxStreak ? `${streakHolders.map(s => playerLink(s.name)).join(', ')} · victoires d'affilée` : 'Aucune donnée');
 }
 
 function renderXpRows() {
@@ -1096,7 +1220,7 @@ function renderXpRows() {
   el.innerHTML = ranked.map((s, i) => {
     const lvl = s.level, col = playerColor(s.name, i);
     return `<div class="xp-row">
-      <div class="ava" style="background:${col}">${s.name.charAt(0)}</div>
+      <a class="ava" href="#joueur/${encodeURIComponent(s.name)}" style="background:${col}" aria-label="Profil de ${escapeHtml(s.name)}">${s.name.charAt(0)}</a>
       <div class="body">
         <div class="line1">
           <span class="nm">${playerLink(s.name)}</span>
@@ -1236,10 +1360,10 @@ function renderHero() {
   const kingEl = document.getElementById('kpi-king');
   const kingLbl = document.getElementById('kpi-king-lbl');
   if (king.curStreak >= 2) {
-    kingEl.textContent = king.name + ' 🔥';
+    kingEl.innerHTML = playerLink(king.name) + ' 🔥';
     kingLbl.textContent = `En feu · ${king.curStreak} victoires de suite`;
   } else if (ranked.length && ranked[0].wins > 0) {
-    kingEl.textContent = ranked[0].name + ' 👑';
+    kingEl.innerHTML = playerLink(ranked[0].name) + ' 👑';
     kingLbl.textContent = 'Leader au classement';
   } else {
     kingEl.textContent = '—';
@@ -1602,10 +1726,77 @@ function hideProfile() {
   if (charts.profWinrate) { charts.profWinrate.destroy(); charts.profWinrate = null; }
   if (charts.profModes) { charts.profModes.destroy(); charts.profModes = null; }
 }
+function showHelp() {
+  document.body.classList.add('help-open');
+  window.scrollTo(0, 0);
+}
+function hideHelp() {
+  document.body.classList.remove('help-open');
+}
+function showList() {
+  document.body.classList.add('list-open');
+  window.scrollTo(0, 0);
+  renderProfilesList();
+}
+function hideList() {
+  document.body.classList.remove('list-open');
+}
 function handleRoute() {
-  const m = location.hash.match(/^#joueur\/(.+)$/);
+  const hash = location.hash;
+  const m = hash.match(/^#joueur\/(.+)$/);
+  hideProfile(); hideHelp(); hideList();   // ferme tout, puis ouvre la bonne vue
   if (m) showProfile(decodeURIComponent(m[1]));
-  else hideProfile();
+  else if (hash === '#xp') showHelp();
+  else if (hash === '#profils') showList();
+}
+
+// Annuaire des joueurs : carte cliquable vers chaque profil
+function renderProfilesList() {
+  const ranked = rankedPlayers(statsCache);
+  const el = document.getElementById('plist');
+  if (!el) return;
+  if (ranked.length === 0) { el.innerHTML = '<div class="empty-state">Aucun joueur</div>'; return; }
+  // ordre d'affichage aléatoire (le rang réel reste affiché) — mélange Fisher-Yates
+  const display = ranked.map((s, i) => ({ s, rank: i }));
+  for (let i = display.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [display[i], display[j]] = [display[j], display[i]];
+  }
+  el.innerHTML = display.map(({ s, rank }) => {
+    const col = playerColor(s.name, rank);
+    const wr = s.games ? Math.round(s.wins / s.games * 100) : 0;
+    return `<a class="plist-card" href="#joueur/${encodeURIComponent(s.name)}">
+      <span class="rank">#${rank + 1}</span>
+      <span class="ava" style="background:${col}">${s.name.charAt(0)}</span>
+      <span class="info">
+        <span class="nm">${escapeHtml(s.name)}</span>
+        <span class="lv">LVL ${s.level.lv} · ${s.level.name.toUpperCase()}</span>
+        <span class="sub">${s.wins} victoires · ${s.games} parties · ${wr}%</span>
+      </span>
+      <span class="chev">›</span>
+    </a>`;
+  }).join('');
+}
+
+// Page d'aide XP : sources + table des niveaux (rendue depuis LEVELS pour rester synchro)
+function renderXpHelp() {
+  const sources = [
+    ['🎮', 'Participer à une partie', 'À chaque partie jouée', '+10'],
+    ['🏆', 'Gagner une partie', 'Récompense de la victoire', '+20'],
+    ['👥', 'Gagner à 4 joueurs', "Victoire face à 3 adversaires", '+10'],
+    ['💥', 'Victoire en Shanghai Kill', 'Finir une partie sur un Shanghai Kill', '+15'],
+    ['🔥', 'Série de victoires', '+5 XP × le nombre de victoires d\'affilée (dès 2 de suite)', '+5×'],
+    ['🗺️', 'Jouer les 4 modes', 'Bonus unique une fois les 4 modes essayés', '+50'],
+  ];
+  const sEl = document.getElementById('xp-sources');
+  if (sEl) sEl.innerHTML = sources.map(([ico, t, d, pts]) =>
+    `<div class="xp-source"><div class="ico">${ico}</div><div class="txt"><div class="t">${t}</div><div class="d">${d}</div></div><div class="pts">${pts} XP</div></div>`
+  ).join('');
+
+  const bEl = document.getElementById('xp-levels-body');
+  if (bEl) bEl.innerHTML = LEVELS.map(l =>
+    `<tr><td><span class="lvnum">${l.lv}</span></td><td class="nm">${l.name}</td><td><span class="xp">${l.xp.toLocaleString('fr-FR')} XP</span></td></tr>`
+  ).join('');
 }
 
 /* ════════════════════════ 7. INTERACTIONS ════════════════════════ */
@@ -1696,7 +1887,7 @@ function setupAchievementModals() {
     document.getElementById('modal-desc').textContent = a.desc;
     const ev = document.getElementById('modal-earners');
     ev.innerHTML = list.length
-      ? list.map(p => `<div class="e"><span style="color:${playerColor(p.name)};font-weight:700">${p.name}</span><span>${p.wins} V</span></div>`).join('')
+      ? list.map(p => `<div class="e"><span style="color:${playerColor(p.name)};font-weight:700">${p.name}</span></div>`).join('')
       : '<div class="none">Personne ne l\'a encore débloqué 🔒</div>';
     modal.classList.add('open');
     if (list.length) fireConfetti();
@@ -1750,6 +1941,11 @@ function initTyped() {
       'Sur la ligne, prêt à lancer.',
       'Pas de chance ici, que des stats.',
       'La revanche commence maintenant.',
+      'Junior va-t-il choke ?',
+      'Qui aura le meilleur winrate ?',
+      'Quand est-ce Gaétan jouera ?',
+      'Master Class ou Master Chiasse de Léo ?',
+      'Théo aura-t-il un winrate supérieur à 10 ?',
     ],
     typeSpeed: 38, backSpeed: 18, backDelay: 2200, startDelay: 400, loop: true, smartBackspace: true,
   });
@@ -1824,10 +2020,12 @@ async function init() {
   setupModeExpander();
   setupAchievementModals();
 
-  // routage profil joueur (#joueur/<nom>)
-  document.getElementById('prof-back').addEventListener('click', () => {
-    if (history.length > 1) history.back(); else location.hash = '';
-  });
+  // routage profil joueur (#joueur/<nom>) + aide XP (#xp)
+  renderXpHelp();
+  const backHandler = () => { if (history.length > 1) history.back(); else location.hash = ''; };
+  document.getElementById('prof-back').addEventListener('click', backHandler);
+  document.getElementById('xp-back').addEventListener('click', backHandler);
+  document.getElementById('profils-back').addEventListener('click', backHandler);
   window.addEventListener('hashchange', handleRoute);
 
   // animations (libs may still be loading — guarded inside)

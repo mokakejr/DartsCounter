@@ -1,0 +1,21 @@
+name: Trophy Announce
+
+on:
+  push:
+    paths:
+      - 'docs/data/games.json'   # déclenché quand l'app pousse une nouvelle partie
+  workflow_dispatch:              # déclenchement manuel pour tester
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Announce newly-unlocked trophies
+        run: node scripts/trophy-announce.js
+        env:
+          GOOGLE_CHAT_WEBHOOK: ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}

@@ -153,7 +153,7 @@
       display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
       max-width: 720px; margin: 0 auto;
     }
-    @media (min-width: 760px) { .hero-kpis { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 760px) { .hero-kpis { grid-template-columns: repeat(5, 1fr); } }
     .kpi {
       background: rgba(30,37,48,0.7); border: 1px solid var(--border);
       border-radius: 14px; padding: 18px 14px; backdrop-filter: blur(8px);
@@ -164,6 +164,7 @@
     .kpi .lbl { font-size: 9.5px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-top: 8px; }
     .kpi.win .val { color: var(--gold); }
     .kpi.king .val { color: var(--orange); }
+    .kpi.loser .val { color: var(--red, #E61E2A); }
 
     .scroll-cue {
       position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 2;
@@ -601,6 +602,7 @@
       <div class="kpi"><div class="val" id="kpi-avg">—</div><div class="lbl">Durée moyenne</div></div>
       <div class="kpi king"><div class="val text" id="kpi-king">—</div><div class="lbl" id="kpi-king-lbl">Roi actuel</div></div>
       <div class="kpi"><div class="val text" id="kpi-mode">—</div><div class="lbl" id="kpi-mode-lbl">Mode le plus joué</div></div>
+      <div class="kpi loser"><div class="val text" id="kpi-loser">—</div><div class="lbl" id="kpi-loser-lbl">Pire série</div></div>
     </div>
   </div>
   <a href="#classement" class="scroll-cue" id="scroll-cue" aria-label="Défiler">▼</a>
@@ -901,7 +903,11 @@ const ACHIEVEMENTS = [
   { id:'triple_threat',     ico:'⚔️', name:'Triple Menace',    desc:'3 victoires dans la même journée',      cond:s => s.maxWinsInDay >= 3 },
   { id:'legend_week',       ico:'🗓️', name:'Semaine Légendaire',desc:'5 victoires en 7 jours',               cond:s => s.maxWinsInWeek >= 5 },
   { id:'the_goat',          ico:'🐐', name:'GOAT',             desc:'Le plus de victoires, tous modes',      cond:(s,all) => isGoat(s, all) },
-  { id:'comeback_king',     ico:'🔄', name:'Roi du Retour',    desc:'Bientôt disponible',                    cond:() => false },
+  { id:'comeback_king',     ico:'🔄', name:'Roi du Retour',    desc:'Gagner après 5 défaites de suite',      cond:s => s.comeback },
+  { id:'quarter_century',   ico:'🥈', name:'Quart de Siècle',  desc:'25 victoires',                          cond:s => s.wins >= 25 },
+  { id:'veteran',           ico:'🎖️', name:'Vétéran Assidu',   desc:'250 parties jouées',                    cond:s => s.games >= 250 },
+  { id:'untouchable',       ico:'🛡️', name:'Intouchable',      desc:'Win rate > 75% sur 30+ parties',        cond:s => s.games >= 30 && s.wins / s.games > 0.75 },
+  { id:'punching_ball',     ico:'🥊', name:'Punching Ball',    desc:'5 défaites consécutives',               cond:s => s.maxLossStreak >= 5 },
 ];
 
 /* ════════════════════════ STATE ════════════════════════ */
@@ -938,7 +944,7 @@ function computePlayerStats(games) {
   const ensure = name => {
     if (!S[name]) S[name] = {
       name, wins:0, games:0, totalDuration:0, xp:0,
-      curStreak:0, maxStreak:0, lossStreak:0, underdog:false,
+      curStreak:0, maxStreak:0, lossStreak:0, maxLossStreak:0, underdog:false, comeback:false,
       modeWins:{}, modeGames:{}, modesPlayed:new Set(), opponents:new Set(),
       shanghaiKillWins:0, cutThroatWins:0, speedWin:false, marathon:false, nightOwl:false,
       winDates:[], maxWinsInDay:0, maxWinsInWeek:0, allModesBonus:false,
@@ -969,6 +975,7 @@ function computePlayerStats(games) {
         if (g.variant === 'Cut Throat') s.cutThroatWins++;
         if (dur > 0 && dur < 120) s.speedWin = true;
         if (s.lossStreak >= 3) s.underdog = true;
+        if (s.lossStreak >= 5) s.comeback = true;
         s.curStreak++;
         s.lossStreak = 0;
         if (s.curStreak >= 2) s.xp += 5 * s.curStreak; // streak bonus
@@ -977,6 +984,7 @@ function computePlayerStats(games) {
       } else {
         s.curStreak = 0;
         s.lossStreak++;
+        s.maxLossStreak = Math.max(s.maxLossStreak, s.lossStreak);
       }
       // all-modes one-time bonus (playing the 4 modes, win or not)
       if (!s.allModesBonus && ALL_MODES.every(m => s.modesPlayed.has(m))) {
@@ -1372,6 +1380,18 @@ function renderHero() {
   } else {
     kingEl.textContent = '—';
     kingLbl.textContent = 'Roi actuel';
+  }
+
+  // pire série : plus longue série de défaites consécutives jamais subie
+  const loser = ranked.reduce((m, s) => s.maxLossStreak > m.maxLossStreak ? s : m, { maxLossStreak: 0, name: null });
+  const loserEl = document.getElementById('kpi-loser');
+  const loserLbl = document.getElementById('kpi-loser-lbl');
+  if (loser.name && loser.maxLossStreak >= 2) {
+    loserEl.innerHTML = playerLink(loser.name) + ' 💀';
+    loserLbl.textContent = `Pire série · ${loser.maxLossStreak} défaites de suite`;
+  } else {
+    loserEl.textContent = '—';
+    loserLbl.textContent = 'Pire série';
   }
 
   animateCount('kpi-games', allGames.length);

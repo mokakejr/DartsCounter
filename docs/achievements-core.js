@@ -14,13 +14,13 @@
   const ALL_MODES = ['Cricket', 'SuperCricket', 'Shanghai', 'FiftyOne'];
 
   const LEVELS = [
-    { lv:1,  name:'Débutant',    xp:0 },    { lv:2,  name:'Apprenti',    xp:100 },
-    { lv:3,  name:'Habitué',     xp:250 },  { lv:4,  name:'Compétiteur', xp:450 },
-    { lv:5,  name:'Régulier',    xp:700 },  { lv:6,  name:'Affûté',      xp:1000 },
-    { lv:7,  name:'Vétéran',     xp:1400 }, { lv:8,  name:'Redoutable',  xp:1900 },
-    { lv:9,  name:'Maestro',     xp:2500 }, { lv:10, name:'Expert',      xp:3200 },
-    { lv:11, name:'Élite',       xp:4000 }, { lv:12, name:'Champion',    xp:5000 },
-    { lv:13, name:'Légende',     xp:6500 }, { lv:14, name:'Immortel',    xp:8500 },
+    { lv:1,  name:'Bras Cassé',                xp:0 },    { lv:2,  name:'Touriste du Comptoir',     xp:100 },
+    { lv:3,  name:'PMU Lover',                 xp:250 },  { lv:4,  name:'Pilier de Bar',            xp:450 },
+    { lv:5,  name:'Pointe Sèche',              xp:700 },  { lv:6,  name:'La Fléchette dans le Sang',xp:1000 },
+    { lv:7,  name:'Tueur d\'Apéro',            xp:1400 }, { lv:8,  name:'Roi du Triple 20',         xp:1900 },
+    { lv:9,  name:'Vieux Briscard',            xp:2500 }, { lv:10, name:'Biceps en Tungstène',      xp:3200 },
+    { lv:11, name:'Patron du Bar',             xp:4000 }, { lv:12, name:'Machine à 180',            xp:5000 },
+    { lv:13, name:'Légende du Zinc',           xp:6500 }, { lv:14, name:'Dieu du Comptoir',         xp:8500 },
   ];
 
   // Jours de match de la France à la CDM 2026 (phase de poules, groupe I).
@@ -141,7 +141,7 @@
   }
 
   // Trophées de rang XP : un par niveau (généré depuis LEVELS pour rester synchro).
-  const LEVEL_ICONS = ['🌱','📘','🧭','🤺','🔆','🗡️','🪖','😈','🎼','🧪','🏵️','🥇','🌟','🪐'];
+  const LEVEL_ICONS = ['🦴','🍺','🐎','🍷','🎯','🔥','🍻','🎩','🧔','💪','👑','🚀','🐐','🍾'];
   const XP_RANKS = LEVELS.map((l, i) => ({
     id:'xp_lv' + l.lv, cat:'xp', ico:LEVEL_ICONS[i] || '⭐', name:l.name,
     desc:`Atteindre le niveau ${l.lv}${l.lv === LEVELS.length ? ' (max)' : ''} · ${l.name}`,
@@ -195,7 +195,7 @@
     // ── Jours spéciaux ──
     { id:'night_owl',         cat:'special', ico:'🦉', name:'Oiseau de Nuit',  desc:'Une partie après 22h',                cond:s => s.nightOwl },
     { id:'after_hours',       cat:'special', ico:'🌙', name:'After',           desc:'Une partie entre minuit et 5h',       cond:s => s.afterMidnight },
-    { id:'bleus_day',         cat:'special', ico:'🇫🇷', name:'Allez les Bleus', desc:'Jouer un jour de match de la France (CDM 2026)', cond:s => FRANCE_WC_DATES.some(d => s.dayKeys.has(d)) },
+    { id:'bleus_day',         cat:'special', ico:'🐓', name:'Allez les Bleus', desc:'Jouer un jour de match de la France (CDM 2026)', cond:s => FRANCE_WC_DATES.some(d => s.dayKeys.has(d)) },
     { id:'darts_final',       cat:'special', ico:'🎯', name:'Finale des Fléchettes', desc:'Jouer un 3 janvier (finale mondiale PDC)',  cond:s => s.dayKeys.has('01-03') },
     { id:'christmas',         cat:'special', ico:'🎄', name:'Esprit de Noël',  desc:'Jouer le 24 ou 25 décembre',          cond:s => s.dayKeys.has('12-24') || s.dayKeys.has('12-25') },
     { id:'new_year',          cat:'special', ico:'🎆', name:'Réveillon',       desc:'Jouer le 31 décembre ou le 1er janvier',cond:s => s.dayKeys.has('12-31') || s.dayKeys.has('01-01') },

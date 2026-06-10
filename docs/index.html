@@ -602,7 +602,7 @@
       <div class="kpi"><div class="val" id="kpi-avg">—</div><div class="lbl">Durée moyenne</div></div>
       <div class="kpi king"><div class="val text" id="kpi-king">—</div><div class="lbl" id="kpi-king-lbl">Roi actuel</div></div>
       <div class="kpi"><div class="val text" id="kpi-mode">—</div><div class="lbl" id="kpi-mode-lbl">Mode le plus joué</div></div>
-      <div class="kpi loser"><div class="val text" id="kpi-loser">—</div><div class="lbl" id="kpi-loser-lbl">Pire série</div></div>
+      <div class="kpi loser"><div class="val text" id="kpi-loser">—</div><div class="lbl" id="kpi-loser-lbl">Pire série en cours</div></div>
     </div>
   </div>
   <a href="#classement" class="scroll-cue" id="scroll-cue" aria-label="Défiler">▼</a>
@@ -1382,16 +1382,16 @@ function renderHero() {
     kingLbl.textContent = 'Roi actuel';
   }
 
-  // pire série : plus longue série de défaites consécutives jamais subie
-  const loser = ranked.reduce((m, s) => s.maxLossStreak > m.maxLossStreak ? s : m, { maxLossStreak: 0, name: null });
+  // en perdition : plus longue série de défaites consécutives EN COURS (pendant du roi actuel)
+  const loser = ranked.reduce((m, s) => s.lossStreak > m.lossStreak ? s : m, { lossStreak: 0, name: null });
   const loserEl = document.getElementById('kpi-loser');
   const loserLbl = document.getElementById('kpi-loser-lbl');
-  if (loser.name && loser.maxLossStreak >= 2) {
+  if (loser.name && loser.lossStreak >= 2) {
     loserEl.innerHTML = playerLink(loser.name) + ' 💀';
-    loserLbl.textContent = `Pire série · ${loser.maxLossStreak} défaites de suite`;
+    loserLbl.textContent = `En perdition · ${loser.lossStreak} défaites de suite`;
   } else {
     loserEl.textContent = '—';
-    loserLbl.textContent = 'Pire série';
+    loserLbl.textContent = 'Pire série en cours';
   }
 
   animateCount('kpi-games', allGames.length);

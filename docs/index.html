@@ -235,6 +235,7 @@
       font-size: 21px; font-weight: 900; color: #fff; margin-bottom: 10px;
     }
     .pc-name { font-size: 19px; font-weight: 800; letter-spacing: -.3px; }
+    .pc-title { font-size: 10.5px; font-weight: 800; letter-spacing: .4px; color: var(--gold-dim); margin-top: 4px; }
     .pc-level { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--muted); margin-top: 3px; text-transform: uppercase; }
     .pc-streak-flag { display: inline-block; margin-left: 6px; }
     .xp-track { height: 6px; border-radius: 4px; background: rgba(0,0,0,0.4); margin-top: 12px; overflow: hidden; }
@@ -883,6 +884,15 @@ const LEVELS = [
   { lv:13, name:'Légende',     xp:6500 }, { lv:14, name:'Immortel',    xp:8500 },
 ];
 
+// Trophées de rang XP : un par niveau (généré depuis LEVELS pour rester synchro).
+// L'ordre croissant permet de retrouver facilement le rang le plus haut débloqué.
+const LEVEL_ICONS = ['🌱','📘','🧭','🤺','🔆','🗡️','🪖','😈','🎼','🧪','🏵️','🥇','🌟','🪐'];
+const XP_RANKS = LEVELS.map((l, i) => ({
+  id:'xp_lv' + l.lv, cat:'xp', ico:LEVEL_ICONS[i] || '⭐', name:l.name,
+  desc:`Atteindre le niveau ${l.lv}${l.lv === LEVELS.length ? ' (max)' : ''} · ${l.name}`,
+  cond:s => s.level.lv >= l.lv,
+}));
+
 // Grandes catégories d'affichage des trophées (ordre = ordre de rendu).
 const ACH_CATEGORIES = [
   { key:'wins',    ico:'🏆', label:'Victoires & Séries' },
@@ -935,11 +945,8 @@ const ACHIEVEMENTS = [
   { id:'veteran',           cat:'volume', ico:'🎖️', name:'Vétéran Assidu',  desc:'250 parties jouées',                   cond:s => s.games >= 250 },
   { id:'social',            cat:'volume', ico:'👥', name:'Sociable',        desc:'Jouer avec 3 adversaires différents',  cond:s => s.opponents.size >= 3 },
 
-  // ── XP & progression ──
-  { id:'xp_rising',         cat:'xp', ico:'⭐', name:'Étoile Montante',    desc:'Atteindre le niveau 5',                 cond:s => s.level.lv >= 5 },
-  { id:'xp_virtuoso',       cat:'xp', ico:'💫', name:'Virtuose',           desc:'Atteindre le niveau 9',                 cond:s => s.level.lv >= 9 },
-  { id:'xp_elite',          cat:'xp', ico:'🏵️', name:'Élite',              desc:'Atteindre le niveau 11',                cond:s => s.level.lv >= 11 },
-  { id:'xp_immortal',       cat:'xp', ico:'🪐', name:'Immortel',           desc:'Atteindre le niveau maximum',           cond:s => s.level.isMax },
+  // ── XP & progression (un trophée par niveau, généré depuis LEVELS) ──
+  ...XP_RANKS,
 
   // ── Jours spéciaux ──
   { id:'night_owl',         cat:'special', ico:'🦉', name:'Oiseau de Nuit',  desc:'Une partie après 22h',                cond:s => s.nightOwl },
@@ -1211,6 +1218,13 @@ function rankedPlayers(stats) {
   return Object.values(stats).sort((a, b) => b.wins - a.wins || b.games - a.games || a.name.localeCompare(b.name));
 }
 
+// Rang XP le plus élevé débloqué par un joueur (XP_RANKS est en ordre croissant).
+function topRank(s) {
+  let top = null;
+  for (const a of XP_RANKS) if (a.cond(s)) top = a;
+  return top;
+}
+
 function statsForFilter(mode) {
   return mode === 'all' ? statsCache : computePlayerStats(allGames.filter(g => g.mode === mode));
 }
@@ -1235,11 +1249,15 @@ function renderLeaderboard(mode) {
     const col = playerColor(s.name, i);
     const hot = s.curStreak >= 3 ? `<span class="pc-streak-flag">🔥</span>` : '';
     const favLabel = s.favoriteMode ? MODE_LABELS[s.favoriteMode] : '—';
+    // Titre sous le nom : "GOAT du groupe" si actuellement GOAT, sinon le rang XP le plus haut.
+    const rk = topRank(s);
+    const title = isGoat(s, stats) ? '🐐 GOAT du groupe' : (rk ? `${rk.ico} ${rk.name}` : '');
     return `<div class="player-card rank-${rank}">
       <div class="pc-top ${rcls}">
         <div class="pc-rank ${rcls}">${rank}</div>
         <a class="pc-avatar" href="#joueur/${encodeURIComponent(s.name)}" style="background:${col}" aria-label="Profil de ${escapeHtml(s.name)}">${s.name.charAt(0)}</a>
         <div class="pc-name">${playerLink(s.name)}${hot}</div>
+        ${title ? `<div class="pc-title">${title}</div>` : ''}
         <div class="pc-level">LVL ${lvl.lv} · ${lvl.name}</div>
         <div class="xp-track"><div class="xp-fill" style="width:${lvl.pct}%"></div></div>
         <div class="pc-xp-text">${lvl.isMax ? `${s.xp} XP · MAX` : `${s.xp} / ${lvl.nextXP} XP`}</div>

@@ -850,7 +850,7 @@
     <div class="ico" id="modal-ico">🏆</div>
     <h3 id="modal-name"></h3>
     <div class="ds" id="modal-desc"></div>
-    <div class="earners-title">Débloqué par</div>
+    <div class="earners-title" id="modal-earners-title">Débloqué par</div>
     <div class="earner-list" id="modal-earners"></div>
   </div>
 </div>
@@ -1929,25 +1929,41 @@ function setupModeExpander() {
 
 function setupAchievementModals() {
   const modal = document.getElementById('modal');
-  const openAch = id => {
+  // playerName renseigné => vue profil (on n'affiche que la date d'obtention du joueur).
+  const openAch = (id, playerName = null) => {
     const a = ACHIEVEMENTS.find(x => x.id === id);
     if (!a) return;
-    const list = computeAchievements(statsCache)[a.id] || [];
     document.getElementById('modal-ico').textContent = a.ico;
     document.getElementById('modal-name').textContent = a.name;
     document.getElementById('modal-desc').textContent = a.desc;
     const ev = document.getElementById('modal-earners');
-    ev.innerHTML = list.length
-      ? list.map(p => `<div class="e"><span style="color:${playerColor(p.name)};font-weight:700">${p.name}</span></div>`).join('')
-      : '<div class="none">Personne ne l\'a encore débloqué 🔒</div>';
+    // En vue profil, le titre "Débloqué par" n'a pas de sens (on montre juste la date).
+    document.getElementById('modal-earners-title').style.display = playerName ? 'none' : '';
+    let unlocked;
+    if (playerName) {
+      const s = statsCache[playerName];
+      unlocked = !!(s && a.cond(s, statsCache));
+      const d = unlockDatesFor(playerName)[id];
+      ev.innerHTML = unlocked
+        ? `<div class="e">🗓️ Débloqué le ${d ? formatDateShort(d) : '—'}</div>`
+        : '<div class="none">Pas encore débloqué 🔒</div>';
+    } else {
+      const list = computeAchievements(statsCache)[a.id] || [];
+      unlocked = list.length > 0;
+      ev.innerHTML = unlocked
+        ? list.map(p => `<div class="e"><span style="color:${playerColor(p.name)};font-weight:700">${p.name}</span></div>`).join('')
+        : '<div class="none">Personne ne l\'a encore débloqué 🔒</div>';
+    }
     modal.classList.add('open');
-    if (list.length) fireConfetti();
+    if (unlocked) fireConfetti();
   };
   // Délégation sur les deux grilles : section Trophées + vitrine des profils
   ['ach-grid', 'prof-ach-grid'].forEach(gridId => {
     document.getElementById(gridId).addEventListener('click', e => {
       const card = e.target.closest('.ach-card');
-      if (card && card.dataset.ach) openAch(card.dataset.ach);
+      if (!card || !card.dataset.ach) return;
+      const m = gridId === 'prof-ach-grid' ? location.hash.match(/^#joueur\/(.+)$/) : null;
+      openAch(card.dataset.ach, m ? decodeURIComponent(m[1]) : null);
     });
   });
   const close = () => modal.classList.remove('open');

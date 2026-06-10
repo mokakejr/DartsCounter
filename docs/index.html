@@ -909,6 +909,16 @@ const ACHIEVEMENTS = [
   { id:'veteran',           ico:'🎖️', name:'Vétéran Assidu',   desc:'250 parties jouées',                    cond:s => s.games >= 250 },
   { id:'untouchable',       ico:'🛡️', name:'Intouchable',      desc:'Win rate > 75% sur 30+ parties',        cond:s => s.games >= 30 && s.wins / s.games > 0.75 },
   { id:'punching_ball',     ico:'🥊', name:'Punching Ball',    desc:'5 défaites consécutives',               cond:s => s.maxLossStreak >= 5 },
+  { id:'world_cup_opener',  ico:'🏟️', name:'Coup d\'Envoi Mondial', desc:'Jouer le jour du 1er match de la CDM 2026', cond:s => s.dayKeys.has('2026-06-11') },
+  { id:'darts_final',       ico:'🎯', name:'Finale des Fléchettes', desc:'Jouer un 3 janvier (finale mondiale PDC)',  cond:s => s.dayKeys.has('01-03') },
+  { id:'christmas',         ico:'🎄', name:'Esprit de Noël',    desc:'Jouer le 24 ou 25 décembre',            cond:s => s.dayKeys.has('12-24') || s.dayKeys.has('12-25') },
+  { id:'new_year',          ico:'🎆', name:'Réveillon',         desc:'Jouer le 31 décembre ou le 1er janvier',cond:s => s.dayKeys.has('12-31') || s.dayKeys.has('01-01') },
+  { id:'halloween',         ico:'🎃', name:'Citrouille',        desc:'Jouer un 31 octobre',                   cond:s => s.dayKeys.has('10-31') },
+  { id:'april_fools',       ico:'🐟', name:'Poisson d\'Avril',  desc:'Jouer un 1er avril',                    cond:s => s.dayKeys.has('04-01') },
+  { id:'pi_day',            ico:'🥧', name:'Pi Day',            desc:'Jouer un 14 mars (3.14)',               cond:s => s.dayKeys.has('03-14') },
+  { id:'after_hours',       ico:'🌙', name:'After',             desc:'Une partie entre minuit et 5h',         cond:s => s.afterMidnight },
+  { id:'friday_13',         ico:'🃏', name:'Vendredi 13',       desc:'Jouer un vendredi 13',                  cond:s => s.friday13 },
+  { id:'weekend_warrior',   ico:'🍻', name:'Guerrier du Week-end', desc:'Jouer un samedi et un dimanche',     cond:s => s.playedSat && s.playedSun },
 ];
 
 /* ════════════════════════ STATE ════════════════════════ */
@@ -949,6 +959,7 @@ function computePlayerStats(games) {
       curStreak:0, maxStreak:0, lossStreak:0, maxLossStreak:0, underdog:false, comeback:false,
       modeWins:{}, modeGames:{}, modesPlayed:new Set(), opponents:new Set(),
       shanghaiKillWins:0, cutThroatWins:0, speedWin:false, marathon:false, nightOwl:false,
+      dayKeys:new Set(), friday13:false, afterMidnight:false, playedSat:false, playedSun:false,
       winDates:[], maxWinsInDay:0, maxWinsInWeek:0, allModesBonus:false,
     };
     return S[name];
@@ -957,6 +968,10 @@ function computePlayerStats(games) {
   for (const g of chronological(games)) {
     const dur = g.duration || 0;
     const date = new Date(g.date);
+    const mmdd = `${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    const ymd  = `${date.getFullYear()}-${mmdd}`;
+    const wday = date.getDay();        // 0=dim … 6=sam
+    const hr   = date.getHours();
     g.players.forEach(p => {
       const s = ensure(p);
       s.games++;
@@ -967,6 +982,11 @@ function computePlayerStats(games) {
       g.players.forEach(o => { if (o !== p) s.opponents.add(o); });
       if (dur > 1800) s.marathon = true;
       if (date.getHours() >= 22) s.nightOwl = true;
+      s.dayKeys.add(mmdd); s.dayKeys.add(ymd);
+      if (wday === 5 && date.getDate() === 13) s.friday13 = true;
+      if (wday === 6) s.playedSat = true;
+      if (wday === 0) s.playedSun = true;
+      if (hr < 5) s.afterMidnight = true;
 
       if (g.winner === p) {
         s.wins++;

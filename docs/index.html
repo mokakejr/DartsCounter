@@ -330,6 +330,7 @@
     .ach-card.locked .lock { position: absolute; top: 10px; right: 10px; font-size: 13px; }
     .ach-card.unlocked { border-color: var(--gold-dim); }
     .ach-card.unlocked .ico { filter: drop-shadow(0 0 8px rgba(255,215,0,0.35)); }
+    .ach-card .ach-date { font-size: 8.5px; font-weight: 700; letter-spacing: .3px; color: var(--gold-dim); margin-top: 2px; }
 
     /* modal */
     .modal-backdrop {
@@ -913,6 +914,7 @@ const ACHIEVEMENTS = [
 /* ════════════════════════ STATE ════════════════════════ */
 let allGames = [];
 let statsCache = {};
+let achDatesCache = null; // { player -> { achId -> isoDate } } ; calculé à la demande
 let lbFilter = 'all';
 let histFilter = 'all';
 let histSearch = '';
@@ -1040,6 +1042,28 @@ function computeAchievements(stats) {
   return earned;
 }
 
+// Date de déblocage de chaque trophée par joueur : on rejoue les parties
+// chronologiquement et on retient la 1re partie après laquelle la condition passe à vrai.
+function computeUnlockDates(games) {
+  const chron = chronological(games);
+  const dates = {}; // name -> { achId -> isoDate }
+  for (let i = 0; i < chron.length; i++) {
+    const stats = computePlayerStats(chron.slice(0, i + 1));
+    Object.values(stats).forEach(s => {
+      const slot = dates[s.name] || (dates[s.name] = {});
+      ACHIEVEMENTS.forEach(a => {
+        if (!slot[a.id] && a.cond(s, stats)) slot[a.id] = chron[i].date;
+      });
+    });
+  }
+  return dates;
+}
+
+function unlockDatesFor(name) {
+  if (!achDatesCache) achDatesCache = computeUnlockDates(allGames);
+  return achDatesCache[name] || {};
+}
+
 function computeRivalries(games) {
   const map = {};
   for (const g of games) {
@@ -1097,6 +1121,9 @@ function formatDate(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' }) + ' · ' +
          d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+}
+function formatDateShort(iso) {
+  return new Date(iso).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'2-digit' });
 }
 function modeCssClass(mode) {
   return { Cricket:'cricket', SuperCricket:'supercricket', Shanghai:'shanghai', FiftyOne:'fiftyone' }[mode] || 'cricket';
@@ -1626,12 +1653,15 @@ function renderProfile(name) {
 
   // ── vitrine trophées ──
   const unlocked = ACHIEVEMENTS.filter(a => a.cond(s, statsCache));
+  const unlockDates = unlockDatesFor(name);
   document.getElementById('prof-ach-count').textContent = `${unlocked.length} / ${ACHIEVEMENTS.length}`;
   document.getElementById('prof-ach-grid').innerHTML = ACHIEVEMENTS.map(a => {
     const got = a.cond(s, statsCache);
+    const d = unlockDates[a.id];
     return `<div class="ach-card ${got ? 'unlocked' : 'locked'}">
       ${got ? '' : '<span class="lock">🔒</span>'}
       <div class="ico">${a.ico}</div><div class="nm">${a.name}</div><div class="ds">${a.desc}</div>
+      ${got && d ? `<div class="ach-date">🗓️ Débloqué le ${formatDateShort(d)}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -2076,6 +2106,7 @@ function fireConfetti() {
 async function init() {
   allGames = await loadGames();
   statsCache = computePlayerStats(allGames);
+  achDatesCache = null; // invalidé : recalculé à la 1re ouverture d'un profil
   document.getElementById('stats-count').textContent = allGames.length + ' parties';
 
   renderHero();

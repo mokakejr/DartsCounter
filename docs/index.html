@@ -1658,7 +1658,7 @@ function renderProfile(name) {
   document.getElementById('prof-ach-grid').innerHTML = ACHIEVEMENTS.map(a => {
     const got = a.cond(s, statsCache);
     const d = unlockDates[a.id];
-    return `<div class="ach-card ${got ? 'unlocked' : 'locked'}">
+    return `<div class="ach-card ${got ? 'unlocked' : 'locked'}" data-ach="${a.id}">
       ${got ? '' : '<span class="lock">🔒</span>'}
       <div class="ico">${a.ico}</div><div class="nm">${a.name}</div><div class="ds">${a.desc}</div>
       ${got && d ? `<div class="ach-date">🗓️ Débloqué le ${formatDateShort(d)}</div>` : ''}
@@ -1928,14 +1928,11 @@ function setupModeExpander() {
 }
 
 function setupAchievementModals() {
-  const earned = computeAchievements(statsCache);
   const modal = document.getElementById('modal');
-  document.getElementById('ach-grid').addEventListener('click', e => {
-    const card = e.target.closest('.ach-card');
-    if (!card) return;
-    const a = ACHIEVEMENTS.find(x => x.id === card.dataset.ach);
+  const openAch = id => {
+    const a = ACHIEVEMENTS.find(x => x.id === id);
     if (!a) return;
-    const list = earned[a.id] || [];
+    const list = computeAchievements(statsCache)[a.id] || [];
     document.getElementById('modal-ico').textContent = a.ico;
     document.getElementById('modal-name').textContent = a.name;
     document.getElementById('modal-desc').textContent = a.desc;
@@ -1945,6 +1942,13 @@ function setupAchievementModals() {
       : '<div class="none">Personne ne l\'a encore débloqué 🔒</div>';
     modal.classList.add('open');
     if (list.length) fireConfetti();
+  };
+  // Délégation sur les deux grilles : section Trophées + vitrine des profils
+  ['ach-grid', 'prof-ach-grid'].forEach(gridId => {
+    document.getElementById(gridId).addEventListener('click', e => {
+      const card = e.target.closest('.ach-card');
+      if (card && card.dataset.ach) openAch(card.dataset.ach);
+    });
   });
   const close = () => modal.classList.remove('open');
   document.getElementById('modal-close').addEventListener('click', close);

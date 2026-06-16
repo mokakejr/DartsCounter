@@ -1,0 +1,53 @@
+.tpage { padding: 100px var(--gutter) 80px; min-height: 100svh; }
+.back { display: inline-block; margin-bottom: 36px; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.back:hover { color: var(--text); }
+
+.tpage__title { font-size: clamp(44px, 9vw, 96px); }
+.tpage__sub { color: var(--muted); margin: 8px 0 28px; font-size: 16px; }
+.tpage__sub b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+.tpage__filters { display: flex; gap: 10px; margin-bottom: 48px; }
+
+.tcat { margin-bottom: 44px; }
+.tcat__title { margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+.tcat__count { color: var(--muted); letter-spacing: 0; }
+
+.tpage__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.tcard {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+/* Rarity halo on unlocked cards (uses the --rar var set inline). */
+.tcard:not(.tcard--locked) { border-color: color-mix(in srgb, var(--rar, var(--border)) 45%, var(--border)); }
+.tcard:hover { transform: translateY(-2px); }
+.tcard:not(.tcard--locked):hover { box-shadow: 0 0 22px -8px var(--rar, transparent); border-color: var(--rar, var(--muted)); }
+.tcard--locked { opacity: 0.5; filter: grayscale(0.6); }
+.tcard--locked:hover { opacity: 0.85; border-color: var(--muted); }
+
+.tcard__ico { font-size: 30px; line-height: 1; flex-shrink: 0; }
+.tcard__body { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.tcard__name { font-size: 16px; font-weight: 700; }
+.tcard__desc { font-size: 12.5px; color: var(--muted); }
+
+.tcard__rar { position: absolute; top: 12px; right: 14px; font-size: 12px; }
+
+.tcard__prog { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.tcard__prog-track { flex: 1; height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.tcard__prog-track span { display: block; height: 100%; background: var(--muted); }
+.tcard__prog-num { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }

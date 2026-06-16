@@ -1,0 +1,75 @@
+.feed { padding: clamp(60px, 9vh, 120px) var(--gutter); }
+
+.feed__grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.feed__list { list-style: none; display: flex; flex-direction: column; }
+.feed__row {
+  display: grid;
+  grid-template-columns: 130px 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.feed__mode {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.feed__players { font-size: 17px; color: var(--muted); }
+.feed__player:hover { color: var(--text); }
+.feed__win { color: var(--text); font-weight: 700; }
+.feed__win::before { content: '🏆 '; }
+.feed__win:hover { color: var(--primary); }
+.feed__meta { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+/* Rivalries */
+.rivals {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+}
+.rivals__title { margin-bottom: 18px; }
+.rival { margin-bottom: 18px; }
+.rival__names {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+.rival__vs { color: var(--muted); font-variant-numeric: tabular-nums; }
+.rival__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.rival__bar span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+.rival__games {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.rivals__empty { color: var(--muted); font-size: 14px; }
+
+@media (max-width: 820px) {
+  .feed__grid { grid-template-columns: 1fr; }
+  .feed__row { grid-template-columns: 90px 1fr; }
+  .feed__meta { grid-column: 2; }
+}

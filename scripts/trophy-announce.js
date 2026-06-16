@@ -3,13 +3,13 @@
 // one or more trophies (for one or more players).
 //
 // Triggered by .github/workflows/trophy-announce.yml on push to games.json.
-// Reuses the shared trophy engine (docs/achievements-core.js) so the logic
-// never drifts from the dashboard.
+// Reuses the shared trophy engine (shared/achievements-core.mjs) so the logic
+// never drifts from the dashboard. The engine is ESM, loaded via dynamic import.
 
 const fs    = require('fs');
 const https = require('https');
 const url   = require('url');
-const core  = require('../docs/achievements-core.js');
+const path  = require('path');
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const WEBHOOK    = (process.env.GOOGLE_CHAT_WEBHOOK || '').trim();
@@ -46,7 +46,7 @@ function sendCard(body) {
 // ── Detect newly-unlocked trophies ────────────────────────────────────────────
 // Compare trophy holders with vs without the most recent game (games[0], car
 // l'app insère en tête). Renvoie { joueur: [trophée, …] } pour les nouveaux.
-function newlyUnlocked(allGames) {
+function newlyUnlocked(allGames, core) {
   const earnedAfter  = core.computeAchievements(core.computePlayerStats(allGames));
   const earnedBefore = core.computeAchievements(core.computePlayerStats(allGames.slice(1)));
   const byPlayer = {};
@@ -99,13 +99,17 @@ function buildCard(byPlayer) {
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
-function main() {
+async function main() {
   if (!fs.existsSync(GAMES_FILE)) { console.log('No games file — skipping.'); process.exit(0); }
   const raw = fs.readFileSync(GAMES_FILE, 'utf8').replace(/﻿/g, '');
   const all = JSON.parse(raw);
   if (!Array.isArray(all) || all.length === 0) { console.log('No games — skipping.'); process.exit(0); }
 
-  const byPlayer = newlyUnlocked(all);
+  // Shared trophy engine is ESM — load it via dynamic import from CommonJS.
+  const coreUrl = require('url').pathToFileURL(path.join(__dirname, '..', 'shared', 'achievements-core.mjs')).href;
+  const core = await import(coreUrl);
+
+  const byPlayer = newlyUnlocked(all, core);
   const players = Object.keys(byPlayer);
   if (players.length === 0) { console.log('No new trophy from the latest game — skipping.'); process.exit(0); }
 
@@ -113,4 +117,4 @@ function main() {
   sendCard(buildCard(byPlayer));
 }
 
-main();
+main().catch(e => { console.error(e); process.exit(1); });

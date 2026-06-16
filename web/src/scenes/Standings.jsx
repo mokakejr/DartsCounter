@@ -1,0 +1,85 @@
+import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { ALL_MODES } from '../lib/stats.js';
+import { MODE_LABEL } from '../lib/data.js';
+import './Standings.css';
+
+const FILTERS = ['Global', ...ALL_MODES];
+
+function rankClass(i) {
+  return i < 3 ? `r${i + 1}` : 'rn';
+}
+
+export default function Standings({ ranked }) {
+  const [filter, setFilter] = useState('Global');
+
+  const rows = useMemo(() => {
+    if (filter === 'Global') return ranked;
+    return ranked
+      .map(s => ({
+        ...s,
+        _wins: s.modeWins[filter] || 0,
+        _games: s.modeGames[filter] || 0,
+      }))
+      .filter(s => s._games > 0)
+      .sort((a, b) => b._wins - a._wins || b._games - a._games);
+  }, [ranked, filter]);
+
+  return (
+    <section className="standings shell" id="classement">
+      <div className="sec-head">
+        <p className="eyebrow">01 — Classement</p>
+        <h2 className="display sec-title">Qui domine&nbsp;?</h2>
+        <div className="standings__filters">
+          {FILTERS.map(f => (
+            <button
+              key={f}
+              className={`chip ${filter === f ? 'chip--on' : ''}`}
+              onClick={() => setFilter(f)}
+            >
+              {f === 'Global' ? 'Global' : MODE_LABEL[f]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <ol className="ladder">
+        {rows.map((s, i) => {
+          const wins = filter === 'Global' ? s.wins : s._wins;
+          const games = filter === 'Global' ? s.games : s._games;
+          const rate = games ? Math.round((wins / games) * 100) : 0;
+          return (
+            <motion.li
+              key={s.name}
+              className={`ladder__row ${rankClass(i)}`}
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.45, delay: Math.min(i * 0.04, 0.3) }}
+            >
+              <span className={`ladder__rank ${rankClass(i)}`}>{i + 1}</span>
+              <Link to={`/joueur/${encodeURIComponent(s.name)}`} className="ladder__avatar">
+                {s.name.charAt(0)}
+              </Link>
+              <Link to={`/joueur/${encodeURIComponent(s.name)}`} className="ladder__name">
+                {s.name}
+                <span className="ladder__lv">niv. {s.level.lv} · {s.level.name}</span>
+              </Link>
+              <span className="ladder__stat">
+                <b>{wins}</b><em>victoires</em>
+              </span>
+              <span className="ladder__stat ladder__stat--rate">
+                <b style={{ color: 'var(--win)' }}>{rate}%</b><em>winrate</em>
+              </span>
+              <span className="ladder__stat ladder__stat--hide">
+                <b>{games}</b><em>parties</em>
+              </span>
+            </motion.li>
+          );
+        })}
+        {rows.length === 0 && <li className="ladder__empty">Aucune partie dans ce mode.</li>}
+      </ol>
+    </section>
+  );
+}

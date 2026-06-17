@@ -18,6 +18,24 @@
 }
 .nav__count { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text); }
 
+.nav__callout {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 6px 13px;
+  border-radius: 999px;
+  border: 1.5px solid currentColor;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+  line-height: 1;
+}
+.nav__callout:disabled { opacity: 0.4; cursor: not-allowed; }
+
 .footer {
   display: flex;
   align-items: center;

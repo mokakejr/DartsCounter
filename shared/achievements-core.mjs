@@ -193,6 +193,7 @@ export const ACHIEVEMENTS = [
   { id:'desert_crossing',   cat:'loss', ico:'🏜️', name:'Traversée du Désert',desc:'7 défaites consécutives',             cond:s => s.maxLossStreak >= 7,  prog:s => [s.maxLossStreak, 7] },
   { id:'cursed',            cat:'loss', ico:'🪦', name:'Maudit',           desc:'10 défaites consécutives',              cond:s => s.maxLossStreak >= 10, prog:s => [s.maxLossStreak, 10] },
   { id:'bottomless_pit',    cat:'loss', ico:'🕳️', name:'Puits sans Fond',  desc:'12 défaites consécutives',              cond:s => s.maxLossStreak >= 12, prog:s => [s.maxLossStreak, 12] },
+  { id:'are_you_serious',   cat:'loss', ico:'😐', name:"T'es sérieux ?",    desc:'20 défaites consécutives',              cond:s => s.maxLossStreak >= 20, prog:s => [s.maxLossStreak, 20] },
 
   // ── Modes de jeu ──
   { id:'cricket_master',    cat:'modes', ico:'🦗', name:'Maître du Cricket',desc:'10 victoires en Cricket',              cond:s => (s.modeWins.Cricket||0) >= 10, prog:s => [s.modeWins.Cricket||0, 10] },

@@ -3,7 +3,7 @@
 .sec-head { margin-bottom: 48px; }
 .sec-title {
   font-size: clamp(40px, 7vw, 96px);
-  margin: 0 0 28px;
+  margin: 20px 0 28px;
   padding-top: 0.18em;
 }
 

@@ -11,13 +11,26 @@
   text-align: left;
   color: inherit;
   font: inherit;
-  transform-style: preserve-3d;
-  will-change: transform;
-  overflow: hidden;
-  transition: box-shadow 0.25s;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
-/* Showcase variant — vertical, larger */
+/* Rarity borders */
+.tcard--legendary:not(.tcard--locked) { border-color: color-mix(in srgb, #ffd700 50%, var(--border)); }
+.tcard--epic:not(.tcard--locked)      { border-color: color-mix(in srgb, #A974E6 45%, var(--border)); }
+.tcard--rare:not(.tcard--locked)      { border-color: color-mix(in srgb, #4C9BE6 45%, var(--border)); }
+
+/* Hover */
+.tcard:not(.tcard--locked):hover { transform: translateY(-2px); }
+.tcard--legendary:not(.tcard--locked):hover { box-shadow: 0 0 22px -8px #ffd700; border-color: #ffd700; }
+.tcard--epic:not(.tcard--locked):hover      { box-shadow: 0 0 22px -8px #A974E6; border-color: #A974E6; }
+.tcard--rare:not(.tcard--locked):hover      { box-shadow: 0 0 22px -8px #4C9BE6; border-color: #4C9BE6; }
+.tcard--common:not(.tcard--locked):hover    { box-shadow: 0 0 22px -8px var(--muted); border-color: var(--muted); }
+
+/* Locked */
+.tcard--locked { opacity: 0.5; filter: grayscale(0.6); }
+.tcard--locked:hover { opacity: 0.85; border-color: var(--muted); }
+
+/* Showcase variant */
 .tcard--showcase {
   flex-direction: column;
   align-items: flex-start;
@@ -25,68 +38,9 @@
   gap: 12px;
   min-height: 200px;
 }
-.tcard--showcase .tcard__ico { font-size: 44px; }
+.tcard--showcase .tcard__ico  { font-size: 44px; }
 .tcard--showcase .tcard__name { font-size: 18px; }
 .tcard--showcase .tcard__desc { font-size: 14px; line-height: 1.5; }
-
-/* Rarity borders */
-.tcard--legendary:not(.tcard--locked) {
-  border-color: color-mix(in srgb, #ffd700 50%, var(--border));
-  animation: legendBorder 2.5s ease-in-out infinite;
-}
-.tcard--epic:not(.tcard--locked) {
-  border-color: color-mix(in srgb, #A974E6 45%, var(--border));
-}
-.tcard--rare:not(.tcard--locked) {
-  border-color: color-mix(in srgb, #4C9BE6 45%, var(--border));
-}
-
-/* Hover glows */
-.tcard--legendary:not(.tcard--locked):hover { box-shadow: 0 8px 36px -8px rgba(255,215,0,0.5); }
-.tcard--epic:not(.tcard--locked):hover      { box-shadow: 0 8px 36px -8px rgba(169,116,230,0.5); }
-.tcard--rare:not(.tcard--locked):hover      { box-shadow: 0 8px 28px -8px rgba(76,155,230,0.45); }
-.tcard--common:not(.tcard--locked):hover    { box-shadow: 0 8px 24px -10px rgba(107,114,128,0.35); }
-
-/* Holographic foil */
-.tcard__foil {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.25s;
-  mix-blend-mode: color-dodge;
-}
-.tcard:hover .tcard__foil { opacity: 1; }
-
-.tcard--legendary .tcard__foil {
-  background: conic-gradient(
-    from 0deg at var(--gx, 50%) var(--gy, 50%),
-    #ffd700, #fff9c4, #ffd700, #b8860b, #ffd700, #ffe066, #ffd700
-  );
-}
-.tcard--epic .tcard__foil {
-  background: radial-gradient(
-    ellipse at var(--gx, 50%) var(--gy, 50%),
-    #f0abfc 0%, #c026d3 35%, transparent 65%
-  );
-}
-.tcard--rare .tcard__foil {
-  background: radial-gradient(
-    ellipse at var(--gx, 50%) var(--gy, 50%),
-    #93c5fd 0%, #2563eb 35%, transparent 65%
-  );
-}
-.tcard--common .tcard__foil {
-  background: radial-gradient(
-    ellipse at var(--gx, 50%) var(--gy, 50%),
-    #e2e8f0 0%, #94a3b8 40%, transparent 70%
-  );
-}
-
-/* Locked state */
-.tcard--locked { opacity: 0.5; filter: grayscale(0.65); }
-.tcard--locked:hover { opacity: 0.82; border-color: var(--muted); }
 
 /* Content */
 .tcard__ico  { font-size: 30px; line-height: 1; flex-shrink: 0; }
@@ -95,25 +49,9 @@
 .tcard__desc { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
 
 .tcard__prog { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-.tcard__prog-track {
-  flex: 1; height: 5px; border-radius: 3px;
-  background: var(--surface-2); overflow: hidden;
-}
-.tcard__prog-track span { display: block; height: 100%; background: var(--primary); }
+.tcard__prog-track { flex: 1; height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.tcard__prog-track span { display: block; height: 100%; background: var(--muted); }
 .tcard__prog-num { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
-.tcard__lock {
-  position: absolute;
-  bottom: 12px; right: 12px;
-  color: var(--muted); opacity: 0.45;
-}
-.tcard__rar {
-  position: absolute;
-  top: 12px; right: 14px;
-  font-size: 11px;
-}
-
-@keyframes legendBorder {
-  0%, 100% { border-color: color-mix(in srgb, #ffd700 50%, var(--border)); }
-  50%       { border-color: color-mix(in srgb, #ffe066 68%, var(--border)); }
-}
+.tcard__lock { position: absolute; bottom: 12px; right: 12px; color: var(--muted); opacity: 0.45; }
+.tcard__rar  { position: absolute; top: 12px; right: 14px; font-size: 11px; }

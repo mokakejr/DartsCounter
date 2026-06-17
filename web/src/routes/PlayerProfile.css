@@ -21,6 +21,17 @@
 }
 .profile__name { font-size: clamp(40px, 8vw, 80px); }
 .profile__lv { color: var(--muted); margin-top: 4px; }
+.profile__goat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #C9A227;
+}
 
 .xpbar { margin: 8px 0 40px; }
 .xpbar__track { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
@@ -66,7 +77,11 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
+  cursor: pointer;
+  color: inherit;
+  transition: transform 0.15s, border-color 0.15s;
 }
+.ptrophy:hover { transform: scale(1.14); border-color: var(--muted); }
 
 .profile__games { list-style: none; }
 .profile__games li { display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }

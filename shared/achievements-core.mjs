@@ -41,7 +41,7 @@ export function computePlayerStats(games) {
   const ensure = name => {
     if (!S[name]) S[name] = {
       name, wins:0, games:0, totalDuration:0, xp:0,
-      curStreak:0, maxStreak:0, lossStreak:0, maxLossStreak:0, underdog:false, comeback:false,
+      curStreak:0, maxStreak:0, lossStreak:0, maxLossStreak:0, underdog:false, comeback:false, phoenix:false,
       modeWins:{}, modeGames:{}, modesPlayed:new Set(), opponents:new Set(),
       shanghaiKillWins:0, cutThroatWins:0, speedWin:false, marathon:false, nightOwl:false,
       dayKeys:new Set(), friday13:false, afterMidnight:false, playedSat:false, playedSun:false,
@@ -92,6 +92,7 @@ export function computePlayerStats(games) {
         g.players.forEach(o => { if (o !== p) s.beat[o] = (s.beat[o] || 0) + 1; });
         if (s.lossStreak >= 3) s.underdog = true;
         if (s.lossStreak >= 5) s.comeback = true;
+        if (s.lossStreak >= 7) s.phoenix = true;
         s.curStreak++;
         s.lossStreak = 0;
         if (s.curStreak >= 2) s.xp += 5 * s.curStreak; // streak bonus
@@ -184,12 +185,14 @@ export const ACHIEVEMENTS = [
   { id:'the_goat',          cat:'wins', ico:'🐐', name:'GOAT',             desc:'Le plus de victoires, tous modes',      cond:(s,all) => isGoat(s, all) },
   { id:'underdog',          cat:'wins', ico:'🐕', name:'Underdog',         desc:'Gagner après 3 défaites de suite',      cond:s => s.underdog },
   { id:'comeback_king',     cat:'wins', ico:'🔄', name:'Roi du Retour',    desc:'Gagner après 5 défaites de suite',      cond:s => s.comeback },
+  { id:'phoenix',           cat:'wins', ico:'🦅', name:'Phénix',           desc:'Gagner après 7 défaites de suite',      cond:s => s.phoenix },
 
   // ── Défaites ──
-  { id:'rough_patch',       cat:'loss', ico:'🩹', name:'Mauvaise Passe',   desc:'3 défaites consécutives',               cond:s => s.maxLossStreak >= 3 },
-  { id:'punching_ball',     cat:'loss', ico:'🥊', name:'Punching Ball',    desc:'5 défaites consécutives',               cond:s => s.maxLossStreak >= 5 },
-  { id:'desert_crossing',   cat:'loss', ico:'🏜️', name:'Traversée du Désert',desc:'7 défaites consécutives',             cond:s => s.maxLossStreak >= 7 },
-  { id:'cursed',            cat:'loss', ico:'🪦', name:'Maudit',           desc:'10 défaites consécutives',              cond:s => s.maxLossStreak >= 10 },
+  { id:'rough_patch',       cat:'loss', ico:'🩹', name:'Mauvaise Passe',   desc:'3 défaites consécutives',               cond:s => s.maxLossStreak >= 3,  prog:s => [s.maxLossStreak, 3] },
+  { id:'punching_ball',     cat:'loss', ico:'🥊', name:'Punching Ball',    desc:'5 défaites consécutives',               cond:s => s.maxLossStreak >= 5,  prog:s => [s.maxLossStreak, 5] },
+  { id:'desert_crossing',   cat:'loss', ico:'🏜️', name:'Traversée du Désert',desc:'7 défaites consécutives',             cond:s => s.maxLossStreak >= 7,  prog:s => [s.maxLossStreak, 7] },
+  { id:'cursed',            cat:'loss', ico:'🪦', name:'Maudit',           desc:'10 défaites consécutives',              cond:s => s.maxLossStreak >= 10, prog:s => [s.maxLossStreak, 10] },
+  { id:'bottomless_pit',    cat:'loss', ico:'🕳️', name:'Puits sans Fond',  desc:'12 défaites consécutives',              cond:s => s.maxLossStreak >= 12, prog:s => [s.maxLossStreak, 12] },
 
   // ── Modes de jeu ──
   { id:'cricket_master',    cat:'modes', ico:'🦗', name:'Maître du Cricket',desc:'10 victoires en Cricket',              cond:s => (s.modeWins.Cricket||0) >= 10, prog:s => [s.modeWins.Cricket||0, 10] },

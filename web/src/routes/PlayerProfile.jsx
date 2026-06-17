@@ -1,18 +1,20 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ACHIEVEMENTS, computeAchievements, ALL_MODES } from '../lib/stats.js';
+import { ALL_MODES } from '../lib/stats.js';
 import { MODE_LABEL, fmtDuration } from '../lib/data.js';
 import { rivalries } from '../lib/derive.js';
+import { buildTrophies } from '../lib/trophies.js';
+import TrophyModal from '../components/TrophyModal.jsx';
 import './PlayerProfile.css';
 
 export default function PlayerProfile({ games, stats }) {
   const { name } = useParams();
   const s = stats[name];
+  const [selectedTrophy, setSelectedTrophy] = useState(null);
 
   const earned = useMemo(() => {
     if (!s) return [];
-    const all = computeAchievements(stats);
-    return ACHIEVEMENTS.filter(a => (all[a.id] || []).some(e => e.name === name));
+    return buildTrophies(stats, name).filter(t => t.unlocked);
   }, [stats, name, s]);
 
   const recent = useMemo(
@@ -38,12 +40,14 @@ export default function PlayerProfile({ games, stats }) {
     );
   }
 
+  const maxWins = Math.max(...Object.values(stats).map(p => p.wins));
+  const isGoat  = s.wins === maxWins && maxWins > 0;
   const winrate = s.games ? Math.round((s.wins / s.games) * 100) : 0;
   const maxModeWins = Math.max(1, ...ALL_MODES.map(m => s.modeWins[m] || 0));
 
   const tiles = [
     { k: 'Victoires', v: s.wins },
-    { k: 'Parties', v: s.games },
+    { k: s.games === 1 ? 'Partie' : 'Parties', v: s.games },
     { k: 'Winrate', v: `${winrate}%`, accent: 'var(--win)' },
     { k: 'Meilleure série', v: s.maxStreak },
     { k: 'Temps de jeu', v: fmtDuration(s.totalDuration) },
@@ -58,13 +62,11 @@ export default function PlayerProfile({ games, stats }) {
         <span className="profile__avatar">{name.charAt(0)}</span>
         <div>
           <h1 className="display profile__name">{name}</h1>
-          <p className="profile__lv">
-            Niveau {s.level.lv} · {s.level.name}
-          </p>
+          <p className="profile__lv">Niveau {s.level.lv} · {s.level.name}</p>
+          {isGoat && <span className="profile__goat">🐐 GOAT du groupe</span>}
         </div>
       </header>
 
-      {/* XP progress */}
       <div className="xpbar">
         <div className="xpbar__track"><span style={{ width: `${s.level.pct}%` }} /></div>
         <div className="xpbar__meta">
@@ -104,8 +106,8 @@ export default function PlayerProfile({ games, stats }) {
 
           <h2 className="profile__h2 eyebrow">Rivalités</h2>
           {h2h.map(r => {
-            const me = r.a === name ? r.aWins : r.bWins;
-            const opp = r.a === name ? r.bWins : r.aWins;
+            const me    = r.a === name ? r.aWins : r.bWins;
+            const opp   = r.a === name ? r.bWins : r.aWins;
             const other = r.a === name ? r.b : r.a;
             return (
               <div key={other} className="h2h">
@@ -122,10 +124,15 @@ export default function PlayerProfile({ games, stats }) {
         <section>
           <h2 className="profile__h2 eyebrow">Trophées · {earned.length}</h2>
           <div className="profile__trophies">
-            {earned.map(a => (
-              <span key={a.id} className="ptrophy" title={`${a.name} — ${a.desc}`}>
-                {a.ico}
-              </span>
+            {earned.map(t => (
+              <button
+                key={t.id}
+                className="ptrophy"
+                title={`${t.name} — ${t.desc}`}
+                onClick={() => setSelectedTrophy(t)}
+              >
+                {t.ico}
+              </button>
             ))}
           </div>
 
@@ -143,6 +150,8 @@ export default function PlayerProfile({ games, stats }) {
           </ul>
         </section>
       </div>
+
+      <TrophyModal trophy={selectedTrophy} onClose={() => setSelectedTrophy(null)} />
     </div>
   );
 }

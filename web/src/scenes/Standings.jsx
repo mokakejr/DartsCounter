@@ -67,13 +67,13 @@ export default function Standings({ ranked }) {
                 <span className="ladder__lv">niv. {s.level.lv} · {s.level.name}</span>
               </Link>
               <span className="ladder__stat">
-                <b>{wins}</b><em>victoires</em>
+                <b>{wins}</b><em>{wins === 1 ? 'victoire' : 'victoires'}</em>
               </span>
               <span className="ladder__stat ladder__stat--rate">
                 <b style={{ color: 'var(--win)' }}>{rate}%</b><em>winrate</em>
               </span>
               <span className="ladder__stat ladder__stat--hide">
-                <b>{games}</b><em>parties</em>
+                <b>{games}</b><em>{games === 1 ? 'partie' : 'parties'}</em>
               </span>
             </motion.li>
           );

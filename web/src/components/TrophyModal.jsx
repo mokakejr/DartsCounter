@@ -1,9 +1,6 @@
-import { Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import './TrophyModal.css';
-
-const TrophyMedal = lazy(() => import('./TrophyMedal.jsx'));
 
 export default function TrophyModal({ trophy, onClose }) {
   return (
@@ -25,14 +22,7 @@ export default function TrophyModal({ trophy, onClose }) {
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
           >
             <button className="modal__close" onClick={onClose} aria-label="Fermer">×</button>
-
-            <div className="modal__media">
-              <Suspense fallback={<span className="modal__ico">{trophy.ico}</span>}>
-                <TrophyMedal rarity={trophy.rarity} />
-              </Suspense>
-              <span className="modal__ico-overlay">{trophy.ico}</span>
-            </div>
-
+            <span className="modal__ico">{trophy.ico}</span>
             {trophy.rarity && (
               <span className="modal__rarity" style={{ color: trophy.rarity.color }}>
                 ● {trophy.rarity.label}

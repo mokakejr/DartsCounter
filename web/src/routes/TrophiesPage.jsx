@@ -3,33 +3,34 @@ import { Link } from 'react-router-dom';
 import { ACHIEVEMENTS } from '../lib/stats.js';
 import { buildTrophies } from '../lib/trophies.js';
 import { useCountUp } from '../lib/useCountUp.js';
-import Reveal from '../components/Reveal.jsx';
+import TrophyCard from '../components/TrophyCard.jsx';
 import TrophyModal from '../components/TrophyModal.jsx';
 import './TrophiesPage.css';
 
 const CATS = [
-  ['wins', 'Victoires & séries'],
-  ['loss', 'Défaites'],
-  ['modes', 'Modes de jeu'],
-  ['perf', 'Performance'],
-  ['volume', 'Assiduité'],
+  ['wins',    'Victoires & séries'],
+  ['loss',    'Défaites'],
+  ['modes',   'Modes de jeu'],
+  ['perf',    'Performance'],
+  ['volume',  'Assiduité'],
   ['special', 'Jours spéciaux'],
-  ['xp', 'Niveaux & XP'],
+  ['xp',      'Niveaux & XP'],
 ];
 
 const FILTERS = [
-  ['all', 'Tous'],
+  ['all',      'Tous'],
   ['unlocked', 'Débloqués'],
-  ['locked', 'Verrouillés'],
+  ['locked',   'Verrouillés'],
 ];
 
 export default function TrophiesPage({ stats }) {
   const [selected, setSelected] = useState(null);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter]     = useState('all');
 
-  const trophies = useMemo(() => buildTrophies(stats), [stats]);
-  const unlocked = trophies.filter(t => t.unlocked).length;
-  const count = useCountUp(unlocked);
+  const trophies   = useMemo(() => buildTrophies(stats), [stats]);
+  const unlocked   = trophies.filter(t => t.unlocked).length;
+  const count      = useCountUp(unlocked);
+  const legendaries = useMemo(() => trophies.filter(t => t.rarity?.key === 'legendary'), [trophies]);
 
   const visible = t =>
     filter === 'all' || (filter === 'unlocked' ? t.unlocked : !t.unlocked);
@@ -41,6 +42,29 @@ export default function TrophiesPage({ stats }) {
       <p className="tpage__sub">
         <b>{count}</b> / {ACHIEVEMENTS.length} débloqués
       </p>
+
+      {/* Legendary showcase */}
+      {legendaries.length > 0 && (
+        <section className="tshowcase">
+          <h2 className="eyebrow tshowcase__head">
+            ⚡ Légendaires
+            <span className="tcat__count">
+              {legendaries.filter(t => t.unlocked).length}/{legendaries.length}
+            </span>
+          </h2>
+          <div className="tshowcase__grid">
+            {legendaries.map((a, i) => (
+              <TrophyCard
+                key={a.id}
+                trophy={a}
+                delay={i * 0.06}
+                onClick={() => setSelected(a)}
+                showcase
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="tpage__filters">
         {FILTERS.map(([key, label]) => (
@@ -55,9 +79,9 @@ export default function TrophiesPage({ stats }) {
       </div>
 
       {CATS.map(([key, label]) => {
-        const list = trophies.filter(t => t.cat === key && visible(t));
-        if (list.length === 0) return null;
-        const got = trophies.filter(t => t.cat === key && t.unlocked).length;
+        const list  = trophies.filter(t => t.cat === key && visible(t));
+        if (!list.length) return null;
+        const got   = trophies.filter(t => t.cat === key && t.unlocked).length;
         const total = trophies.filter(t => t.cat === key).length;
         return (
           <section key={key} className="tcat">
@@ -66,31 +90,12 @@ export default function TrophiesPage({ stats }) {
             </h2>
             <div className="tpage__grid">
               {list.map((a, i) => (
-                <Reveal
-                  as="button"
+                <TrophyCard
                   key={a.id}
+                  trophy={a}
                   delay={Math.min(i * 0.03, 0.25)}
-                  className={`tcard ${a.unlocked ? '' : 'tcard--locked'}`}
                   onClick={() => setSelected(a)}
-                  style={a.rarity ? { '--rar': a.rarity.color } : undefined}
-                >
-                  <span className="tcard__ico">{a.ico}</span>
-                  <span className="tcard__body">
-                    <span className="tcard__name">{a.name}</span>
-                    <span className="tcard__desc">{a.desc}</span>
-                    {!a.unlocked && a.progress && (
-                      <span className="tcard__prog">
-                        <span className="tcard__prog-track">
-                          <span style={{ width: `${Math.round((a.progress[0] / a.progress[1]) * 100)}%` }} />
-                        </span>
-                        <span className="tcard__prog-num">{a.progress[0]}/{a.progress[1]}</span>
-                      </span>
-                    )}
-                  </span>
-                  {a.unlocked && a.rarity && (
-                    <span className="tcard__rar" style={{ color: a.rarity.color }}>●</span>
-                  )}
-                </Reveal>
+                />
               ))}
             </div>
           </section>

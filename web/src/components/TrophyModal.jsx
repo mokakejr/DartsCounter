@@ -1,8 +1,10 @@
+import { Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import './TrophyModal.css';
 
-// Shared trophy detail modal — used by the home preview and the full page.
+const TrophyMedal = lazy(() => import('./TrophyMedal.jsx'));
+
 export default function TrophyModal({ trophy, onClose }) {
   return (
     <AnimatePresence>
@@ -23,7 +25,14 @@ export default function TrophyModal({ trophy, onClose }) {
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
           >
             <button className="modal__close" onClick={onClose} aria-label="Fermer">×</button>
-            <span className="modal__ico">{trophy.ico}</span>
+
+            <div className="modal__media">
+              <Suspense fallback={<span className="modal__ico">{trophy.ico}</span>}>
+                <TrophyMedal rarity={trophy.rarity} />
+              </Suspense>
+              <span className="modal__ico-overlay">{trophy.ico}</span>
+            </div>
+
             {trophy.rarity && (
               <span className="modal__rarity" style={{ color: trophy.rarity.color }}>
                 ● {trophy.rarity.label}

@@ -36,7 +36,10 @@ export default function Hero({ ranked, games }) {
             transition={{ duration: 0.8, delay: 0.05 }}
           >
             {champ ? (
-              <>{champ.name}<br /><span className="hero__accent">règne.</span></>
+              <>
+                <span className="hero__line">{champ.name}</span>
+                <span className="hero__line hero__accent">règne.</span>
+              </>
             ) : (
               <>La <span className="hero__accent">Ligue</span></>
             )}

@@ -36,6 +36,13 @@
 }
 .nav__callout:disabled { opacity: 0.4; cursor: not-allowed; }
 
+@media (max-width: 600px) {
+  .nav__count { display: none; }
+  .nav__links { gap: 12px; }
+  .nav__links a { font-size: 11px; }
+  .nav__callout { font-size: 10px; padding: 5px 10px; }
+}
+
 .footer {
   display: flex;
   align-items: center;

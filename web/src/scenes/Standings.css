@@ -88,3 +88,14 @@
   .ladder__row { grid-template-columns: 34px 40px 1fr auto auto; gap: 12px; padding: 14px 16px; }
   .ladder__stat--hide { display: none; }
 }
+
+@media (max-width: 480px) {
+  .ladder__row { grid-template-columns: 28px 36px 1fr auto; gap: 10px; padding: 12px 14px; }
+  .ladder__stat--rate { display: none; }
+  .ladder__lv { display: none; }
+  .ladder__avatar { width: 36px; height: 36px; font-size: 16px; }
+  .ladder__rank { font-size: 20px; }
+  .ladder__name { font-size: 16px; }
+  .ladder__stat { min-width: 52px; }
+  .ladder__stat b { font-size: 18px; }
+}

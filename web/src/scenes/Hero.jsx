@@ -67,7 +67,7 @@ export default function Hero({ ranked, games }) {
             transition={{ duration: 0.6, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="ticket__top">
-              <span className="ticket__tag">Victoire</span>
+              <span className="ticket__tag">Dernière partie</span>
               <span className="ticket__when">{relDate(last.date)}</span>
             </div>
 

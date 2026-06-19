@@ -69,7 +69,10 @@ function buildCard(byPlayer) {
     const lines = achs.map(a => `${a.ico} <b>${a.name}</b> — ${a.desc}`).join('<br>');
     const buttons = achs.slice(0, 6).map(a => ({
       text: `${a.ico} ${a.name}`,
-      onClick: { openLink: { url: `${STATS_URL}/#trophee/${a.id}` } },
+      // HashRouter route of the React dashboard (/#/trophees); ?t=<id> tells the
+      // trophies page which trophy modal to auto-open. The old "#trophee/<id>"
+      // format matched no route and fell back to Home — that's why links broke.
+      onClick: { openLink: { url: `${STATS_URL}/#/trophees?t=${a.id}` } },
     }));
     return {
       header: `🎉 ${name}`,

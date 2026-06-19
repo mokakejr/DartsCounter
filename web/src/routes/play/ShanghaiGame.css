@@ -1,0 +1,353 @@
+/* ── Game shell ─────────────────────────────────────── */
+.sg {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg);
+  padding: 0 20px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────── */
+.sg__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 8px;
+}
+.sg__back {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 18px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+}
+.sg__back:hover { border-color: var(--muted); }
+.sg__round-badge {
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+.sg__round-num { font-weight: 700; color: var(--text); font-size: 16px; }
+.sg__round-sep { margin: 0 2px; }
+.sg__spacer { width: 36px; }
+
+/* ── Target circle ──────────────────────────────────── */
+.sg__target {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 10px;
+}
+.sg__target-ring {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 3px solid var(--primary);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--primary) 30%, transparent);
+  display: grid;
+  place-items: center;
+}
+.sg__target-num {
+  font-family: var(--font-display);
+  font-size: 52px;
+  line-height: 1;
+  color: var(--text);
+}
+.sg__target-label {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── Current player ─────────────────────────────────── */
+.sg__player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 16px;
+}
+.sg__player-name {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+}
+.sg__player-total {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ── Dart slots ─────────────────────────────────────── */
+.sg__darts {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.sg__dart {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.sg__dart--filled {
+  border-color: var(--text);
+  color: var(--text);
+  background: var(--surface-2);
+}
+.sg__dart--miss {
+  border-color: var(--muted);
+  color: var(--muted);
+}
+
+/* ── Turn score preview ─────────────────────────────── */
+.sg__turn-pts {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+.sg__turn-hint { color: var(--muted); font-weight: 400; font-size: 13px; }
+
+/* ── Zone buttons ───────────────────────────────────── */
+.sg__zones {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.sg__zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 16px 8px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s, transform 0.1s;
+  touch-action: manipulation;
+}
+.sg__zone:active:not(:disabled) { transform: scale(0.94); }
+.sg__zone:disabled { opacity: 0.25; cursor: not-allowed; }
+
+.sg__zone--0 { --zc: var(--muted); }
+.sg__zone--1 { --zc: var(--text); }
+.sg__zone--2 { --zc: var(--win); }
+.sg__zone--3 { --zc: var(--rank-1); }
+
+.sg__zone:not(:disabled):hover { border-color: var(--zc); background: var(--surface-2); }
+.sg__zone--2:not(:disabled) { border-color: color-mix(in srgb, var(--win) 40%, var(--border)); }
+.sg__zone--3:not(:disabled) { border-color: color-mix(in srgb, var(--rank-1) 40%, var(--border)); }
+
+.sg__zone-label {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--zc);
+  letter-spacing: 0.02em;
+}
+.sg__zone-pts {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+
+/* ── Confirm / turn-done ────────────────────────────── */
+.sg__confirm {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.sg__confirm-pts {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--win);
+}
+
+/* ── Buttons ────────────────────────────────────────── */
+.sg__btn {
+  padding: 14px 28px;
+  border-radius: 10px;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.sg__btn--primary { background: var(--primary); color: #fff; }
+.sg__btn--secondary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.sg__btn--wide { width: 100%; }
+.sg__btn:hover { opacity: 0.85; }
+
+/* ── Undo ───────────────────────────────────────────── */
+.sg__undo {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px;
+  margin-bottom: 8px;
+}
+.sg__undo:hover { color: var(--text); }
+.sg__undo-placeholder { height: 31px; margin-bottom: 8px; }
+
+/* ── Score table ────────────────────────────────────── */
+.sg__scores {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+.sg__score-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: border-color 0.15s;
+}
+.sg__score-row--active {
+  border-color: var(--primary);
+}
+.sg__score-name {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sg__score-bar-track {
+  width: 80px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.sg__score-bar-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.sg__score-pts {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 28px;
+  text-align: right;
+}
+
+/* ── Shanghai overlay ───────────────────────────────── */
+.sg__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter: blur(6px);
+  animation: sg-fadein 0.3s ease;
+}
+.sg__overlay-icon { font-size: 72px; line-height: 1; }
+.sg__overlay-title {
+  font-family: var(--font-display);
+  font-size: 56px;
+  color: var(--primary);
+  letter-spacing: 0.04em;
+}
+.sg__overlay-sub { font-size: 20px; color: var(--muted); }
+
+@keyframes sg-fadein {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Finished screen ────────────────────────────────── */
+.sg--finished {
+  justify-content: center;
+  gap: 32px;
+}
+.sg__fin-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sg__podium {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sg__podium-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.sg__podium-row--first {
+  border-color: var(--rank-1);
+  background: color-mix(in srgb, var(--rank-1) 8%, var(--surface));
+}
+.sg__podium-rank {
+  font-size: 13px;
+  color: var(--muted);
+  min-width: 28px;
+}
+.sg__podium-row--first .sg__podium-rank { color: var(--rank-1); }
+.sg__podium-name { flex: 1; font-size: 20px; font-weight: 700; }
+.sg__podium-pts { font-size: 18px; font-weight: 700; color: var(--text); }
+.sg__podium-tie { font-size: 15px; color: var(--muted); text-align: center; }
+
+.sg__fin-actions {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+}
+.sg__fin-actions .sg__btn { flex: 1; text-align: center; }

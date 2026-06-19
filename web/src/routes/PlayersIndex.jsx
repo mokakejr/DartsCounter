@@ -15,7 +15,7 @@ export default function PlayersIndex({ ranked }) {
             <span className="pcard__name">{s.name}</span>
             <span className="pcard__lv">niv. {s.level.lv} · {s.level.name}</span>
             <span className="pcard__stats">
-              <b>{s.wins}</b> victoires · {s.games} parties
+              <b>{s.wins}</b> {s.wins === 1 ? 'victoire' : 'victoires'} · {s.games} {s.games === 1 ? 'partie' : 'parties'}
             </span>
             <span className="pcard__rank">#{i + 1}</span>
           </Link>

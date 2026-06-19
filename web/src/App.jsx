@@ -1,4 +1,4 @@
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, NavLink, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useLenis } from './lib/useLenis.js';
 import { useGames } from './lib/useGames.js';
@@ -75,16 +75,16 @@ export default function App() {
       <nav className="nav">
         <Link to="/" className="nav__brand display">DC</Link>
         <div className="nav__links">
-          <Link to="/profils">Joueurs</Link>
-          <Link to="/trophees">Trophées</Link>
-          <Link to="/xp">XP</Link>
+          <NavLink to="/profils" className={({ isActive }) => isActive ? 'is-active' : undefined}>Joueurs</NavLink>
+          <NavLink to="/trophees" className={({ isActive }) => isActive ? 'is-active' : undefined}>Trophées</NavLink>
+          <NavLink to="/xp" className={({ isActive }) => isActive ? 'is-active' : undefined}>XP</NavLink>
           <span className="nav__count">{games.length} parties</span>
           <button
             className="nav__callout"
             disabled={calloutRemaining > 0}
             onClick={() => setCalloutOpen(true)}
           >
-            {calloutRemaining > 0 ? `⏳ ${fmtCountdown(calloutRemaining)}` : '🎯 Qui joue ?'}
+            {calloutRemaining > 0 ? `⏳ ${fmtCountdown(calloutRemaining)}` : "🎯 LET'S PLAY"}
           </button>
         </div>
       </nav>

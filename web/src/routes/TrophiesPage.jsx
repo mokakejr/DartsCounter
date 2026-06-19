@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ACHIEVEMENTS } from '../lib/stats.js';
 import { buildTrophies } from '../lib/trophies.js';
 import { useCountUp } from '../lib/useCountUp.js';
@@ -27,8 +27,18 @@ export default function TrophiesPage({ stats }) {
   const [selected, setSelected] = useState(null);
   const [filter, setFilter]     = useState('all');
 
+  const [searchParams] = useSearchParams();
+
   const trophies   = useMemo(() => buildTrophies(stats), [stats]);
   const unlocked   = trophies.filter(t => t.unlocked).length;
+
+  // Deep-link depuis les annonces webhook : /#/trophees?t=<id> ouvre la modale.
+  useEffect(() => {
+    const id = searchParams.get('t');
+    if (!id) return;
+    const t = trophies.find(x => x.id === id);
+    if (t) setSelected(t);
+  }, [searchParams, trophies]);
   const count      = useCountUp(unlocked);
   const legendaries = useMemo(() => trophies.filter(t => t.rarity?.key === 'legendary'), [trophies]);
 

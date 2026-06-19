@@ -15,6 +15,20 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--text);
+  position: relative;
+  padding-bottom: 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.nav__links a:hover { opacity: 1; }
+/* Onglet actif : pleine opacité + soulignement (visible malgré mix-blend). */
+.nav__links a.is-active { opacity: 1; font-weight: 700; }
+.nav__links a.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  background: currentColor;
 }
 .nav__count { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text); }
 

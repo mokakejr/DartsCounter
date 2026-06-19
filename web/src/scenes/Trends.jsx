@@ -4,7 +4,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
 } from 'recharts';
 import { modeDistribution, winsOverTime } from '../lib/derive.js';
-import { MODE_LABEL } from '../lib/data.js';
+import { MODE_LABEL, fmtDuration } from '../lib/data.js';
 import './Trends.css';
 
 const SERIES = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)', 'var(--series-5)'];
@@ -32,11 +32,21 @@ export default function Trends({ games, ranked }) {
   const top = useMemo(() => ranked.slice(0, 5).map(s => s.name), [ranked]);
   const { data } = useMemo(() => winsOverTime(games, top), [games, top]);
 
+  // Durée moyenne d'une partie (sur les parties chronométrées).
+  const avgDuration = useMemo(() => {
+    const timed = games.filter(g => (g.duration || 0) > 0);
+    if (!timed.length) return null;
+    return timed.reduce((sum, g) => sum + g.duration, 0) / timed.length;
+  }, [games]);
+
   return (
     <section className="trends shell" id="tendances">
       <div className="sec-head">
         <p className="eyebrow">03 — Tendances</p>
-        <h2 className="display sec-title">Comment ça évolue</h2>
+        <h2 className="display sec-title">Les tendances</h2>
+        {avgDuration != null && (
+          <p className="sec-note">Durée moyenne d'une partie · <b>{fmtDuration(avgDuration)}</b></p>
+        )}
       </div>
 
       <div className="trends__grid">

@@ -55,6 +55,11 @@ export default function Hero({ ranked, games }) {
               <span className="hero__champ-meta">
                 {champ.wins} victoires · niv. {champ.level.lv} · {champ.level.name}
               </span>
+              {/* Pourquoi il règne : le détail derrière la 1re place. */}
+              <span className="hero__champ-why">
+                {champ.games ? Math.round((champ.wins / champ.games) * 100) : 0}% de winrate
+                {champ.curStreak >= 2 && <> · 🔥 {champ.curStreak} victoires de suite</>}
+              </span>
             </motion.div>
           )}
         </div>
@@ -92,7 +97,7 @@ export default function Hero({ ranked, games }) {
         )}
       </div>
 
-      <div className="hero__scroll">↓ défile</div>
+      <a href="#classement" className="hero__scroll">↓ Voir le classement</a>
     </header>
   );
 }

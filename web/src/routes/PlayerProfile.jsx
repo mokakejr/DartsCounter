@@ -45,12 +45,15 @@ export default function PlayerProfile({ games, stats }) {
   const winrate = s.games ? Math.round((s.wins / s.games) * 100) : 0;
   const maxModeWins = Math.max(1, ...ALL_MODES.map(m => s.modeWins[m] || 0));
 
+  const avgDuration = s.games ? s.totalDuration / s.games : 0;
+
   const tiles = [
     { k: 'Victoires', v: s.wins },
     { k: s.games === 1 ? 'Partie' : 'Parties', v: s.games },
     { k: 'Winrate', v: `${winrate}%`, accent: 'var(--win)' },
-    { k: 'Meilleure série', v: s.maxStreak },
+    { k: 'Victoires d’affilée', v: s.maxStreak },
     { k: 'Temps de jeu', v: fmtDuration(s.totalDuration) },
+    { k: 'Durée moy.', v: fmtDuration(avgDuration) },
     { k: 'Mode favori', v: MODE_LABEL[s.favoriteMode] || '—' },
   ];
 

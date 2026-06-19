@@ -1,6 +1,8 @@
 .standings { padding: clamp(80px, 12vh, 160px) var(--gutter); }
 
 .sec-head { margin-bottom: 48px; }
+.sec-note { margin-top: 14px; font-size: 13px; color: var(--muted-2); }
+.sec-note b { color: var(--text); font-variant-numeric: tabular-nums; }
 .sec-title {
   font-size: clamp(40px, 7vw, 96px);
   margin: 20px 0 28px;
@@ -9,9 +11,9 @@
 
 .standings__filters { display: flex; flex-wrap: wrap; gap: 10px; }
 .chip {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--muted);
+  color: var(--muted-2);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -20,7 +22,7 @@
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s, background 0.2s;
 }
-.chip:hover { color: var(--text); border-color: var(--muted); }
+.chip:hover { color: var(--text); border-color: var(--text); }
 .chip--on { background: var(--primary); border-color: var(--primary); color: #fff; }
 
 .ladder { list-style: none; display: flex; flex-direction: column; gap: 8px; }

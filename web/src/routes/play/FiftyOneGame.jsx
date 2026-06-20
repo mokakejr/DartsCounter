@@ -24,7 +24,7 @@ export default function FiftyOneGame() {
   const fivesScored = divisible ? turnTotal / 5 : 0;
   const currentFives = game.fives[player];
   const wouldBust = divisible && currentFives + fivesScored > FIFTY_ONE_TARGET;
-  const canConfirm = !wouldBust && (turnTotal === 0 || divisible);
+  const validScore = divisible && !wouldBust;
 
   function pressDigit(d) {
     setInput(prev => {
@@ -38,8 +38,8 @@ export default function FiftyOneGame() {
   }
 
   function confirm() {
-    if (!canConfirm) return;
-    const scored = scoreTurn(game, player, turnTotal);
+    // Invalid score (not multiple of 5, or bust) → pass turn with 0
+    const scored = scoreTurn(game, player, validScore ? turnTotal : 0);
     if (scored.winner !== null) {
       postGame({
         mode: 'FiftyOne', variant: 'Normal',
@@ -145,8 +145,7 @@ export default function FiftyOneGame() {
         <button className="f51__key f51__key--back" onClick={pressBack}>⌫</button>
         <button className="f51__key" onClick={() => pressDigit('0')}>0</button>
         <button
-          className={`f51__key f51__key--ok${canConfirm ? ' f51__key--ok-active' : ''}`}
-          disabled={!canConfirm}
+          className={`f51__key f51__key--ok${validScore ? ' f51__key--ok-active' : ''}`}
           onClick={confirm}
         >
           OK

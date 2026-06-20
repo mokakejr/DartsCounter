@@ -9,6 +9,7 @@ import {
   SHANGHAI_ROUNDS,
 } from '../../play/models/shanghai.js';
 import { postGame } from '../../play/postGame.js';
+import ExitConfirmModal from './ExitConfirmModal.jsx';
 import './ShanghaiGame.css';
 
 const ZONES = [
@@ -29,6 +30,7 @@ export default function ShanghaiGame() {
   const [pending, setPending] = useState(null);
   // phase: 'playing' | 'turn-done' | 'shanghai' | 'finished'
   const [phase, setPhase] = useState('playing');
+  const [showExit, setShowExit] = useState(false);
   const startedAt = useRef(Date.now());
   const isKill = useRef(false);
 
@@ -136,6 +138,12 @@ export default function ShanghaiGame() {
 
   return (
     <div className="sg">
+      <ExitConfirmModal
+        open={showExit}
+        onConfirm={() => navigate('/play')}
+        onCancel={() => setShowExit(false)}
+      />
+
       {/* Shanghai win overlay */}
       {phase === 'shanghai' && (
         <div className="sg__overlay">
@@ -147,7 +155,7 @@ export default function ShanghaiGame() {
 
       {/* Header */}
       <div className="sg__header">
-        <button className="sg__back" onClick={() => navigate('/play')}>←</button>
+        <button className="sg__back" onClick={() => setShowExit(true)}>←</button>
         <div className="sg__round-badge">
           R<span className="sg__round-num">{round + 1}</span>
           <span className="sg__round-sep">/</span>

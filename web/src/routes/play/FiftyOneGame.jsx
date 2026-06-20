@@ -4,6 +4,7 @@ import {
   initialFiftyOneState, scoreTurn, nextPlayer, FIFTY_ONE_TARGET,
 } from '../../play/models/fiftyOne.js';
 import { postGame } from '../../play/postGame.js';
+import ExitConfirmModal from './ExitConfirmModal.jsx';
 import './FiftyOneGame.css';
 
 export default function FiftyOneGame() {
@@ -14,6 +15,7 @@ export default function FiftyOneGame() {
   const [game, setGame] = useState(() => initialFiftyOneState(players));
   const [input, setInput] = useState('');
   const [phase, setPhase] = useState('playing'); // 'playing' | 'finished'
+  const [showExit, setShowExit] = useState(false);
   const startedAt = useRef(Date.now());
 
   const player = game.currentPlayer;
@@ -22,7 +24,7 @@ export default function FiftyOneGame() {
   const fivesScored = divisible ? turnTotal / 5 : 0;
   const currentFives = game.fives[player];
   const wouldBust = divisible && currentFives + fivesScored > FIFTY_ONE_TARGET;
-  const canConfirm = !wouldBust && (turnTotal === 0 || divisible);
+  const validScore = divisible && !wouldBust;
 
   function pressDigit(d) {
     setInput(prev => {
@@ -36,8 +38,8 @@ export default function FiftyOneGame() {
   }
 
   function confirm() {
-    if (!canConfirm) return;
-    const scored = scoreTurn(game, player, turnTotal);
+    // Invalid score (not multiple of 5, or bust) → pass turn with 0
+    const scored = scoreTurn(game, player, validScore ? turnTotal : 0);
     if (scored.winner !== null) {
       postGame({
         mode: 'FiftyOne', variant: 'Normal',
@@ -85,8 +87,13 @@ export default function FiftyOneGame() {
 
   return (
     <div className="f51">
+      <ExitConfirmModal
+        open={showExit}
+        onConfirm={() => navigate('/play')}
+        onCancel={() => setShowExit(false)}
+      />
       <div className="f51__header">
-        <button className="f51__back" onClick={() => navigate('/play')}>←</button>
+        <button className="f51__back" onClick={() => setShowExit(true)}>←</button>
         <span className="f51__title">51</span>
         <div style={{ width: 36 }} />
       </div>
@@ -138,8 +145,7 @@ export default function FiftyOneGame() {
         <button className="f51__key f51__key--back" onClick={pressBack}>⌫</button>
         <button className="f51__key" onClick={() => pressDigit('0')}>0</button>
         <button
-          className={`f51__key f51__key--ok${canConfirm ? ' f51__key--ok-active' : ''}`}
-          disabled={!canConfirm}
+          className={`f51__key f51__key--ok${validScore ? ' f51__key--ok-active' : ''}`}
           onClick={confirm}
         >
           OK

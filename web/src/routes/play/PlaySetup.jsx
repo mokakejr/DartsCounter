@@ -67,6 +67,7 @@ export default function PlaySetup() {
     setSelected(prev =>
       prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
     );
+    setSearch('');
   }
 
   function addNew() {
@@ -99,6 +100,7 @@ export default function PlaySetup() {
           onKeyDown={e => e.key === 'Enter' && addNew()}
           placeholder="Rechercher ou ajouter…"
           maxLength={20}
+          autoFocus
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -108,8 +110,8 @@ export default function PlaySetup() {
         )}
       </div>
 
-      {/* Player chips */}
-      {filtered.length > 0 && (
+      {/* Player chips — only shown when user is typing (fix: don't reveal all known players by default) */}
+      {q && filtered.length > 0 && (
         <div className="play-setup__chips">
           {filtered.map(name => (
             <button
@@ -133,12 +135,22 @@ export default function PlaySetup() {
       {/* Play order */}
       {selected.length > 0 && (
         <div className="play-setup__order">
-          <p className="play-setup__order-label">Ordre de jeu</p>
+          <div className="play-setup__order-header">
+            <p className="play-setup__order-label">Ordre de jeu</p>
+            <button
+              className="play-setup__shuffle"
+              disabled={selected.length < 2}
+              onClick={() => setSelected(s => [...s].sort(() => Math.random() - 0.5))}
+            >
+              ⇄
+            </button>
+          </div>
           <div className="play-setup__order-list">
             {selected.map((name, i) => (
               <div key={name} className="play-setup__order-item">
                 <span className="play-setup__order-num">{i + 1}</span>
                 <span className="play-setup__order-name">{name}</span>
+                <button className="play-setup__order-remove" onClick={() => toggle(name)}>×</button>
               </div>
             ))}
           </div>

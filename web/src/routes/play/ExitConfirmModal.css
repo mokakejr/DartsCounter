@@ -1,0 +1,55 @@
+.ecm__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.ecm__dialog {
+  background: #1E1E1E;
+  border-radius: 12px;
+  padding: 28px 24px 20px;
+  width: min(320px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ecm__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #E8E8E8;
+  margin: 0;
+}
+
+.ecm__body {
+  font-size: 13px;
+  color: #888888;
+  margin: 0;
+}
+
+.ecm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ecm__btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ecm__btn--cancel { color: #888888; }
+.ecm__btn--cancel:hover { color: #B6B6BB; }
+.ecm__btn--confirm { color: #E57373; }
+.ecm__btn--confirm:hover { color: #FF8A8A; }

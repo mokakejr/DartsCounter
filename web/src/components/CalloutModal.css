@@ -34,11 +34,44 @@
   line-height: 1.5;
 }
 
+.callout-modal__league-badge {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 14px;
+}
+
+.callout-modal__search {
+  width: 100%;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--surface) 50%, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+}
+.callout-modal__search:focus { border-color: var(--primary); }
+.callout-modal__search::placeholder { color: var(--muted); }
+.callout-modal__search::-webkit-search-cancel-button { cursor: pointer; }
+
+.callout-modal__empty {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 10px 0 6px;
+}
+
 .callout-modal__players {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 16px;
+  max-height: 260px;
+  overflow-y: auto;
 }
 
 .callout-modal__player {

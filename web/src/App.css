@@ -9,8 +9,41 @@
   mix-blend-mode: difference;
 }
 .nav__brand { font-size: 22px; letter-spacing: 0.04em; }
-.nav__links { display: flex; align-items: center; gap: 22px; }
-.nav__links a {
+.nav__right { display: flex; align-items: center; gap: 8px; }
+
+.nav__burger {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+}
+
+.nav__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 48;
+}
+
+.nav__drawer {
+  position: fixed;
+  top: 56px;
+  right: var(--gutter);
+  z-index: 49;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 160px;
+}
+.nav__drawer a {
   font-size: 12px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -20,17 +53,16 @@
   opacity: 0.7;
   transition: opacity 0.2s;
 }
-.nav__links a:hover { opacity: 1; }
-/* Onglet actif : pleine opacité + soulignement (visible malgré mix-blend). */
-.nav__links a.is-active { opacity: 1; font-weight: 700; }
-.nav__links a.is-active::after {
+.nav__drawer a:hover { opacity: 1; }
+.nav__drawer a.is-active { opacity: 1; font-weight: 700; }
+.nav__drawer a.is-active::after {
   content: '';
   position: absolute;
   left: 0; right: 0; bottom: 0;
   height: 2px;
   background: currentColor;
 }
-.nav__count { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text); }
+.nav__count { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
 
 .nav__callout {
   font-size: 11px;
@@ -51,9 +83,6 @@
 .nav__callout:disabled { opacity: 0.4; cursor: not-allowed; }
 
 @media (max-width: 600px) {
-  .nav__count { display: none; }
-  .nav__links { gap: 12px; }
-  .nav__links a { font-size: 11px; }
   .nav__callout { font-size: 10px; padding: 5px 10px; }
 }
 

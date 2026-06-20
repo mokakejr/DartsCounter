@@ -7,13 +7,21 @@ import { computePlayerStats } from './stats.js';
 // player belongs to the league are counted.
 export function useGames(leaguePlayers = null) {
   const [allGames, setAllGames] = useState(null); // null = loading
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     let alive = true;
-    loadGames().then(g => { if (alive) setAllGames(g); });
+    loadGames()
+      .then(g => { if (alive) setAllGames(g); })
+      .catch(e => { if (alive) { console.error('loadGames failed:', e); setError(e); } });
     return () => { alive = false; };
   }, []);
 
+  // Filter semantics: include a game if ANY of its players is in the league.
+  // This means non-league players who appeared alongside a league member are
+  // also visible in filtered stats — intentional, so partial groups still make sense.
+  // Memo depends on leaguePlayers array reference; updateLeague always creates a new
+  // array via spread, so mutations-in-place would break this silently.
   const games = useMemo(() => {
     if (!allGames) return null;
     if (!leaguePlayers || leaguePlayers.length === 0) return allGames;
@@ -32,5 +40,5 @@ export function useGames(leaguePlayers = null) {
     [stats]
   );
 
-  return { games, allGames, stats, ranked, loading: allGames === null };
+  return { games, allGames, stats, ranked, loading: allGames === null && !error, error };
 }

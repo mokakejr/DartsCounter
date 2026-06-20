@@ -105,7 +105,8 @@ function buildCard(byPlayer) {
 async function main() {
   if (!fs.existsSync(GAMES_FILE)) { console.log('No games file — skipping.'); process.exit(0); }
   const raw = fs.readFileSync(GAMES_FILE, 'utf8').replace(/﻿/g, '');
-  const all = JSON.parse(raw);
+  let all;
+  try { all = JSON.parse(raw); } catch (e) { console.error('games.json is not valid JSON:', e.message); process.exit(1); }
   if (!Array.isArray(all) || all.length === 0) { console.log('No games — skipping.'); process.exit(0); }
 
   // Shared trophy engine is ESM — load it via dynamic import from CommonJS.

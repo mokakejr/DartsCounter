@@ -61,7 +61,7 @@ export function computePlayerStats(games) {
     const ymd  = `${date.getFullYear()}-${mmdd}`;
     const wday = date.getDay();        // 0=dim … 6=sam
     const hr   = date.getHours();
-    g.players.forEach(p => {
+    (g.players ?? []).forEach(p => {
       const s = ensure(p);
       s.games++;
       s.totalDuration += dur;
@@ -71,7 +71,7 @@ export function computePlayerStats(games) {
       s.dayGames[ymd] = (s.dayGames[ymd] || 0) + 1;
       g.players.forEach(o => { if (o !== p) s.opponents.add(o); });
       if (dur > 1800) s.marathon = true;
-      if (date.getHours() >= 22) s.nightOwl = true;
+      if (hr >= 22) s.nightOwl = true;
       s.dayKeys.add(mmdd); s.dayKeys.add(ymd);
       if (wday === 5 && date.getDate() === 13) s.friday13 = true;
       if (wday === 6) s.playedSat = true;

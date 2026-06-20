@@ -11,15 +11,10 @@ export async function loadGames() {
   const url = isDemo()
     ? `${import.meta.env.BASE_URL}games.sample.json`
     : `${RAW_URL}?t=${Date.now()}`;
-  try {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
-  } catch (e) {
-    console.error('loadGames failed:', e);
-    return [];
-  }
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
 }
 
 // Mode display labels (kept tiny + local; matches the Android/data vocabulary).

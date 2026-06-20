@@ -1,14 +1,20 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './CalloutModal.css';
 
 const CALLOUT_WH_KEY = 'dartsWebhookUrl';
 const CALLOUT_TS_KEY = 'dartsCalloutLastSent';
 
-export default function CalloutModal({ open, onClose, onSent, players }) {
+const norm = s => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+
+export default function CalloutModal({ open, onClose, onSent, players, leagueName }) {
   const [configuring, setConfiguring] = useState(() => !localStorage.getItem(CALLOUT_WH_KEY));
   const [sending, setSending] = useState(false);
+  const [query, setQuery] = useState('');
   const inputRef = useRef(null);
+  const searchRef = useRef(null);
+
+  useEffect(() => { if (open) { setQuery(''); setTimeout(() => searchRef.current?.focus(), 80); } }, [open]);
 
   function saveWebhook() {
     const url = inputRef.current?.value.trim();
@@ -79,17 +85,37 @@ export default function CalloutModal({ open, onClose, onSent, players }) {
               </div>
             ) : (
               <>
+                {leagueName && (
+                  <p className="callout-modal__league-badge">🏷 {leagueName}</p>
+                )}
+                <input
+                  ref={searchRef}
+                  className="callout-modal__search"
+                  type="search"
+                  placeholder="Rechercher un joueur…"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  autoComplete="off"
+                />
                 <div className="callout-modal__players">
-                  {players.map(name => (
-                    <button
-                      key={name}
-                      className="callout-modal__player"
-                      onClick={() => selectPlayer(name)}
-                      disabled={sending}
-                    >
-                      {name}
-                    </button>
-                  ))}
+                  {(() => {
+                    const filtered = query.trim()
+                      ? players.filter(p => norm(p).includes(norm(query)))
+                      : players;
+                    if (filtered.length === 0) {
+                      return <p className="callout-modal__empty">Aucun joueur trouvé</p>;
+                    }
+                    return filtered.map(name => (
+                      <button
+                        key={name}
+                        className="callout-modal__player"
+                        onClick={() => selectPlayer(name)}
+                        disabled={sending}
+                      >
+                        {name}
+                      </button>
+                    ));
+                  })()}
                 </div>
                 <button
                   className="callout-modal__config-link"

@@ -51,7 +51,7 @@ function fmtCountdown(ms) {
 function AppInner() {
   useLenis();
   const { activeLeague, activateLeague } = useLeague();
-  const { games, allGames, stats, ranked, loading } = useGames(activeLeague?.players ?? null);
+  const { games, allGames, stats, ranked, loading, error } = useGames(activeLeague?.players ?? null);
   const [calloutOpen, setCalloutOpen] = useState(false);
   const [calloutRemaining, setCalloutRemaining] = useState(calloutRemainingMs);
 
@@ -73,6 +73,19 @@ function AppInner() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="boot">
+        <p className="eyebrow" style={{ color: 'var(--primary)' }}>
+          Impossible de charger les parties — {error.message}
+        </p>
+        <button className="nav__callout" onClick={() => window.location.reload()}>
+          Réessayer
+        </button>
+      </div>
+    );
+  }
+
   // Players known from games history (for league form)
   const knownPlayers = allGames
     ? [...new Set(allGames.flatMap(g => g.players ?? []))].sort((a, b) => a.localeCompare(b, 'fr'))
@@ -88,7 +101,7 @@ function AppInner() {
           <NavLink to="/trophees" className={({ isActive }) => isActive ? 'is-active' : undefined}>Trophées</NavLink>
           <NavLink to="/ligues" className={({ isActive }) => isActive ? 'is-active' : undefined}>Ligues</NavLink>
           <NavLink to="/xp" className={({ isActive }) => isActive ? 'is-active' : undefined}>XP</NavLink>
-          <span className="nav__count">{games.length} parties</span>
+          <span className="nav__count">{(allGames ?? games).length} parties</span>
           <button
             className="nav__callout"
             disabled={calloutRemaining > 0}
@@ -124,6 +137,7 @@ function AppInner() {
         onClose={() => setCalloutOpen(false)}
         onSent={() => setCalloutRemaining(COOLDOWN_MS)}
         players={ranked.map(s => s.name)}
+        leagueName={activeLeague?.name ?? null}
       />
 
       <Routes>

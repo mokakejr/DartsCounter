@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 
-const LEAGUES_KEY = 'dartsLeagues';
+const LEAGUES_KEY    = 'dartsLeagues';
+const ACTIVE_ID_KEY  = 'dartsActiveLeague';
 
 function load() {
   try { return JSON.parse(localStorage.getItem(LEAGUES_KEY) || '[]'); }
@@ -19,7 +20,7 @@ export const LeagueContext = createContext(null);
 
 export function LeagueProvider({ children }) {
   const [leagues, setLeagues] = useState(load);
-  const [activeId, setActiveId] = useState(null);
+  const [activeId, setActiveId] = useState(() => localStorage.getItem(ACTIVE_ID_KEY));
 
   const activeLeague = leagues.find(l => l.id === activeId) ?? null;
 
@@ -47,11 +48,16 @@ export function LeagueProvider({ children }) {
       save(next);
       return next;
     });
-    setActiveId(a => a === id ? null : a);
+    setActiveId(a => { if (a === id) localStorage.removeItem(ACTIVE_ID_KEY); return a === id ? null : a; });
   }, []);
 
   const activateLeague = useCallback((id) => {
-    setActiveId(prev => prev === id ? null : id); // toggle
+    setActiveId(prev => {
+      const next = prev === id ? null : id;
+      if (next) localStorage.setItem(ACTIVE_ID_KEY, next);
+      else localStorage.removeItem(ACTIVE_ID_KEY);
+      return next;
+    });
   }, []);
 
   return (

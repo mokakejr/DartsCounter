@@ -4,7 +4,8 @@ import './Leagues.css';
 
 export default function Leagues({ knownPlayers }) {
   const { leagues, activeLeague, activateLeague, createLeague, updateLeague, deleteLeague } = useLeague();
-  const [editing, setEditing] = useState(null); // null | 'new' | league.id
+  const [editing, setEditing] = useState(null);    // null | 'new' | league.id
+  const [confirmDelete, setConfirmDelete] = useState(null); // league.id pending deletion
 
   const editTarget = editing && editing !== 'new'
     ? leagues.find(l => l.id === editing)
@@ -44,12 +45,26 @@ export default function Leagues({ knownPlayers }) {
                 {activeLeague?.id === league.id ? '✓ Active' : 'Activer'}
               </button>
               <button className="leagues__btn" onClick={() => setEditing(league.id)}>Modifier</button>
-              <button
-                className="leagues__btn leagues__btn--delete"
-                onClick={() => { if (confirm(`Supprimer "${league.name}" ?`)) deleteLeague(league.id); }}
-              >
-                Supprimer
-              </button>
+              {confirmDelete === league.id ? (
+                <>
+                  <button
+                    className="leagues__btn leagues__btn--delete"
+                    onClick={() => { deleteLeague(league.id); setConfirmDelete(null); }}
+                  >
+                    Confirmer
+                  </button>
+                  <button className="leagues__btn" onClick={() => setConfirmDelete(null)}>
+                    Annuler
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="leagues__btn leagues__btn--delete"
+                  onClick={() => setConfirmDelete(league.id)}
+                >
+                  Supprimer
+                </button>
+              )}
             </div>
           </div>
         ))}

@@ -67,6 +67,7 @@ export default function PlaySetup() {
     setSelected(prev =>
       prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
     );
+    setSearch('');
   }
 
   function addNew() {

@@ -108,8 +108,8 @@ export default function PlaySetup() {
         )}
       </div>
 
-      {/* Player chips */}
-      {filtered.length > 0 && (
+      {/* Player chips — only shown when user is typing (fix: don't reveal all known players by default) */}
+      {q && filtered.length > 0 && (
         <div className="play-setup__chips">
           {filtered.map(name => (
             <button

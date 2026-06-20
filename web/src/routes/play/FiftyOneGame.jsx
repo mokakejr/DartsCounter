@@ -4,6 +4,7 @@ import {
   initialFiftyOneState, scoreTurn, nextPlayer, FIFTY_ONE_TARGET,
 } from '../../play/models/fiftyOne.js';
 import { postGame } from '../../play/postGame.js';
+import ExitConfirmModal from './ExitConfirmModal.jsx';
 import './FiftyOneGame.css';
 
 export default function FiftyOneGame() {
@@ -14,6 +15,7 @@ export default function FiftyOneGame() {
   const [game, setGame] = useState(() => initialFiftyOneState(players));
   const [input, setInput] = useState('');
   const [phase, setPhase] = useState('playing'); // 'playing' | 'finished'
+  const [showExit, setShowExit] = useState(false);
   const startedAt = useRef(Date.now());
 
   const player = game.currentPlayer;
@@ -85,8 +87,13 @@ export default function FiftyOneGame() {
 
   return (
     <div className="f51">
+      <ExitConfirmModal
+        open={showExit}
+        onConfirm={() => navigate('/play')}
+        onCancel={() => setShowExit(false)}
+      />
       <div className="f51__header">
-        <button className="f51__back" onClick={() => navigate('/play')}>←</button>
+        <button className="f51__back" onClick={() => setShowExit(true)}>←</button>
         <span className="f51__title">51</span>
         <div style={{ width: 36 }} />
       </div>

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, Fragment } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   initialCricketState, addHit, nextPlayer,
@@ -9,6 +9,7 @@ import {
   nextPlayer as scNext, SC_TARGET_COUNT, SC_MODE,
 } from '../../play/models/superCricket.js';
 import { postGame } from '../../play/postGame.js';
+import ExitConfirmModal from './ExitConfirmModal.jsx';
 import './CricketGame.css';
 
 const CRICKET_LABELS = ['20', '19', '18', '17', '16', '15', 'BULL'];
@@ -19,11 +20,24 @@ function loadView() {
   return localStorage.getItem(VIEW_KEY) === 'classic' ? 'classic' : 'apk';
 }
 
+function playSound(name) {
+  const src = name === 'mexicaine'
+    ? `/sounds/mexicaine${Math.random() < 0.5 ? 1 : 2}.wav`
+    : `/sounds/${name}.wav`;
+  new Audio(src).play().catch(() => {});
+}
+
 function markSym(m) {
   if (!m) return '';
   if (m === 1) return '/';
   if (m === 2) return 'X';
   return '●';
+}
+
+function markSymClass(m, globClosed) {
+  if (m >= 3 && globClosed) return 'cg__mark--glob-closed';
+  if (m >= 3) return 'cg__mark--closed';
+  return '';
 }
 
 export default function CricketGame() {
@@ -41,21 +55,44 @@ export default function CricketGame() {
   const [multiplier, setMultiplier] = useState(1);
   // phase: 'playing' | 'turn-done' | 'finished'
   const [phase, setPhase] = useState('playing');
-  const [view, setView] = useState(loadView);
+  // SC always starts in APK view; Cricket remembers last choice
+  const [view, setView] = useState(() => isSC ? 'apk' : loadView());
+  const [history, setHistory] = useState([]); // [{game, dartsUsed}]
+  const [showExit, setShowExit] = useState(false);
   const startedAt = useRef(Date.now());
 
   const player = game.currentPlayer;
   const labels = isSC ? SC_LABELS : CRICKET_LABELS;
+  const isAPK = view === 'apk';
 
   function switchView(v) {
     setView(v);
     localStorage.setItem(VIEW_KEY, v);
+    if (v === 'classic' && phase === 'playing' && dartsUsed >= 3) {
+      setPhase('turn-done');
+    }
+  }
+
+  function pushHistory() {
+    setHistory(h => [...h, { game, dartsUsed }]);
+  }
+
+  function undo() {
+    if (!history.length) return;
+    const prev = history[history.length - 1];
+    setGame(prev.game);
+    setDartsUsed(prev.dartsUsed);
+    setPhase('playing');
+    setHistory(h => h.slice(0, -1));
   }
 
   // ── APK mode: tap directly on board cell ──────────────────────────────────
 
   function tapCell(tIdx) {
-    if (dartsUsed >= 3 || phase !== 'playing') return;
+    if (phase !== 'playing') return;
+    // APK (table view): unlimited clicks — no 3-dart limit
+    if (!isAPK && dartsUsed >= 3) return;
+    pushHistory();
     let next = game;
     if (isSC) {
       if (tIdx < 7) next = addStandardHit(next, player, tIdx);
@@ -74,22 +111,26 @@ export default function CricketGame() {
         startedAt: startedAt.current,
       });
       setPhase('finished');
-    } else if (used >= 3) {
+    } else if (!isAPK && used >= 3) {
+      // Classic mode only: auto-transition after 3 darts
       setPhase('turn-done');
     }
   }
 
   function tapMissAPK() {
-    if (dartsUsed >= 3 || phase !== 'playing') return;
+    if (phase !== 'playing') return;
+    if (!isAPK && dartsUsed >= 3) return;
+    pushHistory();
     const used = dartsUsed + 1;
     setDartsUsed(used);
-    if (used >= 3) setPhase('turn-done');
+    if (!isAPK && used >= 3) setPhase('turn-done');
   }
 
   // ── Classic mode: multiplier + target buttons ────────────────────────────
 
   function tapTarget(tIdx) {
     if (dartsUsed >= 3 || phase !== 'playing') return;
+    pushHistory();
     let next = game;
     if (isSC) {
       if (tIdx < 7) {
@@ -122,6 +163,7 @@ export default function CricketGame() {
 
   function tapMiss() {
     if (dartsUsed >= 3 || phase !== 'playing') return;
+    pushHistory();
     setMultiplier(1);
     const used = dartsUsed + 1;
     setDartsUsed(used);
@@ -135,6 +177,7 @@ export default function CricketGame() {
     setDartsUsed(0);
     setMultiplier(1);
     setPhase('playing');
+    setHistory([]);
   }
 
   // ── Finished screen ───────────────────────────────────────────────────────
@@ -165,13 +208,17 @@ export default function CricketGame() {
     );
   }
 
-  const isAPK = view === 'apk';
-
   return (
-    <div className="cg">
+    <div className={`cg${isSC ? ' cg--sc' : ''}`}>
+      <ExitConfirmModal
+        open={showExit}
+        onConfirm={() => navigate('/play')}
+        onCancel={() => setShowExit(false)}
+      />
+
       {/* Header */}
       <div className="cg__header">
-        <button className="cg__back" onClick={() => navigate('/play')}>←</button>
+        <button className="cg__back" onClick={() => setShowExit(true)}>←</button>
         <span className="cg__title">{isSC ? 'SUPER CRICKET' : 'CRICKET'}</span>
         <div className="cg__dart-slots">
           {[0, 1, 2].map(i => (
@@ -202,7 +249,7 @@ export default function CricketGame() {
         <span className="cg__player-pts">{game.points[player]} pts</span>
       </div>
 
-      {/* Score board — always visible; cells tappable in APK mode */}
+      {/* Score board */}
       <div className="cg__board-wrap">
         <table className="cg__board">
           <thead>
@@ -220,28 +267,42 @@ export default function CricketGame() {
               const globClosed = isSC
                 ? players.every((_, p) => game.marks[p][tIdx] >= 3)
                 : isGloballyClosed(game, tIdx);
-              const canTap = isAPK && phase === 'playing' && dartsUsed < 3 && !globClosed;
+              // APK mode: no dartsUsed limit — unlimited clicks
+              const canTap = isAPK && phase === 'playing' && !globClosed;
+              const isSpecial = isSC && tIdx >= 7;
               return (
-                <tr key={lbl} className={globClosed ? 'cg__row--closed' : ''}>
-                  <td className="cg__td-lbl">{lbl}</td>
-                  {players.map((_, pIdx) => {
-                    const isCurrentPlayer = pIdx === player;
-                    const tappable = canTap && isCurrentPlayer;
-                    return (
-                      <td
-                        key={pIdx}
-                        className={[
-                          'cg__td-mark',
-                          isCurrentPlayer ? 'cg__td-mark--active' : '',
-                          tappable ? 'cg__td-mark--tappable' : '',
-                        ].filter(Boolean).join(' ')}
-                        onClick={tappable ? () => tapCell(tIdx) : undefined}
-                      >
-                        {markSym(game.marks[pIdx][tIdx])}
-                      </td>
-                    );
-                  })}
-                </tr>
+                <Fragment key={lbl}>
+                  {isSC && tIdx === 7 && (
+                    <tr className="cg__row-sc-divider">
+                      <td colSpan={players.length + 1} />
+                    </tr>
+                  )}
+                  <tr className={globClosed ? 'cg__row--closed' : ''}>
+                    <td className={`cg__td-lbl${isSpecial ? ' cg__td-lbl--special' : ''}`}>{lbl}</td>
+                    {players.map((_, pIdx) => {
+                      const isCurrentPlayer = pIdx === player;
+                      const tappable = canTap && isCurrentPlayer;
+                      const m = game.marks[pIdx][tIdx];
+                      const scSpecialClosed = isSpecial && m >= 3 && !globClosed;
+                      return (
+                        <td
+                          key={pIdx}
+                          className={[
+                            'cg__td-mark',
+                            isCurrentPlayer ? 'cg__td-mark--active' : '',
+                            tappable ? 'cg__td-mark--tappable' : '',
+                            scSpecialClosed ? 'cg__td-mark--sc-special-closed' : '',
+                          ].filter(Boolean).join(' ')}
+                          onClick={tappable ? () => tapCell(tIdx) : undefined}
+                        >
+                          <span className={markSymClass(m, globClosed)}>
+                            {markSym(m)}
+                          </span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </Fragment>
               );
             })}
             <tr className="cg__row-pts">
@@ -256,62 +317,88 @@ export default function CricketGame() {
         </table>
       </div>
 
-      {/* APK mode: MISS button only */}
-      {isAPK && phase === 'playing' && (
-        <div className="cg__apk-miss">
-          <button
-            className="cg__btn cg__btn--miss"
-            onClick={tapMissAPK}
-            disabled={dartsUsed >= 3}
-          >
-            MISS
-          </button>
-        </div>
-      )}
-
-      {/* Classic mode: multiplier + target buttons */}
-      {!isAPK && phase === 'playing' && (
-        <div className="cg__input">
-          <div className="cg__mult-row">
-            {[1, 2, 3].map(m => (
-              <button
-                key={m}
-                className={`cg__mult${multiplier === m ? ' cg__mult--on' : ''}`}
-                onClick={() => setMultiplier(m)}
-              >
-                ×{m}
-              </button>
-            ))}
-          </div>
-          <div className="cg__tgt-row">
-            {labels.map((lbl, tIdx) => (
-              <button
-                key={lbl}
-                className="cg__tgt"
-                onClick={() => tapTarget(tIdx)}
-                disabled={dartsUsed >= 3}
-              >
-                {lbl}
-              </button>
-            ))}
+      {/* Controls — fixed min-height via CSS keeps board height stable on view switch */}
+      <div className="cg__controls">
+        {/* APK mode: MISS / MEXICAINE / GAUFRE sound buttons */}
+        {isAPK && phase === 'playing' && (
+          <div className="cg__sound-row">
             <button
-              className="cg__tgt cg__tgt--miss"
-              onClick={tapMiss}
-              disabled={dartsUsed >= 3}
+              className="cg__sound-btn cg__sound-btn--miss"
+              onClick={() => { playSound('miss'); tapMissAPK(); }}
             >
               MISS
             </button>
+            <button
+              className="cg__sound-btn cg__sound-btn--mex"
+              onClick={() => playSound('mexicaine')}
+            >
+              MEXICAINE
+            </button>
+            <button
+              className="cg__sound-btn cg__sound-btn--gaufre"
+              onClick={() => playSound('gaufre')}
+            >
+              GAUFRE
+            </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {phase === 'turn-done' && (
-        <div className="cg__confirm">
-          <button className="cg__btn cg__btn--primary cg__btn--wide" onClick={confirmTurn}>
-            SUIVANT →
+        {/* SUIVANT — APK: always visible while playing; Classic: only after 3 darts */}
+        {(isAPK ? phase === 'playing' : phase === 'turn-done') && (
+          <div className="cg__confirm">
+            <button className="cg__btn cg__btn--primary cg__btn--wide" onClick={confirmTurn}>
+              SUIVANT →
+            </button>
+          </div>
+        )}
+
+        {/* Classic mode: multiplier + target buttons */}
+        {!isAPK && phase === 'playing' && (
+          <div className="cg__input">
+            <div className="cg__mult-row">
+              {[1, 2, 3].map(m => (
+                <button
+                  key={m}
+                  className={`cg__mult${multiplier === m ? ' cg__mult--on' : ''}`}
+                  onClick={() => setMultiplier(m)}
+                >
+                  ×{m}
+                </button>
+              ))}
+            </div>
+            <div className="cg__tgt-row">
+              {labels.map((lbl, tIdx) => (
+                <button
+                  key={lbl}
+                  className="cg__tgt"
+                  onClick={() => tapTarget(tIdx)}
+                  disabled={dartsUsed >= 3}
+                >
+                  {lbl}
+                </button>
+              ))}
+              <button
+                className="cg__tgt cg__tgt--miss"
+                onClick={tapMiss}
+                disabled={dartsUsed >= 3}
+              >
+                MISS
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Annuler — always rendered, disabled when no history */}
+        <div className="cg__undo-wrap">
+          <button
+            className="cg__btn--undo"
+            onClick={undo}
+            disabled={history.length === 0}
+          >
+            ⟲ Annuler
           </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

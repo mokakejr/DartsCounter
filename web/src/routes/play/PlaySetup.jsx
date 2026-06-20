@@ -140,6 +140,7 @@ export default function PlaySetup() {
               <div key={name} className="play-setup__order-item">
                 <span className="play-setup__order-num">{i + 1}</span>
                 <span className="play-setup__order-name">{name}</span>
+                <button className="play-setup__order-remove" onClick={() => toggle(name)}>×</button>
               </div>
             ))}
           </div>

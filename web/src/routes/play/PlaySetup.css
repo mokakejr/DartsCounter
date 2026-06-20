@@ -137,7 +137,20 @@
 .play-setup__order-name {
   font-size: 17px;
   font-weight: 600;
+  flex: 1;
 }
+.play-setup__order-remove {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.12s, background 0.12s;
+}
+.play-setup__order-remove:hover { color: #E57373; background: rgba(229,115,115,0.10); }
 
 .play-setup__start {
   width: 100%;

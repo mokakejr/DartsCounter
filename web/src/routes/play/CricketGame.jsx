@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   initialCricketState, addHit, nextPlayer,
@@ -8,10 +8,16 @@ import {
   initialSuperCricketState, addStandardHit, addSpecialMark,
   nextPlayer as scNext, SC_TARGET_COUNT, SC_MODE,
 } from '../../play/models/superCricket.js';
+import { postGame } from '../../play/postGame.js';
 import './CricketGame.css';
 
 const CRICKET_LABELS = ['20', '19', '18', '17', '16', '15', 'BULL'];
 const SC_LABELS = [...CRICKET_LABELS, 'DBL', 'TRP', 'BED'];
+
+const VIEW_KEY = 'dartsViewMode'; // 'apk' | 'classic'
+function loadView() {
+  return localStorage.getItem(VIEW_KEY) === 'classic' ? 'classic' : 'apk';
+}
 
 function markSym(m) {
   if (!m) return '';
@@ -35,9 +41,52 @@ export default function CricketGame() {
   const [multiplier, setMultiplier] = useState(1);
   // phase: 'playing' | 'turn-done' | 'finished'
   const [phase, setPhase] = useState('playing');
+  const [view, setView] = useState(loadView);
+  const startedAt = useRef(Date.now());
 
   const player = game.currentPlayer;
   const labels = isSC ? SC_LABELS : CRICKET_LABELS;
+
+  function switchView(v) {
+    setView(v);
+    localStorage.setItem(VIEW_KEY, v);
+  }
+
+  // ── APK mode: tap directly on board cell ──────────────────────────────────
+
+  function tapCell(tIdx) {
+    if (dartsUsed >= 3 || phase !== 'playing') return;
+    let next = game;
+    if (isSC) {
+      if (tIdx < 7) next = addStandardHit(next, player, tIdx);
+      else next = addSpecialMark(next, player, tIdx);
+    } else {
+      next = addHit(next, player, tIdx, 1);
+    }
+    setGame(next);
+    const used = dartsUsed + 1;
+    setDartsUsed(used);
+    if (next.winner !== null) {
+      postGame({
+        mode: isSC ? 'SuperCricket' : 'Cricket', variant: 'Normal',
+        players, scores: players.map((_, i) => next.points[i]),
+        winner: players[next.winner],
+        startedAt: startedAt.current,
+      });
+      setPhase('finished');
+    } else if (used >= 3) {
+      setPhase('turn-done');
+    }
+  }
+
+  function tapMissAPK() {
+    if (dartsUsed >= 3 || phase !== 'playing') return;
+    const used = dartsUsed + 1;
+    setDartsUsed(used);
+    if (used >= 3) setPhase('turn-done');
+  }
+
+  // ── Classic mode: multiplier + target buttons ────────────────────────────
 
   function tapTarget(tIdx) {
     if (dartsUsed >= 3 || phase !== 'playing') return;
@@ -58,8 +107,17 @@ export default function CricketGame() {
     setMultiplier(1);
     const used = dartsUsed + 1;
     setDartsUsed(used);
-    if (next.winner !== null) setPhase('finished');
-    else if (used >= 3) setPhase('turn-done');
+    if (next.winner !== null) {
+      postGame({
+        mode: isSC ? 'SuperCricket' : 'Cricket', variant: 'Normal',
+        players, scores: players.map((_, i) => next.points[i]),
+        winner: players[next.winner],
+        startedAt: startedAt.current,
+      });
+      setPhase('finished');
+    } else if (used >= 3) {
+      setPhase('turn-done');
+    }
   }
 
   function tapMiss() {
@@ -70,6 +128,8 @@ export default function CricketGame() {
     if (used >= 3) setPhase('turn-done');
   }
 
+  // ── Shared ────────────────────────────────────────────────────────────────
+
   function confirmTurn() {
     setGame(g => isSC ? scNext(g) : nextPlayer(g));
     setDartsUsed(0);
@@ -77,7 +137,7 @@ export default function CricketGame() {
     setPhase('playing');
   }
 
-  // ── Finished screen
+  // ── Finished screen ───────────────────────────────────────────────────────
   if (phase === 'finished') {
     const ranked = players
       .map((name, i) => ({ name, pts: game.points[i] }))
@@ -105,6 +165,8 @@ export default function CricketGame() {
     );
   }
 
+  const isAPK = view === 'apk';
+
   return (
     <div className="cg">
       {/* Header */}
@@ -118,13 +180,29 @@ export default function CricketGame() {
         </div>
       </div>
 
+      {/* View toggle */}
+      <div className="cg__view-toggle">
+        <button
+          className={`cg__view-btn${isAPK ? ' cg__view-btn--on' : ''}`}
+          onClick={() => switchView('apk')}
+        >
+          Vue tableau
+        </button>
+        <button
+          className={`cg__view-btn${!isAPK ? ' cg__view-btn--on' : ''}`}
+          onClick={() => switchView('classic')}
+        >
+          Vue boutons
+        </button>
+      </div>
+
       {/* Current player */}
       <div className="cg__player">
         <span className="cg__player-name">{players[player]}</span>
         <span className="cg__player-pts">{game.points[player]} pts</span>
       </div>
 
-      {/* Score board */}
+      {/* Score board — always visible; cells tappable in APK mode */}
       <div className="cg__board-wrap">
         <table className="cg__board">
           <thead>
@@ -142,14 +220,27 @@ export default function CricketGame() {
               const globClosed = isSC
                 ? players.every((_, p) => game.marks[p][tIdx] >= 3)
                 : isGloballyClosed(game, tIdx);
+              const canTap = isAPK && phase === 'playing' && dartsUsed < 3 && !globClosed;
               return (
                 <tr key={lbl} className={globClosed ? 'cg__row--closed' : ''}>
                   <td className="cg__td-lbl">{lbl}</td>
-                  {players.map((_, pIdx) => (
-                    <td key={pIdx} className={`cg__td-mark${pIdx === player ? ' cg__td-mark--active' : ''}`}>
-                      {markSym(game.marks[pIdx][tIdx])}
-                    </td>
-                  ))}
+                  {players.map((_, pIdx) => {
+                    const isCurrentPlayer = pIdx === player;
+                    const tappable = canTap && isCurrentPlayer;
+                    return (
+                      <td
+                        key={pIdx}
+                        className={[
+                          'cg__td-mark',
+                          isCurrentPlayer ? 'cg__td-mark--active' : '',
+                          tappable ? 'cg__td-mark--tappable' : '',
+                        ].filter(Boolean).join(' ')}
+                        onClick={tappable ? () => tapCell(tIdx) : undefined}
+                      >
+                        {markSym(game.marks[pIdx][tIdx])}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })}
@@ -165,8 +256,21 @@ export default function CricketGame() {
         </table>
       </div>
 
-      {/* Input */}
-      {phase === 'playing' && (
+      {/* APK mode: MISS button only */}
+      {isAPK && phase === 'playing' && (
+        <div className="cg__apk-miss">
+          <button
+            className="cg__btn cg__btn--miss"
+            onClick={tapMissAPK}
+            disabled={dartsUsed >= 3}
+          >
+            MISS
+          </button>
+        </div>
+      )}
+
+      {/* Classic mode: multiplier + target buttons */}
+      {!isAPK && phase === 'playing' && (
         <div className="cg__input">
           <div className="cg__mult-row">
             {[1, 2, 3].map(m => (

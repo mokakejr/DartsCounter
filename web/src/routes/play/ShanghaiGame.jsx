@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   initialShanghaiState,
@@ -8,6 +8,7 @@ import {
   leader,
   SHANGHAI_ROUNDS,
 } from '../../play/models/shanghai.js';
+import { postGame } from '../../play/postGame.js';
 import './ShanghaiGame.css';
 
 const ZONES = [
@@ -28,6 +29,8 @@ export default function ShanghaiGame() {
   const [pending, setPending] = useState(null);
   // phase: 'playing' | 'turn-done' | 'shanghai' | 'finished'
   const [phase, setPhase] = useState('playing');
+  const startedAt = useRef(Date.now());
+  const isKill = useRef(false);
 
   const round = game.currentRound;
   const player = game.currentPlayer;
@@ -46,6 +49,7 @@ export default function ShanghaiGame() {
     const shanghai = isShanghai(darts);
     const nextGame = addScore(game, player, round, pts, shanghai);
     setPending({ pts, isShanghai: shanghai, nextGame });
+    if (shanghai) isKill.current = true;
     setPhase(shanghai ? 'shanghai' : 'turn-done');
   }, [darts]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -56,23 +60,43 @@ export default function ShanghaiGame() {
 
   function confirmTurn() {
     if (!pending) return;
-    setGame(pending.nextGame);
+    const ng = pending.nextGame;
+    setGame(ng);
     setDarts([]);
     setPending(null);
-    setPhase(pending.nextGame.finished ? 'finished' : 'playing');
+    if (ng.finished) {
+      const win = leader(ng);
+      postGame({
+        mode: 'Shanghai', variant: 'Normal',
+        players, scores: players.map((_, i) => totalScore(ng, i)),
+        winner: win !== null ? players[win] : '',
+        startedAt: startedAt.current,
+      });
+      setPhase('finished');
+    } else {
+      setPhase('playing');
+    }
   }
 
   // Auto-advance after Shanghai animation
   useEffect(() => {
     if (phase !== 'shanghai' || !pending) return;
     const t = setTimeout(() => {
-      setGame(pending.nextGame);
+      const ng = pending.nextGame;
+      const win = leader(ng);
+      postGame({
+        mode: 'Shanghai', variant: 'Shanghai Kill',
+        players, scores: players.map((_, i) => totalScore(ng, i)),
+        winner: win !== null ? players[win] : '',
+        startedAt: startedAt.current,
+      });
+      setGame(ng);
       setDarts([]);
       setPending(null);
       setPhase('finished');
     }, 2400);
     return () => clearTimeout(t);
-  }, [phase, pending]);
+  }, [phase, pending]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const rankings = players
     .map((name, i) => ({ name, i, total: totalScore(game, i) }))

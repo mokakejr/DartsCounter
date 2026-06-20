@@ -59,10 +59,16 @@
   font-size: 13px;
 }
 
-.play-setup__add {
+.play-setup__search-row {
   display: flex;
   gap: 10px;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
+}
+
+.play-setup__no-results {
+  font-size: 14px;
+  color: var(--muted);
+  margin: -8px 0 24px;
 }
 
 .play-setup__input {

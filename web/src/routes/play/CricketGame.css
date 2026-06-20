@@ -102,6 +102,52 @@
 }
 .cg__td-pts--active { color: var(--text); }
 
+/* ── View toggle ────────────────────────────────────── */
+.cg__view-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.cg__view-btn {
+  flex: 1;
+  padding: 7px 10px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.cg__view-btn--on {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+}
+
+/* ── APK mode: tappable cells ───────────────────────── */
+.cg__td-mark--tappable {
+  cursor: pointer;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  transition: background 0.1s, transform 0.08s;
+}
+.cg__td-mark--tappable:active { transform: scale(0.88); }
+
+.cg__apk-miss {
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.cg__btn--miss {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.cg__btn--miss:disabled { opacity: 0.25; cursor: not-allowed; }
+
 /* ── Input ──────────────────────────────────────────── */
 .cg__input {
   display: flex;

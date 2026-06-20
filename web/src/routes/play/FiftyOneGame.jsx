@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   initialFiftyOneState, scoreTurn, nextPlayer, FIFTY_ONE_TARGET,
 } from '../../play/models/fiftyOne.js';
+import { postGame } from '../../play/postGame.js';
 import './FiftyOneGame.css';
 
 export default function FiftyOneGame() {
@@ -13,6 +14,7 @@ export default function FiftyOneGame() {
   const [game, setGame] = useState(() => initialFiftyOneState(players));
   const [input, setInput] = useState('');
   const [phase, setPhase] = useState('playing'); // 'playing' | 'finished'
+  const startedAt = useRef(Date.now());
 
   const player = game.currentPlayer;
   const turnTotal = parseInt(input, 10) || 0;
@@ -37,6 +39,12 @@ export default function FiftyOneGame() {
     if (!canConfirm) return;
     const scored = scoreTurn(game, player, turnTotal);
     if (scored.winner !== null) {
+      postGame({
+        mode: 'FiftyOne', variant: 'Normal',
+        players, scores: players.map((_, i) => scored.fives[i]),
+        winner: players[scored.winner],
+        startedAt: startedAt.current,
+      });
       setGame(scored);
       setPhase('finished');
     } else {

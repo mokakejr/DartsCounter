@@ -1,0 +1,11 @@
+name = "games-proxy"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+[vars]
+GITHUB_REPO_OWNER = "mokakejr"
+GITHUB_REPO_NAME = "DartsCounter-"
+
+# Secrets (set with `wrangler secret put <NAME>`):
+#   GITHUB_TOKEN         — fine-grained PAT with Contents read+write on the repo
+#   GOOGLE_CHAT_WEBHOOK  — optional; omit to skip chat notifications

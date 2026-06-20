@@ -138,6 +138,7 @@ export default function PlaySetup() {
             <p className="play-setup__order-label">Ordre de jeu</p>
             <button
               className="play-setup__shuffle"
+              disabled={selected.length < 2}
               onClick={() => setSelected(s => [...s].sort(() => Math.random() - 0.5))}
             >
               ⇄

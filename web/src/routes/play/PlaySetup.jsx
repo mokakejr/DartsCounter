@@ -134,7 +134,15 @@ export default function PlaySetup() {
       {/* Play order */}
       {selected.length > 0 && (
         <div className="play-setup__order">
-          <p className="play-setup__order-label">Ordre de jeu</p>
+          <div className="play-setup__order-header">
+            <p className="play-setup__order-label">Ordre de jeu</p>
+            <button
+              className="play-setup__shuffle"
+              onClick={() => setSelected(s => [...s].sort(() => Math.random() - 0.5))}
+            >
+              🔀 Aléatoire
+            </button>
+          </div>
           <div className="play-setup__order-list">
             {selected.map((name, i) => (
               <div key={name} className="play-setup__order-item">

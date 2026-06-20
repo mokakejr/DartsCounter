@@ -105,12 +105,31 @@
   flex: 1;
   margin-bottom: 32px;
 }
+.play-setup__order-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.play-setup__shuffle {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.play-setup__shuffle:hover { color: var(--text); border-color: var(--muted); }
 .play-setup__order-label {
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 .play-setup__order-list {
   display: flex;

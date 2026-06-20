@@ -1,0 +1,3 @@
+# Copy to .dev.vars for local `wrangler dev` — never commit .dev.vars
+GITHUB_TOKEN=ghp_yourTokenHere
+GOOGLE_CHAT_WEBHOOK=https://chat.googleapis.com/v1/spaces/...

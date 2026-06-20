@@ -100,6 +100,7 @@ export default function PlaySetup() {
           onKeyDown={e => e.key === 'Enter' && addNew()}
           placeholder="Rechercher ou ajouter…"
           maxLength={20}
+          autoFocus
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}

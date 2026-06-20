@@ -60,6 +60,9 @@ function AppInner() {
   const { games, allGames, stats, ranked, loading, error } = useGames(activeLeague?.players ?? null);
   const [calloutOpen, setCalloutOpen] = useState(false);
   const [calloutRemaining, setCalloutRemaining] = useState(calloutRemainingMs);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => setMenuOpen(false), [location.pathname]);
 
   useEffect(() => {
     if (calloutRemaining <= 0) return;
@@ -117,21 +120,31 @@ function AppInner() {
       <ScrollTop />
       <nav className="nav">
         <Link to="/" className="nav__brand display">DC</Link>
-        <div className="nav__links">
-          <NavLink to="/profils" className={({ isActive }) => isActive ? 'is-active' : undefined}>Joueurs</NavLink>
-          <NavLink to="/trophees" className={({ isActive }) => isActive ? 'is-active' : undefined}>Trophées</NavLink>
-          <NavLink to="/ligues" className={({ isActive }) => isActive ? 'is-active' : undefined}>Ligues</NavLink>
-          <NavLink to="/xp" className={({ isActive }) => isActive ? 'is-active' : undefined}>XP</NavLink>
-          <span className="nav__count">{(allGames ?? games).length} parties</span>
+        <div className="nav__right">
           <button
             className="nav__callout"
             disabled={calloutRemaining > 0}
             onClick={() => setCalloutOpen(true)}
           >
-            {calloutRemaining > 0 ? `⏳ ${fmtCountdown(calloutRemaining)}` : "🎯 LET'S PLAY"}
+            {calloutRemaining > 0 ? `⏳ ${fmtCountdown(calloutRemaining)}` : '🔔'}
+          </button>
+          <button className="nav__burger" onClick={() => setMenuOpen(o => !o)} aria-label="Menu">
+            {menuOpen ? '✕' : '☰'}
           </button>
         </div>
       </nav>
+      {menuOpen && (
+        <>
+          <div className="nav__backdrop" onClick={() => setMenuOpen(false)} />
+          <div className="nav__drawer">
+            <NavLink to="/profils" className={({ isActive }) => isActive ? 'is-active' : undefined}>Joueurs</NavLink>
+            <NavLink to="/trophees" className={({ isActive }) => isActive ? 'is-active' : undefined}>Trophées</NavLink>
+            <NavLink to="/ligues" className={({ isActive }) => isActive ? 'is-active' : undefined}>Ligues</NavLink>
+            <NavLink to="/xp" className={({ isActive }) => isActive ? 'is-active' : undefined}>XP</NavLink>
+            <span className="nav__count">{(allGames ?? games).length} parties</span>
+          </div>
+        </>
+      )}
 
       {activeLeague && (
         <div className="league-banner">

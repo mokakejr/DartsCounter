@@ -1,0 +1,210 @@
+.leagues {
+  padding-top: 100px;
+  padding-bottom: 80px;
+  min-height: 100svh;
+}
+
+.leagues__title {
+  font-size: clamp(40px, 8vw, 80px);
+  margin-bottom: 12px;
+}
+
+.leagues__sub {
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 480px;
+  margin-bottom: 32px;
+}
+
+.leagues__new {
+  padding: 12px 24px;
+  background: var(--primary);
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: opacity 0.15s;
+  margin-bottom: 36px;
+  display: block;
+}
+.leagues__new:hover { opacity: 0.85; }
+
+.leagues__empty {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+/* ── Card list ─────────────────────────────────────────── */
+.leagues__list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.leagues__card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  transition: border-color 0.2s;
+}
+
+.leagues__card--active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 5%, var(--surface));
+}
+
+.leagues__card-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.leagues__card-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.leagues__card-count {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.leagues__card-players {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.leagues__card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Buttons ───────────────────────────────────────────── */
+.leagues__btn {
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.leagues__btn:hover { border-color: var(--muted); }
+.leagues__btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.leagues__btn--activate {
+  border-color: var(--muted);
+}
+.leagues__btn--on {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+}
+
+.leagues__btn--primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  font-weight: 700;
+}
+.leagues__btn--primary:hover { opacity: 0.85; border-color: var(--primary); }
+
+.leagues__btn--delete {
+  color: #e55;
+  border-color: transparent;
+  background: none;
+}
+.leagues__btn--delete:hover { border-color: #e55; background: color-mix(in srgb, #e55 8%, transparent); }
+
+/* ── Form overlay ──────────────────────────────────────── */
+.leagues__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.leagues__form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 32px 28px;
+  width: min(480px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.leagues__form-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.leagues__label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.leagues__input {
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.leagues__input:focus { border-color: var(--muted); }
+.leagues__input::placeholder { color: var(--muted); }
+
+.leagues__player-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.leagues__chip {
+  padding: 8px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.leagues__chip:hover { border-color: var(--muted); }
+.leagues__chip--on {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--bg));
+}
+
+.leagues__form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}

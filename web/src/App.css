@@ -57,6 +57,53 @@
   .nav__callout { font-size: 10px; padding: 5px 10px; }
 }
 
+/* ── Active league banner ──────────────────────────────── */
+.league-banner {
+  position: fixed;
+  top: 56px;
+  left: 0; right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px var(--gutter);
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+.league-banner__label {
+  color: var(--primary);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.league-banner__name {
+  font-weight: 700;
+  color: var(--text);
+}
+.league-banner__players {
+  color: var(--muted);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.league-banner__clear {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+.league-banner__clear:hover { border-color: var(--muted); color: var(--text); }
+
 .footer {
   display: flex;
   align-items: center;

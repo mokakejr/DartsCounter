@@ -2,6 +2,7 @@ import { Routes, Route, Link, NavLink, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useLenis } from './lib/useLenis.js';
 import { useGames } from './lib/useGames.js';
+import { LeagueProvider, useLeague } from './lib/useLeague.jsx';
 import CalloutModal from './components/CalloutModal.jsx';
 import Hero from './scenes/Hero.jsx';
 import Standings from './scenes/Standings.jsx';
@@ -12,6 +13,7 @@ import PlayerProfile from './routes/PlayerProfile.jsx';
 import PlayersIndex from './routes/PlayersIndex.jsx';
 import TrophiesPage from './routes/TrophiesPage.jsx';
 import XpGuide from './routes/XpGuide.jsx';
+import Leagues from './routes/Leagues.jsx';
 import './App.css';
 
 function Home({ games, stats, ranked }) {
@@ -45,9 +47,11 @@ function fmtCountdown(ms) {
   return `${Math.floor(s / 60)}m${(s % 60).toString().padStart(2, '0')}s`;
 }
 
-export default function App() {
+// Inner app has access to LeagueContext (wrapped by LeagueProvider in App)
+function AppInner() {
   useLenis();
-  const { games, stats, ranked, loading } = useGames();
+  const { activeLeague, activateLeague } = useLeague();
+  const { games, allGames, stats, ranked, loading } = useGames(activeLeague?.players ?? null);
   const [calloutOpen, setCalloutOpen] = useState(false);
   const [calloutRemaining, setCalloutRemaining] = useState(calloutRemainingMs);
 
@@ -69,6 +73,11 @@ export default function App() {
     );
   }
 
+  // Players known from games history (for league form)
+  const knownPlayers = allGames
+    ? [...new Set(allGames.flatMap(g => g.players ?? []))].sort((a, b) => a.localeCompare(b, 'fr'))
+    : [];
+
   return (
     <>
       <ScrollTop />
@@ -77,6 +86,7 @@ export default function App() {
         <div className="nav__links">
           <NavLink to="/profils" className={({ isActive }) => isActive ? 'is-active' : undefined}>Joueurs</NavLink>
           <NavLink to="/trophees" className={({ isActive }) => isActive ? 'is-active' : undefined}>Trophées</NavLink>
+          <NavLink to="/ligues" className={({ isActive }) => isActive ? 'is-active' : undefined}>Ligues</NavLink>
           <NavLink to="/xp" className={({ isActive }) => isActive ? 'is-active' : undefined}>XP</NavLink>
           <span className="nav__count">{games.length} parties</span>
           <button
@@ -88,6 +98,26 @@ export default function App() {
           </button>
         </div>
       </nav>
+
+      {/* Active league banner */}
+      {activeLeague && (
+        <div className="league-banner">
+          <span className="league-banner__label">
+            Ligue active :
+          </span>
+          <span className="league-banner__name">{activeLeague.name}</span>
+          <span className="league-banner__players">
+            {activeLeague.players.join(' · ')}
+          </span>
+          <button
+            className="league-banner__clear"
+            onClick={() => activateLeague(activeLeague.id)}
+            title="Désactiver le filtre ligue"
+          >
+            × Tout voir
+          </button>
+        </div>
+      )}
 
       <CalloutModal
         open={calloutOpen}
@@ -102,15 +132,24 @@ export default function App() {
         <Route path="/profils" element={<PlayersIndex ranked={ranked} />} />
         <Route path="/trophees" element={<TrophiesPage stats={stats} />} />
         <Route path="/xp" element={<XpGuide />} />
+        <Route path="/ligues" element={<Leagues knownPlayers={knownPlayers} />} />
         <Route path="*" element={<Home games={games} stats={stats} ranked={ranked} />} />
       </Routes>
 
       <footer className="footer shell">
         <span>DartsCounter — La Ligue</span>
-        <a href="https://github.com/mokakejr/DartsCounter" target="_blank" rel="noreferrer">
+        <a href="https://github.com/mokakejr/DartsCounter-" target="_blank" rel="noreferrer">
           GitHub ↗
         </a>
       </footer>
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <LeagueProvider>
+      <AppInner />
+    </LeagueProvider>
   );
 }

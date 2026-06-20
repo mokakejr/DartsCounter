@@ -112,18 +112,17 @@
   margin-bottom: 12px;
 }
 .play-setup__shuffle {
-  background: none;
-  border: 1px solid var(--border);
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  background: #1E1E1E;
+  border: none;
   border-radius: 8px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--muted);
-  padding: 5px 10px;
+  font-size: 20px;
+  color: #666666;
   cursor: pointer;
-  transition: color 0.12s, border-color 0.12s;
+  transition: color 0.12s, background 0.12s;
 }
-.play-setup__shuffle:hover { color: var(--text); border-color: var(--muted); }
+.play-setup__shuffle:hover { color: var(--text); background: #2A2A2A; }
 .play-setup__order-label {
   font-size: 11px;
   letter-spacing: 0.18em;

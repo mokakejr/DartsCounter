@@ -140,7 +140,7 @@ export default function PlaySetup() {
               className="play-setup__shuffle"
               onClick={() => setSelected(s => [...s].sort(() => Math.random() - 0.5))}
             >
-              🔀 Aléatoire
+              ⇄
             </button>
           </div>
           <div className="play-setup__order-list">

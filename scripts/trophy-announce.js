@@ -14,7 +14,7 @@ const path  = require('path');
 // ── Config ──────────────────────────────────────────────────────────────────
 const WEBHOOK    = (process.env.GOOGLE_CHAT_WEBHOOK || '').trim();
 const GAMES_FILE = 'docs/data/games.json';
-const STATS_URL  = `https://${process.env.GITHUB_REPOSITORY_OWNER || 'mokakejr'}.github.io/DartsCounter`;
+const STATS_URL  = `https://${process.env.GITHUB_REPOSITORY_OWNER || 'mokakejr'}.github.io/DartsCounter-`;
 const TROPHY_IMG = 'https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/emoji_events/default/48px.svg';
 
 // ── Send webhook (même pattern que weekly-recap.js) ───────────────────────────

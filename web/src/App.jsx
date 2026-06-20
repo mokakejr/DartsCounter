@@ -1,4 +1,4 @@
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, NavLink, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useLenis } from './lib/useLenis.js';
 import { useGames } from './lib/useGames.js';
@@ -11,6 +11,7 @@ import Trophies from './scenes/Trophies.jsx';
 import PlayerProfile from './routes/PlayerProfile.jsx';
 import PlayersIndex from './routes/PlayersIndex.jsx';
 import TrophiesPage from './routes/TrophiesPage.jsx';
+import TrophyDeepLink from './routes/TrophyDeepLink.jsx';
 import XpGuide from './routes/XpGuide.jsx';
 import './App.css';
 
@@ -75,9 +76,9 @@ export default function App() {
       <nav className="nav">
         <Link to="/" className="nav__brand display">DC</Link>
         <div className="nav__links">
-          <Link to="/profils">Joueurs</Link>
-          <Link to="/trophees">Trophées</Link>
-          <Link to="/xp">XP</Link>
+          <NavLink to="/profils">Joueurs</NavLink>
+          <NavLink to="/trophees">Trophées</NavLink>
+          <NavLink to="/xp">XP</NavLink>
           <span className="nav__count">{games.length} parties</span>
           <button
             className="nav__callout"
@@ -101,13 +102,14 @@ export default function App() {
         <Route path="/joueur/:name" element={<PlayerProfile games={games} stats={stats} />} />
         <Route path="/profils" element={<PlayersIndex ranked={ranked} />} />
         <Route path="/trophees" element={<TrophiesPage stats={stats} />} />
+        <Route path="/trophee/:id" element={<TrophyDeepLink stats={stats} />} />
         <Route path="/xp" element={<XpGuide />} />
         <Route path="*" element={<Home games={games} stats={stats} ranked={ranked} />} />
       </Routes>
 
       <footer className="footer shell">
         <span>DartsCounter — La Ligue</span>
-        <a href="https://github.com/mokakejr/DartsCounter" target="_blank" rel="noreferrer">
+        <a href="https://github.com/mokakejr/DartsCounter-" target="_blank" rel="noreferrer">
           GitHub ↗
         </a>
       </footer>

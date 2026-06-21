@@ -180,6 +180,16 @@ directory on the VPS so dev and prod never share a Postgres/Redis volume.
    cp .env.example .env.main      # (.env.dev in the dev checkout)
    # edit: DOMAIN, POSTGRES_PASSWORD, CADDY_NETWORK (the real name from step 2), CORS_ORIGINS
    ```
+   **`DOMAIN` is the bare root domain — the same value in both `.env.main`
+   and `.env.dev`.** Don't put `dev.mydomain.com` in `.env.dev`'s `DOMAIN`:
+   `docker-compose.dev.yml` and `caddy/Caddyfile.dev` already add the `dev.`
+   prefix themselves wherever it's needed. Setting `DOMAIN=dev.mydomain.com`
+   produces `darts.api.dev.dev.mydomain.com` — a doubled "dev" that's wrong
+   but won't error loudly; it just makes the counter's `POST /games` fail
+   CORS preflight against a hostname nothing serves. `CORS_ORIGINS` and
+   `DASHBOARD_URL`, by contrast, *are* literal full URLs you type out
+   yourself, prefix and all — only `DOMAIN` is templated.
+
    If the code you want to deploy hasn't been merged to `dev`/`master` yet,
    `git checkout <your-branch>` here before continuing — `git clone` just
    needs *some* branch with the compose files on it, it doesn't have to be

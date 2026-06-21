@@ -1,0 +1,32 @@
+services:
+  backend:
+    container_name: dartscounter-dev-backend
+    env_file: !override
+      - .env.dev
+
+  postgres:
+    container_name: dartscounter-dev-postgres
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+
+  redis:
+    container_name: dartscounter-dev-redis
+    volumes:
+      - redis_data_dev:/data
+
+  dashboard:
+    container_name: dartscounter-dev-dashboard
+    build:
+      args:
+        VITE_API_URL: https://darts.api.dev.${DOMAIN}
+        VITE_COUNTER_URL: https://darts.counter.dev.${DOMAIN}
+
+  counter:
+    container_name: dartscounter-dev-counter
+    build:
+      args:
+        VITE_API_URL: https://darts.api.dev.${DOMAIN}
+
+volumes:
+  postgres_data_dev:
+  redis_data_dev:

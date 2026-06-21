@@ -27,3 +27,16 @@ gradle-wrapper/
 
 # Claude Code settings (local)
 .claude/
+
+# Python / backend
+__pycache__/
+*.pyc
+.venv/
+backend/.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Env files with real secrets
+.env
+.env.main
+.env.dev

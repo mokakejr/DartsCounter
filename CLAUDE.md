@@ -26,8 +26,8 @@ dartscounter/
   .env.main                    # gitignored
   .env.dev                     # gitignored
   caddy/
-    Caddyfile.main             # mydomain.com + api.mydomain.com
-    Caddyfile.dev              # dev.mydomain.com + api.dev.mydomain.com
+    Caddyfile.main             # darts.mydomain.com + darts.api.mydomain.com
+    Caddyfile.dev              # darts.dev.mydomain.com + darts.api.dev.mydomain.com
   backend/
     pyproject.toml             # uv, Python 3.12+
     uv.lock
@@ -171,19 +171,19 @@ docker compose -f docker-compose.yml -f docker-compose.local.yml up
 - Redis on `localhost:6379`
 - No Caddy, no TLS
 
-### Dev (branch `dev` → `dev.mydomain.com`)
+### Dev (branch `dev` → `darts.dev.mydomain.com`)
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
-- Caddy (existing VPS instance) routes `dev.mydomain.com` → dashboard container internal port
-- Caddy routes `counter.dev.mydomain.com` → counter container internal port
-- Caddy routes `api.dev.mydomain.com` → FastAPI container internal port
+- Caddy (existing VPS instance) routes `darts.dev.mydomain.com` → dashboard container internal port
+- Caddy routes `darts.counter.dev.mydomain.com` → counter container internal port
+- Caddy routes `darts.api.dev.mydomain.com` → FastAPI container internal port
 
-### Main (branch `master` → `mydomain.com`)
+### Main (branch `master` → `darts.mydomain.com`)
 ```bash
 docker compose up -d
 ```
-- Same pattern on `mydomain.com`, `counter.mydomain.com`, `api.mydomain.com`
+- Same pattern on `darts.mydomain.com`, `darts.counter.mydomain.com`, `darts.api.mydomain.com`
 
 Real domain values go in `.env.main` and `.env.dev` (not committed). Use `DOMAIN=mydomain.com` as placeholder in examples.
 

@@ -40,8 +40,8 @@ services:
       context: .
       dockerfile: pwa-dashboard/Dockerfile
       args:
-        VITE_API_URL: https://api.${DOMAIN}
-        VITE_COUNTER_URL: https://counter.${DOMAIN}
+        VITE_API_URL: https://darts.api.${DOMAIN}
+        VITE_COUNTER_URL: https://darts.counter.${DOMAIN}
     container_name: dartscounter-dashboard
     restart: unless-stopped
     networks:
@@ -51,7 +51,7 @@ services:
     build:
       context: ./pwa-counter
       args:
-        VITE_API_URL: https://api.${DOMAIN}
+        VITE_API_URL: https://darts.api.${DOMAIN}
     container_name: dartscounter-counter
     restart: unless-stopped
     networks:

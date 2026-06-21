@@ -10,16 +10,16 @@ the active scoring app.
 ## Architecture
 
 ```
-                          ┌──────────────────────┐
-                          │   Caddy (host VPS)    │   ← reverse proxy, not in compose
-                          └──────────┬─────────────┘
-              ┌────────────┬─────────┴─────────┬──────────────┐
-              ▼            ▼                   ▼              ▼
-   counter.mydomain.com  mydomain.com   api.mydomain.com  (Postgres/Redis:
-   pwa-counter (Caddy,   pwa-dashboard  FastAPI backend     internal only)
-   serves static build)  (same)         ──┬───────┬──
-                                           ▼       ▼
-                                      Postgres   Redis
+                                ┌──────────────────────┐
+                                │   Caddy (host VPS)    │   ← reverse proxy, not in compose
+                                └──────────┬─────────────┘
+                  ┌──────────────────┬─────┴──────────────┬──────────────┐
+                  ▼                  ▼                    ▼              ▼
+   darts.counter.mydomain.com  darts.mydomain.com  darts.api.mydomain.com  (Postgres/Redis:
+   pwa-counter (Caddy,         pwa-dashboard       FastAPI backend          internal only)
+   serves static build)        (same)              ──┬───────┬──
+                                                       ▼       ▼
+                                                  Postgres   Redis
 ```
 
 - **`backend/`** — FastAPI + async SQLAlchemy (asyncpg), Alembic migrations, `uv`-managed (Python 3.12+). PostgreSQL 16 (JSONB, native UUID) + Redis 7.
@@ -150,10 +150,10 @@ the fly, recomputes Elo for every player in chronological order at the end.
 Two environments, same compose base file with overrides:
 
 ```bash
-# dev  → dev.mydomain.com / counter.dev.mydomain.com / api.dev.mydomain.com
+# dev  → darts.dev.mydomain.com / darts.counter.dev.mydomain.com / darts.api.dev.mydomain.com
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 
-# prod → mydomain.com / counter.mydomain.com / api.mydomain.com
+# prod → darts.mydomain.com / darts.counter.mydomain.com / darts.api.mydomain.com
 docker compose up -d --build
 ```
 

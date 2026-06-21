@@ -18,14 +18,14 @@ services:
     container_name: dartscounter-dev-dashboard
     build:
       args:
-        VITE_API_URL: https://api.dev.${DOMAIN}
-        VITE_COUNTER_URL: https://counter.dev.${DOMAIN}
+        VITE_API_URL: https://darts.api.dev.${DOMAIN}
+        VITE_COUNTER_URL: https://darts.counter.dev.${DOMAIN}
 
   counter:
     container_name: dartscounter-dev-counter
     build:
       args:
-        VITE_API_URL: https://api.dev.${DOMAIN}
+        VITE_API_URL: https://darts.api.dev.${DOMAIN}
 
 volumes:
   postgres_data_dev:

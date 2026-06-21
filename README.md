@@ -163,11 +163,14 @@ directory on the VPS so dev and prod never share a Postgres/Redis volume.
    that only succeeds once the hostname actually resolves to this VPS.
 
 2. **External Docker network** — Caddy and this stack must share one so
-   Caddy can reach containers by name:
+   Caddy can reach containers by name. Check what your existing Caddy is
+   actually attached to (`docker network ls`) — it's often *not* literally
+   named `caddy`:
    ```bash
-   docker network create caddy   # only if it doesn't already exist; must match CADDY_NETWORK
+   docker network create <name>   # only if it doesn't already exist
    ```
-   Your existing Caddy container/compose needs to be attached to it too.
+   Use that real name as `CADDY_NETWORK` below. Your existing Caddy
+   container/compose needs to be attached to it too.
 
 3. **Clone + configure**:
    ```bash
@@ -175,23 +178,56 @@ directory on the VPS so dev and prod never share a Postgres/Redis volume.
    git clone <repo-url> /opt/dartscounter-dev     # dev, if deploying it
    cd /opt/dartscounter
    cp .env.example .env.main      # (.env.dev in the dev checkout)
-   # edit: DOMAIN, POSTGRES_PASSWORD, CADDY_NETWORK, CORS_ORIGINS (real https:// origins)
+   # edit: DOMAIN, POSTGRES_PASSWORD, CADDY_NETWORK (the real name from step 2), CORS_ORIGINS
    ```
+   If the code you want to deploy hasn't been merged to `dev`/`master` yet,
+   `git checkout <your-branch>` here before continuing — `git clone` just
+   needs *some* branch with the compose files on it, it doesn't have to be
+   `dev`/`master`. Switch back with `git checkout dev && git pull` once
+   you've merged, so the directory matches what the CI/CD workflow expects.
 
 4. **Caddy config** — copy the relevant block from `caddy/Caddyfile.main` /
    `caddy/Caddyfile.dev` into your real host Caddy config (this repo never
    starts Caddy itself, so where that config lives is VPS-specific), then
    reload Caddy.
 
-5. **First build + migration**:
+5. **First build + migration** — prod:
    ```bash
-   docker compose up -d --build                                  # prod
-   docker compose exec backend uv run alembic upgrade head
+   docker compose --env-file .env.main up -d --build
+   docker compose --env-file .env.main exec backend uv run alembic upgrade head
    ```
-   Run migrations *inside* the backend container, not on the host — Postgres
-   isn't published to the host port in prod/dev (unlike `docker-compose.local.yml`),
-   so the host-side `POSTGRES_HOST=localhost` command used for local dev
-   (see [Local development](#local-development)) won't reach it here.
+   dev:
+   ```bash
+   docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+   docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml exec backend uv run alembic upgrade head
+   ```
+   Two gotchas, both easy to hit on a first deploy:
+   - **Pass `--env-file` (and `-f`, for dev) to every `docker compose`
+     subcommand, including `exec`/`logs`/`down` — not just `up`.** It's easy
+     to assume Compose "remembers" the project context after `up`, but a
+     bare `docker compose exec backend ...` afterward can resolve a
+     *different* env file/compose file set than the one you used for `up`
+     (one observed case: it picked up `.env.main` out of nowhere on a dev
+     box that was only ever brought up with `--env-file .env.dev`). Always
+     spell out the full flags.
+   - **`--env-file` itself is required in the first place** and easy to
+     miss. `env_file:` inside the compose YAML only sets variables *inside
+     the container* — it does **not** feed `${DOMAIN}`, `${POSTGRES_USER}`,
+     `${CADDY_NETWORK}`, etc. used for *substitution in the compose file
+     itself* (build args, the external network name). That substitution
+     only ever reads the real shell environment or a file named `.env` in
+     the working directory — never `.env.dev`/`.env.main` unless you pass
+     `--env-file` explicitly. Without it, every `${...}` silently resolves
+     to blank (you'll see `WARN: variable is not set` for each one) and
+     `CADDY_NETWORK` quietly falls back to the compose file's hardcoded
+     default `caddy`, which fails with `network caddy declared as
+     external, but could not be found` if your real network has a
+     different name.
+   - Run migrations *inside* the backend container, not on the host —
+     Postgres isn't published to the host port in prod/dev (unlike
+     `docker-compose.local.yml`), so the host-side `POSTGRES_HOST=localhost`
+     command used for local dev (see [Local development](#local-development))
+     won't reach it here.
 
 6. **GitHub Actions secrets** (repo Settings → Secrets → Actions), so future
    pushes auto-deploy — see [CI/CD](#cicd) below.
@@ -202,10 +238,10 @@ Once the above is done once, deploys are just:
 
 ```bash
 # dev  → darts.dev.mydomain.com / darts.counter.dev.mydomain.com / darts.api.dev.mydomain.com
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 
 # prod → darts.mydomain.com / darts.counter.mydomain.com / darts.api.mydomain.com
-docker compose up -d --build
+docker compose --env-file .env.main up -d --build
 ```
 
 Run step 5's `alembic upgrade head` again any time a new migration lands.

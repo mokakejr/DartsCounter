@@ -26,5 +26,5 @@ jobs:
             set -e
             cd /opt/dartscounter
             git pull origin master
-            docker compose pull
-            docker compose up -d --build
+            docker compose --env-file .env.main pull
+            docker compose --env-file .env.main up -d --build

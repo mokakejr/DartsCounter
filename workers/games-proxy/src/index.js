@@ -21,19 +21,28 @@ export default {
       return new Response('Method not allowed', { status: 405, headers: corsHeaders });
     }
 
-    let game;
+    const path = new URL(request.url).pathname;
+
+    let body;
     try {
-      game = await request.json();
+      body = await request.json();
     } catch {
       return new Response('Invalid JSON', { status: 400, headers: corsHeaders });
     }
 
-    if (!game.mode || !Array.isArray(game.players) || !Array.isArray(game.scores)) {
+    // Leagues live in their own file and are upserted by id (no chat post).
+    if (path === '/league') {
+      return handleLeague(env, body, corsHeaders);
+    }
+
+    // Default path (compat): a finished game appended to games.json.
+    if (!body.mode || !Array.isArray(body.players) || !Array.isArray(body.scores)) {
       return new Response('Missing required fields', { status: 400, headers: corsHeaders });
     }
 
     try {
-      await updateGitHub(env, game);
+      await writeFile(env, 'docs/data/games.json', 'chore: add game result',
+        existing => [body, ...existing].slice(0, 200));
     } catch (err) {
       console.error('GitHub update failed:', err);
       return new Response(`GitHub update failed: ${err.message}`, { status: 502, headers: corsHeaders });
@@ -41,7 +50,7 @@ export default {
 
     if (env.GOOGLE_CHAT_WEBHOOK) {
       try {
-        await postToChat(env.GOOGLE_CHAT_WEBHOOK, game);
+        await postToChat(env.GOOGLE_CHAT_WEBHOOK, body);
       } catch (err) {
         console.error('Google Chat failed:', err);
       }
@@ -54,11 +63,40 @@ export default {
   },
 };
 
+// ── Leagues ─────────────────────────────────────────────────────────────────────
+
+async function handleLeague(env, league, corsHeaders) {
+  if (!league.id) {
+    return new Response('Missing league id', { status: 400, headers: corsHeaders });
+  }
+  const isDelete = league._delete === true;
+  if (!isDelete && (typeof league.name !== 'string' || !league.name.trim()
+      || !Array.isArray(league.players))) {
+    return new Response('Missing required fields', { status: 400, headers: corsHeaders });
+  }
+  try {
+    // Upsert by id (or remove on `_delete`); cap at 100, newest activity first.
+    await writeFile(env, 'docs/data/leagues.json',
+      isDelete ? 'chore: delete league' : 'chore: upsert league', existing => {
+        const rest = existing.filter(l => l.id !== league.id);
+        return isDelete ? rest : [league, ...rest].slice(0, 100);
+      });
+  } catch (err) {
+    console.error('League update failed:', err);
+    return new Response(`GitHub update failed: ${err.message}`, { status: 502, headers: corsHeaders });
+  }
+  return new Response(JSON.stringify({ ok: true, league }), {
+    status: 200,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
 // ── GitHub Contents API ────────────────────────────────────────────────────────
 
-async function updateGitHub(env, game) {
+// Reads `path`, applies `merge(existingArray)` and writes the result back.
+async function writeFile(env, path, message, merge) {
   const { GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO_NAME } = env;
-  const apiUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/docs/data/games.json`;
+  const apiUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${path}`;
   const ghHeaders = {
     Authorization: `Bearer ${GITHUB_TOKEN}`,
     Accept: 'application/vnd.github+json',
@@ -78,10 +116,10 @@ async function updateGitHub(env, game) {
     throw new Error(`GET failed: HTTP ${getResp.status}`);
   }
 
-  const updated = [game, ...existing].slice(0, 200);
+  const updated = merge(Array.isArray(existing) ? existing : []);
 
   const putBody = JSON.stringify({
-    message: 'chore: add game result',
+    message,
     content: jsonToBase64(updated),
     ...(sha ? { sha } : {}),
   });

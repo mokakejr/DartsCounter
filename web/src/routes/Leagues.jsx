@@ -1,11 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useLeague } from '../lib/useLeague.jsx';
+import IdentityPicker from '../components/IdentityPicker.jsx';
 import './Leagues.css';
 
+const SWATCHES = ['#E61E2A', '#F5833F', '#E6A93C', '#34D399', '#2DD4BF', '#4C9BE6', '#A974E6', '#EC4899'];
+
 export default function Leagues({ knownPlayers }) {
-  const { leagues, activeLeague, activateLeague, createLeague, updateLeague, deleteLeague } = useLeague();
+  const {
+    leagues, activeLeague, activateLeague,
+    createLeague, updateLeague, deleteLeague,
+    myPlayer,
+  } = useLeague();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [editing, setEditing] = useState(null);    // null | 'new' | league.id
-  const [confirmDelete, setConfirmDelete] = useState(null); // league.id pending deletion
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [joining, setJoining] = useState(null);     // league being joined
+
+  // The Welcome "+ Créer une ligue" CTA links here with ?new=1.
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setEditing('new');
+      searchParams.delete('new');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const editTarget = editing && editing !== 'new'
     ? leagues.find(l => l.id === editing)
@@ -15,7 +34,8 @@ export default function Leagues({ knownPlayers }) {
     <div className="leagues shell">
       <h1 className="leagues__title display">Ligues</h1>
       <p className="leagues__sub">
-        Filtre les stats du dashboard par groupe de joueurs — sans modifier les données.
+        Crée une ligue, rejoins-la avec ton joueur, et le dashboard se filtre sur ton groupe.
+        Les ligues sont partagées avec tout le monde.
       </p>
 
       <button className="leagues__new" onClick={() => setEditing('new')}>
@@ -27,59 +47,78 @@ export default function Leagues({ knownPlayers }) {
       )}
 
       <div className="leagues__list">
-        {leagues.map(league => (
-          <div
-            key={league.id}
-            className={`leagues__card${activeLeague?.id === league.id ? ' leagues__card--active' : ''}`}
-          >
-            <div className="leagues__card-head">
-              <span className="leagues__card-name">{league.name}</span>
-              <span className="leagues__card-count">{league.players.length} joueur{league.players.length !== 1 ? 's' : ''}</span>
-            </div>
-            <p className="leagues__card-players">{league.players.join(' · ')}</p>
-            <div className="leagues__card-actions">
-              <button
-                className={`leagues__btn leagues__btn--activate${activeLeague?.id === league.id ? ' leagues__btn--on' : ''}`}
-                onClick={() => activateLeague(league.id)}
-              >
-                {activeLeague?.id === league.id ? '✓ Active' : 'Activer'}
-              </button>
-              <button className="leagues__btn" onClick={() => setEditing(league.id)}>Modifier</button>
-              {confirmDelete === league.id ? (
-                <>
+        {leagues.map(league => {
+          const mine = myPlayer(league.id);
+          const accent = league.color || 'var(--primary)';
+          const isActive = activeLeague?.id === league.id;
+          return (
+            <div
+              key={league.id}
+              className={`leagues__card${isActive ? ' leagues__card--active' : ''}`}
+              style={{ '--card-accent': accent }}
+            >
+              <div className="leagues__card-head">
+                <span className="leagues__card-dot" style={{ background: accent }} />
+                <span className="leagues__card-name">{league.name}</span>
+                <span className="leagues__card-count">{league.players.length} joueur{league.players.length !== 1 ? 's' : ''}</span>
+              </div>
+              <p className="leagues__card-players">{league.players.join(' · ')}</p>
+              {mine && <p className="leagues__card-mine">Tu joues comme <strong>{mine}</strong></p>}
+              <div className="leagues__card-actions">
+                <button className="leagues__btn leagues__btn--join" onClick={() => setJoining(league)}>
+                  {mine ? 'Changer de joueur' : 'Rejoindre'}
+                </button>
+                <button
+                  className={`leagues__btn leagues__btn--activate${isActive ? ' leagues__btn--on' : ''}`}
+                  onClick={() => activateLeague(league.id)}
+                >
+                  {isActive ? '✓ Active' : 'Activer'}
+                </button>
+                <button className="leagues__btn" onClick={() => setEditing(league.id)}>Modifier</button>
+                {confirmDelete === league.id ? (
+                  <>
+                    <button
+                      className="leagues__btn leagues__btn--delete"
+                      onClick={() => { deleteLeague(league.id); setConfirmDelete(null); }}
+                    >
+                      Confirmer
+                    </button>
+                    <button className="leagues__btn" onClick={() => setConfirmDelete(null)}>
+                      Annuler
+                    </button>
+                  </>
+                ) : (
                   <button
                     className="leagues__btn leagues__btn--delete"
-                    onClick={() => { deleteLeague(league.id); setConfirmDelete(null); }}
+                    onClick={() => setConfirmDelete(league.id)}
                   >
-                    Confirmer
+                    Supprimer
                   </button>
-                  <button className="leagues__btn" onClick={() => setConfirmDelete(null)}>
-                    Annuler
-                  </button>
-                </>
-              ) : (
-                <button
-                  className="leagues__btn leagues__btn--delete"
-                  onClick={() => setConfirmDelete(league.id)}
-                >
-                  Supprimer
-                </button>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {editing && (
         <LeagueForm
           league={editTarget}
           knownPlayers={knownPlayers}
-          onSave={(name, players) => {
-            if (editing === 'new') createLeague(name, players);
-            else updateLeague(editing, name, players);
+          onSave={(name, players, color) => {
+            if (editing === 'new') createLeague(name, players, color);
+            else updateLeague(editing, name, players, color);
             setEditing(null);
           }}
           onCancel={() => setEditing(null)}
+        />
+      )}
+
+      {joining && (
+        <IdentityPicker
+          league={joining}
+          knownPlayers={knownPlayers}
+          onClose={() => setJoining(null)}
         />
       )}
     </div>
@@ -89,6 +128,7 @@ export default function Leagues({ knownPlayers }) {
 function LeagueForm({ league, knownPlayers, onSave, onCancel }) {
   const [name, setName] = useState(league?.name ?? '');
   const [players, setPlayers] = useState(league?.players ?? []);
+  const [color, setColor] = useState(league?.color ?? SWATCHES[0]);
 
   function togglePlayer(p) {
     setPlayers(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
@@ -97,7 +137,7 @@ function LeagueForm({ league, knownPlayers, onSave, onCancel }) {
   function submit(e) {
     e.preventDefault();
     if (!name.trim() || players.length === 0) return;
-    onSave(name.trim(), players);
+    onSave(name.trim(), players, color);
   }
 
   return (
@@ -114,6 +154,24 @@ function LeagueForm({ league, knownPlayers, onSave, onCancel }) {
           maxLength={40}
           autoFocus
         />
+
+        <label className="leagues__label">Couleur de la ligue</label>
+        <div className="leagues__colors">
+          {SWATCHES.map(c => (
+            <button
+              key={c}
+              type="button"
+              className={`leagues__swatch${color.toLowerCase() === c.toLowerCase() ? ' leagues__swatch--on' : ''}`}
+              style={{ background: c }}
+              onClick={() => setColor(c)}
+              aria-label={`Couleur ${c}`}
+            />
+          ))}
+          <label className="leagues__swatch leagues__swatch--custom" style={{ background: color }}>
+            <input type="color" value={color} onChange={e => setColor(e.target.value)} />
+            <span>+</span>
+          </label>
+        </div>
 
         <label className="leagues__label">Joueurs ({players.length} sélectionné{players.length !== 1 ? 's' : ''})</label>
         {knownPlayers && knownPlayers.length > 0 ? (

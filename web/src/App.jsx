@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react';
 import { useLenis } from './lib/useLenis.js';
 import { useGames } from './lib/useGames.js';
 import { LeagueProvider, useLeague } from './lib/useLeague.jsx';
+import { useLeagueTheme } from './lib/useLeagueTheme.js';
 import CalloutModal from './components/CalloutModal.jsx';
+import Welcome from './routes/Welcome.jsx';
 import Hero from './scenes/Hero.jsx';
 import Standings from './scenes/Standings.jsx';
 import Feed from './scenes/Feed.jsx';
@@ -21,10 +23,10 @@ import CricketGame from './routes/play/CricketGame.jsx';
 import FiftyOneGame from './routes/play/FiftyOneGame.jsx';
 import './App.css';
 
-function Home({ games, stats, ranked }) {
+function Home({ games, stats, ranked, leagueName }) {
   return (
     <main>
-      <Hero ranked={ranked} games={games} />
+      <Hero ranked={ranked} games={games} leagueName={leagueName} />
       <Standings ranked={ranked} />
       <Feed games={games} />
       <Trends games={games} ranked={ranked} />
@@ -56,7 +58,8 @@ function AppInner() {
   useLenis();
   const location = useLocation();
   const isPlaying = location.pathname.startsWith('/play');
-  const { activeLeague, activateLeague } = useLeague();
+  const { activeLeague, activateLeague, loading: leaguesLoading, seenWelcome, myPlayer } = useLeague();
+  useLeagueTheme(activeLeague?.color ?? null);
   const { games, allGames, stats, ranked, loading, error } = useGames(activeLeague?.players ?? null);
   const [calloutOpen, setCalloutOpen] = useState(false);
   const [calloutRemaining, setCalloutRemaining] = useState(calloutRemainingMs);
@@ -73,7 +76,7 @@ function AppInner() {
     return () => clearInterval(id);
   }, [calloutRemaining > 0]);
 
-  if (loading && !isPlaying) {
+  if ((loading || leaguesLoading) && !isPlaying) {
     return (
       <div className="boot">
         <div className="boot__spinner" />
@@ -115,6 +118,21 @@ function AppInner() {
     ? [...new Set(allGames.flatMap(g => g.players ?? []))].sort((a, b) => a.localeCompare(b, 'fr'))
     : [];
 
+  // In league mode, the leaderboard surfaces (Hero champion, Standings, players)
+  // should only crown league *members*. The game filter still keeps games played
+  // against guests (so members' wins count), we just don't list the guests.
+  const displayRanked = activeLeague
+    ? ranked.filter(s => activeLeague.players.includes(s.name))
+    : ranked;
+
+  // First-visit gate: show the Welcome page until the visitor picks a league or
+  // explicitly chooses to see everything. A persisted active league skips it.
+  const showWelcome = !activeLeague && !seenWelcome;
+  const landing = showWelcome
+    ? <Welcome allGames={allGames} knownPlayers={knownPlayers} />
+    : <Home games={games} stats={stats} ranked={displayRanked} leagueName={activeLeague?.name ?? null} />;
+  const identity = activeLeague ? myPlayer(activeLeague.id) : null;
+
   return (
     <>
       <ScrollTop />
@@ -149,8 +167,10 @@ function AppInner() {
       {activeLeague && (
         <div className="league-banner">
           <span className="league-banner__label">Ligue active :</span>
-          <span className="league-banner__name">{activeLeague.name}</span>
-          <span className="league-banner__players">{activeLeague.players.join(' · ')}</span>
+          <Link to="/ligues" className="league-banner__name">{activeLeague.name}</Link>
+          {identity
+            ? <span className="league-banner__players">Tu joues comme <strong>{identity}</strong></span>
+            : <span className="league-banner__players">{activeLeague.players.join(' · ')}</span>}
           <button
             className="league-banner__clear"
             onClick={() => activateLeague(activeLeague.id)}
@@ -165,18 +185,18 @@ function AppInner() {
         open={calloutOpen}
         onClose={() => setCalloutOpen(false)}
         onSent={() => setCalloutRemaining(COOLDOWN_MS)}
-        players={ranked.map(s => s.name)}
+        players={displayRanked.map(s => s.name)}
         leagueName={activeLeague?.name ?? null}
       />
 
       <Routes>
-        <Route path="/" element={<Home games={games} stats={stats} ranked={ranked} />} />
+        <Route path="/" element={landing} />
         <Route path="/joueur/:name" element={<PlayerProfile games={games} stats={stats} />} />
-        <Route path="/profils" element={<PlayersIndex ranked={ranked} />} />
+        <Route path="/profils" element={<PlayersIndex ranked={displayRanked} />} />
         <Route path="/trophees" element={<TrophiesPage stats={stats} />} />
         <Route path="/xp" element={<XpGuide />} />
         <Route path="/ligues" element={<Leagues knownPlayers={knownPlayers} />} />
-        <Route path="*" element={<Home games={games} stats={stats} ranked={ranked} />} />
+        <Route path="*" element={landing} />
       </Routes>
 
       <footer className="footer shell">

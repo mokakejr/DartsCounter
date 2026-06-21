@@ -60,10 +60,21 @@
 
 .leagues__card-head {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 6px;
 }
+.leagues__card-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.leagues__card-mine {
+  font-size: 13px;
+  color: var(--muted-2);
+  margin: -8px 0 14px;
+}
+.leagues__card-mine strong { color: var(--card-accent, var(--primary)); }
 
 .leagues__card-name {
   font-size: 18px;
@@ -102,6 +113,16 @@
 }
 .leagues__btn:hover { border-color: var(--muted); }
 .leagues__btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.leagues__btn--join {
+  border-color: color-mix(in srgb, var(--card-accent, var(--primary)) 45%, transparent);
+  color: var(--card-accent, var(--primary));
+  font-weight: 700;
+}
+.leagues__btn--join:hover {
+  border-color: var(--card-accent, var(--primary));
+  background: color-mix(in srgb, var(--card-accent, var(--primary)) 10%, var(--surface));
+}
 
 .leagues__btn--activate {
   border-color: var(--muted);
@@ -177,6 +198,44 @@
 }
 .leagues__input:focus { border-color: var(--muted); }
 .leagues__input::placeholder { color: var(--muted); }
+
+.leagues__colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.leagues__swatch {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s, border-color 0.12s;
+}
+.leagues__swatch:hover { transform: scale(1.1); }
+.leagues__swatch--on {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--bg) inset;
+}
+.leagues__swatch--custom {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  border-color: var(--border);
+  overflow: hidden;
+}
+.leagues__swatch--custom input[type="color"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+}
 
 .leagues__player-chips {
   display: flex;

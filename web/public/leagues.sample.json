@@ -1,0 +1,18 @@
+[
+  {
+    "id": "sample-bureau",
+    "name": "Ligue du Bureau",
+    "color": "#4C9BE6",
+    "players": ["Gaétan", "Léo", "Théo"],
+    "createdAt": "2026-06-01T00:00:00.000Z",
+    "createdBy": "Théo"
+  },
+  {
+    "id": "sample-warriors",
+    "name": "Dart Warriors",
+    "color": "#A974E6",
+    "players": ["Junior", "Théo"],
+    "createdAt": "2026-06-05T00:00:00.000Z",
+    "createdBy": "Junior"
+  }
+]

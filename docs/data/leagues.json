@@ -1,0 +1,10 @@
+[
+  {
+    "id": "connected-products",
+    "name": "Connected Products",
+    "color": "#E61E2A",
+    "players": ["Alexandra", "Alexis B", "Alexis S", "Gaétan", "Julien", "Léo", "Maxime", "Mehdi", "Nathan", "Rémi", "Thomas", "Théo"],
+    "createdAt": "2026-06-20T00:00:00.000Z",
+    "createdBy": "Théo"
+  }
+]

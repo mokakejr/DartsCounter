@@ -1,0 +1,132 @@
+.welcome {
+  min-height: 100svh;
+  padding-bottom: 80px;
+}
+
+/* ── Hero ──────────────────────────────────────────────── */
+.welcome__hero {
+  padding-top: clamp(120px, 22vh, 220px);
+  padding-bottom: clamp(48px, 8vh, 96px);
+}
+
+.welcome__title {
+  font-size: clamp(52px, 13vw, 150px);
+  line-height: 0.92;
+  letter-spacing: -0.01em;
+  margin: 14px 0 0;
+}
+.welcome__line { display: block; }
+.welcome__accent { color: var(--primary); }
+
+.welcome__sub {
+  margin-top: 24px;
+  max-width: 540px;
+  color: var(--muted-2);
+  font-size: clamp(15px, 2.2vw, 18px);
+  line-height: 1.5;
+}
+
+.welcome__cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 36px;
+}
+
+.welcome__cta {
+  padding: 14px 28px;
+  background: var(--primary);
+  border: 1.5px solid var(--primary);
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.welcome__cta:hover { opacity: 0.88; transform: translateY(-1px); }
+
+.welcome__cta--ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+.welcome__cta--ghost:hover { border-color: var(--muted); opacity: 1; }
+
+/* ── League grid ───────────────────────────────────────── */
+.welcome__leagues {
+  padding-top: 8px;
+}
+.welcome__leagues-title {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 22px;
+}
+.welcome__empty {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.welcome__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.welcome__card {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 22px 20px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.welcome__card:hover {
+  border-color: color-mix(in srgb, var(--card-accent) 55%, var(--border));
+  transform: translateY(-2px);
+}
+.welcome__card-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--card-accent);
+}
+
+.welcome__card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.welcome__card-name { font-size: 19px; font-weight: 700; }
+.welcome__card-count {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.welcome__card-champ { font-size: 14px; color: var(--text); margin-bottom: 4px; }
+.welcome__card-champ strong { color: var(--card-accent); }
+.welcome__card-dim { color: var(--muted); }
+.welcome__card-meta { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+
+.welcome__join {
+  width: 100%;
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--card-accent) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--card-accent) 40%, transparent);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--card-accent);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.welcome__join:hover { background: color-mix(in srgb, var(--card-accent) 22%, var(--surface)); }

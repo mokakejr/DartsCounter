@@ -2,16 +2,30 @@
 // game (from the Android app) shows up without rebuilding the site.
 // `?demo` loads the bundled sample instead.
 
-const RAW_URL =
-  'https://raw.githubusercontent.com/mokakejr/DartsCounter/master/docs/data/games.json';
+const RAW_BASE =
+  'https://raw.githubusercontent.com/mokakejr/DartsCounter/master/docs/data';
 
 const isDemo = () => new URLSearchParams(location.search).has('demo');
 
 export async function loadGames() {
   const url = isDemo()
     ? `${import.meta.env.BASE_URL}games.sample.json`
-    : `${RAW_URL}?t=${Date.now()}`;
+    : `${RAW_BASE}/games.json?t=${Date.now()}`;
   const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+// Shared leagues live alongside games.json on GitHub and are fetched at runtime,
+// so a league created from any browser shows up for everyone. `?demo` uses a
+// bundled sample. A 404 (file not yet created) is treated as "no leagues".
+export async function loadLeagues() {
+  const url = isDemo()
+    ? `${import.meta.env.BASE_URL}leagues.sample.json`
+    : `${RAW_BASE}/leagues.json?t=${Date.now()}`;
+  const res = await fetch(url, { cache: 'no-store' });
+  if (res.status === 404) return [];
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
   return Array.isArray(data) ? data : [];

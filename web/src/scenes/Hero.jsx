@@ -5,7 +5,7 @@ import Dart from '../components/Dart.jsx';
 import { MODE_LABEL, fmtDuration, relDate } from '../lib/data.js';
 import './Hero.css';
 
-export default function Hero({ ranked, games }) {
+export default function Hero({ ranked, games, leagueName }) {
   const champ = ranked[0];
   const last = games && games.length ? games[0] : null;
   const others = last ? (last.players || []).filter(p => p !== last.winner) : [];
@@ -26,7 +26,7 @@ export default function Hero({ ranked, games }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            {champ ? 'Champion en titre' : 'DartsCounter · La Ligue'}
+            {leagueName ? leagueName : champ ? 'Champion en titre' : 'DartsCounter · La Ligue'}
           </motion.p>
 
           <motion.h1

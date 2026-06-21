@@ -1,0 +1,29 @@
+# Used for builds whose context is the repo root (currently: pwa-dashboard/Dockerfile,
+# which needs both pwa-dashboard/ and shared/ in one context). Keeps that upload lean.
+
+# Android app
+app/
+gradle/
+gradle.properties
+gradlew.bat
+build.gradle
+settings.gradle
+
+# IDE / VCS
+.git
+.idea
+
+# Python virtualenvs (backend has its own .dockerignore for its own build context)
+.venv/
+backend/.venv/
+
+# Legacy web assets not needed by any container build
+docs/
+workers/
+
+# Build artifacts / deps — each app installs/builds its own inside the image
+**/node_modules
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache

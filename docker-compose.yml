@@ -1,0 +1,68 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: dartscounter-backend
+    restart: unless-stopped
+    env_file:
+      - .env.main
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - default
+      - caddy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: dartscounter-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - default
+
+  redis:
+    image: redis:7-alpine
+    container_name: dartscounter-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - default
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: pwa-dashboard/Dockerfile
+      args:
+        VITE_API_URL: https://api.${DOMAIN}
+        VITE_COUNTER_URL: https://counter.${DOMAIN}
+    container_name: dartscounter-dashboard
+    restart: unless-stopped
+    networks:
+      - caddy
+
+  counter:
+    build:
+      context: ./pwa-counter
+      args:
+        VITE_API_URL: https://api.${DOMAIN}
+    container_name: dartscounter-counter
+    restart: unless-stopped
+    networks:
+      - caddy
+
+networks:
+  default:
+  caddy:
+    name: ${CADDY_NETWORK:-caddy}
+    external: true
+
+volumes:
+  postgres_data:
+  redis_data:

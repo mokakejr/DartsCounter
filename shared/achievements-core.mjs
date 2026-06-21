@@ -2,7 +2,7 @@
  * achievements-core.mjs — moteur de trophées PARTAGÉ (ESM).
  *
  * Source unique de vérité pour : stats par joueur, niveaux/XP, et définition
- * des trophées. Importé par le front React (web/) ET par scripts/trophy-announce.js.
+ * des trophées. Importé par le front React (pwa-dashboard/) ET par scripts/trophy-announce.js.
  * Aucune dépendance, aucune API DOM — logique pure portable.
  * ════════════════════════════════════════════════════════════════════════ */
 

@@ -1,0 +1,16 @@
+# Sample Caddy config for the prod stack. Copy the relevant block into the VPS's
+# existing Caddy instance — Caddy must be attached to the same external Docker
+# network as this compose stack (see CADDY_NETWORK in .env.main) to resolve
+# containers by name.
+
+darts.{$DOMAIN} {
+    reverse_proxy dartscounter-dashboard:80
+}
+
+darts.counter.{$DOMAIN} {
+    reverse_proxy dartscounter-counter:80
+}
+
+darts.api.{$DOMAIN} {
+    reverse_proxy dartscounter-backend:8000
+}

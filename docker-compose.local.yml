@@ -1,0 +1,49 @@
+services:
+  backend:
+    container_name: dartscounter-local-backend
+    env_file: !override
+      - .env
+    networks: !override
+      - default
+    ports:
+      - "8000:8000"
+
+  postgres:
+    container_name: dartscounter-local-postgres
+    ports:
+      - "5432:5432"
+
+  redis:
+    container_name: dartscounter-local-redis
+    ports:
+      - "6379:6379"
+
+  dashboard:
+    container_name: dartscounter-local-dashboard
+    build:
+      target: dev
+    networks: !override
+      - default
+    ports:
+      - "5174:5173"
+    environment:
+      VITE_API_URL: http://localhost:8000
+      VITE_COUNTER_URL: http://localhost:5175
+    volumes:
+      - ./pwa-dashboard:/repo/pwa-dashboard
+      - ./shared:/repo/shared
+      - /repo/pwa-dashboard/node_modules
+
+  counter:
+    container_name: dartscounter-local-counter
+    build:
+      target: dev
+    networks: !override
+      - default
+    ports:
+      - "5175:5173"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    volumes:
+      - ./pwa-counter:/app
+      - /app/node_modules

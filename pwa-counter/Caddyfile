@@ -1,0 +1,12 @@
+:80 {
+	root * /srv
+	encode gzip zstd
+
+	# Never cache the service worker itself — otherwise browsers can keep
+	# serving a stale SW for a long time after a deploy.
+	@sw path /sw.js
+	header @sw Cache-Control "no-cache"
+
+	try_files {path} /index.html
+	file_server
+}

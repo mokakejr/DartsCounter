@@ -1,0 +1,48 @@
+/* ════════════════════════════════════════════════════════════════════════
+ * Design tokens — palette restreinte et intentionnelle.
+ * Règle d'or : peu de couleurs, à rôle unique. Aucun hex en dur ailleurs.
+ * ════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* Neutres éditoriaux (near-black / off-white) */
+  --bg:        #0A0A0B;
+  --surface:   #131316;
+  --surface-2: #1B1B1F;
+  --border:    #26262B;
+  --text:      #F4F3EF;
+  --muted:     #8A8A8E;
+  --muted-2:   #B6B6BB; /* gris plus lisible : chips de filtre, durées/timers */
+
+  /* Accent de marque unique */
+  --primary:     #E61E2A;
+  --primary-dim: #8C1218;
+
+  /* Rang — métaux désaturés, UNIQUEMENT pour le badge de classement */
+  --rank-1: #C9A227;
+  --rank-2: #9CA3AF;
+  --rank-3: #B0814F;
+
+  /* Résultat — seule autre famille de couleur autorisée */
+  --win:  #34D399;
+  --loss: var(--muted);
+
+  /* Séries de graphes — UNE échelle dérivée du primary */
+  --series-1: #E61E2A;
+  --series-2: #F2555E;
+  --series-3: #FF8A91;
+  --series-4: #B0121A;
+  --series-5: #7A0D12;
+
+  /* Rareté des trophées — teintes sobres, communes → légendaires */
+  --rar-common:    #6B7280;
+  --rar-rare:      #4C9BE6;
+  --rar-epic:      #A974E6;
+  --rar-legendary: #E6A93C;
+
+  /* Typo */
+  --font-display: 'Anton', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  /* Rythme */
+  --maxw: 1200px;
+  --gutter: clamp(20px, 5vw, 64px);
+}

@@ -62,7 +62,7 @@ export default function Welcome({ allGames, knownPlayers }) {
           transition={{ duration: 0.6, delay: 0.25 }}
         >
           Crée ta ligue, ramène tes potes et que le meilleur règne. Chaque ligue
-          a son classement, ses trophées et sa couleur.
+          a son classement, ses trophées et son winner.
         </motion.p>
 
         <motion.div

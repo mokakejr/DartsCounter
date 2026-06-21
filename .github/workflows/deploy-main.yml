@@ -1,0 +1,30 @@
+# Requires these repo secrets: VPS_HOST, VPS_USER, VPS_SSH_KEY, VPS_PORT.
+# The VPS must already have the repo cloned at /opt/dartscounter with a
+# .env.main in place (see .env.example) and the host's Caddy instance attached
+# to the network named in CADDY_NETWORK.
+
+name: Deploy (prod)
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            set -e
+            cd /opt/dartscounter
+            git pull origin master
+            docker compose pull
+            docker compose up -d --build

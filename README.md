@@ -147,7 +147,58 @@ the fly, recomputes Elo for every player in chronological order at the end.
 
 ## Deployment
 
-Two environments, same compose base file with overrides:
+This repo assumes a VPS that already has Docker and a Caddy instance running
+for other things too — neither is provisioned by this stack. Two
+environments, same compose base file with overrides, each in its own
+directory on the VPS so dev and prod never share a Postgres/Redis volume.
+
+### First deployment (one-time setup)
+
+1. **DNS** — point each hostname at the VPS's public IP (A/AAAA record, or a
+   wildcard if your provider supports it and that's acceptable):
+   - prod: `darts.mydomain.com`, `darts.counter.mydomain.com`, `darts.api.mydomain.com`
+   - dev (if deploying it too): `darts.dev.mydomain.com`, `darts.counter.dev.mydomain.com`, `darts.api.dev.mydomain.com`
+
+   Caddy provisions Let's Encrypt certs per site block on first request —
+   that only succeeds once the hostname actually resolves to this VPS.
+
+2. **External Docker network** — Caddy and this stack must share one so
+   Caddy can reach containers by name:
+   ```bash
+   docker network create caddy   # only if it doesn't already exist; must match CADDY_NETWORK
+   ```
+   Your existing Caddy container/compose needs to be attached to it too.
+
+3. **Clone + configure**:
+   ```bash
+   git clone <repo-url> /opt/dartscounter        # prod
+   git clone <repo-url> /opt/dartscounter-dev     # dev, if deploying it
+   cd /opt/dartscounter
+   cp .env.example .env.main      # (.env.dev in the dev checkout)
+   # edit: DOMAIN, POSTGRES_PASSWORD, CADDY_NETWORK, CORS_ORIGINS (real https:// origins)
+   ```
+
+4. **Caddy config** — copy the relevant block from `caddy/Caddyfile.main` /
+   `caddy/Caddyfile.dev` into your real host Caddy config (this repo never
+   starts Caddy itself, so where that config lives is VPS-specific), then
+   reload Caddy.
+
+5. **First build + migration**:
+   ```bash
+   docker compose up -d --build                                  # prod
+   docker compose exec backend uv run alembic upgrade head
+   ```
+   Run migrations *inside* the backend container, not on the host — Postgres
+   isn't published to the host port in prod/dev (unlike `docker-compose.local.yml`),
+   so the host-side `POSTGRES_HOST=localhost` command used for local dev
+   (see [Local development](#local-development)) won't reach it here.
+
+6. **GitHub Actions secrets** (repo Settings → Secrets → Actions), so future
+   pushes auto-deploy — see [CI/CD](#cicd) below.
+
+### Ongoing deploys
+
+Once the above is done once, deploys are just:
 
 ```bash
 # dev  → darts.dev.mydomain.com / darts.counter.dev.mydomain.com / darts.api.dev.mydomain.com
@@ -157,23 +208,16 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 docker compose up -d --build
 ```
 
-The VPS's **existing** Caddy instance reverse-proxies to these containers by
-name (see `caddy/Caddyfile.main` / `caddy/Caddyfile.dev` — copy the relevant
-block into your real Caddy config). Caddy itself is never started by this
-compose stack. Containers join the external Docker network named by
-`CADDY_NETWORK` so Caddy can reach them.
-
-Real config goes in `.env.main` (prod) / `.env.dev` (dev) on the VPS —
-gitignored, copy from `.env.example` and fill in real values (`DOMAIN`,
-`POSTGRES_PASSWORD`, `CORS_ORIGINS`, etc).
+Run step 5's `alembic upgrade head` again any time a new migration lands.
 
 ### CI/CD
 
 `.github/workflows/deploy-main.yml` and `deploy-dev.yml` SSH into the VPS on
-push to `master`/`dev` respectively, `git pull`, then `docker compose pull && up -d --build`.
-Required repo secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_PORT`. The
-VPS needs the repo already cloned at `/opt/dartscounter` (prod) /
-`/opt/dartscounter-dev` (dev) with its `.env.main`/`.env.dev` in place.
+push to `master`/`dev` respectively, `git pull`, then `docker compose pull && up -d --build`
+in `/opt/dartscounter` / `/opt/dartscounter-dev`. They don't run migrations —
+do that manually (step 5 above) after a deploy that includes one.
+
+Required repo secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_PORT`.
 
 ## Repo structure
 

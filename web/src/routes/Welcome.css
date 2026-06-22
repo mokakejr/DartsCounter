@@ -65,9 +65,22 @@
   color: var(--muted);
   margin-bottom: 22px;
 }
+.welcome__empty-state {
+  padding: 8px 0 4px;
+}
+.welcome__empty-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  margin-bottom: 10px;
+}
 .welcome__empty {
-  color: var(--muted);
-  font-size: 14px;
+  color: var(--muted-2);
+  font-size: 16px;
+  line-height: 1.5;
+  max-width: 480px;
 }
 
 .welcome__grid {

@@ -61,8 +61,8 @@ export default function Welcome({ allGames, knownPlayers }) {
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.25 }}
         >
-          Crée ta ligue, ramène tes potes et que le meilleur règne. Chaque ligue
-          a son classement, ses trophées et son winner.
+          Crée ta ligue, défie tes potes et montre enfin qui est le patron.
+          Classements en temps réel, badges à décrocher et chambrage garanti.
         </motion.p>
 
         {/* Hierarchy: when leagues exist, *joining* one (the cards below) is the
@@ -76,22 +76,24 @@ export default function Welcome({ allGames, knownPlayers }) {
         >
           {leagues.length === 0 && (
             <button className="welcome__cta" onClick={() => { markSeen(); navigate('/ligues?new=1'); }}>
-              + Créer une ligue
+              + Lancer une ligue
             </button>
           )}
           <button className="welcome__cta welcome__cta--ghost" onClick={seeEverything}>
-            Voir toutes les parties
+            Explorer les parties
           </button>
         </motion.div>
       </section>
 
       <section className="welcome__leagues shell">
-        <h2 className="welcome__leagues-title">
-          {leagues.length > 0 ? 'Rejoins une ligue' : 'Aucune ligue pour l’instant'}
-        </h2>
         {leagues.length === 0 ? (
-          <p className="welcome__empty">Sois le premier — crée la ligue qui rassemblera tout le monde.</p>
+          <div className="welcome__empty-state">
+            <h2 className="welcome__empty-title">Le tableau d’affichage est vide</h2>
+            <p className="welcome__empty">Lance les hostilités : crée la première ligue et invite tes joueurs.</p>
+          </div>
         ) : (
+          <>
+          <h2 className="welcome__leagues-title">Rejoins une ligue</h2>
           <div className="welcome__grid">
             {leagues.map((l, i) => {
               const { champ, gameCount } = summaries[l.id] ?? {};
@@ -124,14 +126,13 @@ export default function Welcome({ allGames, knownPlayers }) {
               );
             })}
           </div>
-        )}
-        {leagues.length > 0 && (
           <button
             className="welcome__create-link"
             onClick={() => { markSeen(); navigate('/ligues?new=1'); }}
           >
-            + Créer une nouvelle ligue
+            + Lancer une nouvelle ligue
           </button>
+          </>
         )}
       </section>
 

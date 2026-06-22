@@ -46,16 +46,16 @@ export default function Leagues({ knownPlayers }) {
     <div className="leagues shell">
       <h1 className="leagues__title display">Ligues</h1>
       <p className="leagues__sub">
-        Crée une ligue, rejoins-la avec ton joueur, et le dashboard se filtre sur ton groupe.
+        Lance une ligue, rejoins-la avec ton joueur, et le dashboard se filtre sur ton groupe.
         Les ligues sont partagées avec tout le monde.
       </p>
 
       <button className="leagues__new" onClick={() => setEditing('new')}>
-        + Créer une ligue
+        + Lancer une ligue
       </button>
 
       {leagues.length === 0 && !editing && (
-        <p className="leagues__empty">Aucune ligue créée. Commence par en créer une !</p>
+        <p className="leagues__empty">Aucune ligue. Lance la première !</p>
       )}
 
       <div className="leagues__list">
@@ -155,7 +155,7 @@ function LeagueForm({ league, knownPlayers, onSave, onCancel }) {
   return (
     <div className="leagues__overlay" onClick={onCancel}>
       <form className="leagues__form" onClick={e => e.stopPropagation()} onSubmit={submit}>
-        <h2 className="leagues__form-title">{league ? 'Modifier la ligue' : 'Nouvelle ligue'}</h2>
+        <h2 className="leagues__form-title">{league ? 'Modifier la ligue' : 'Lancer une ligue'}</h2>
 
         <label className="leagues__label">Nom de la ligue</label>
         <input
@@ -207,7 +207,7 @@ function LeagueForm({ league, knownPlayers, onSave, onCancel }) {
             className="leagues__btn leagues__btn--primary"
             disabled={!name.trim() || players.length === 0}
           >
-            {league ? 'Enregistrer' : 'Créer'}
+            {league ? 'Enregistrer' : 'Lancer'}
           </button>
         </div>
       </form>

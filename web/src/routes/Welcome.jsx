@@ -7,15 +7,14 @@ import IdentityPicker from '../components/IdentityPicker.jsx';
 import './Welcome.css';
 
 // Champion + activity for one league, derived from the full games set.
+// Closed-group rule: a game counts only if EVERY player is a league member.
 function leagueSummary(league, allGames) {
   const games = (allGames ?? []).filter(
-    g => Array.isArray(g.players) && g.players.some(p => league.players.includes(p))
+    g => Array.isArray(g.players) && g.players.length > 0 &&
+      g.players.every(p => league.players.includes(p))
   );
   const stats = computePlayerStats(games);
-  // Champion = best *member* of the league. The game filter keeps non-members
-  // who played alongside the group, but they shouldn't be crowned here.
   const ranked = Object.values(stats)
-    .filter(s => league.players.includes(s.name))
     .sort((a, b) => b.wins - a.wins || b.games - a.games || a.name.localeCompare(b.name));
   return { champ: ranked[0] ?? null, gameCount: games.length };
 }
@@ -62,7 +61,7 @@ export default function Welcome({ allGames, knownPlayers }) {
           transition={{ duration: 0.6, delay: 0.25 }}
         >
           Crée ta ligue, défie tes potes et montre enfin qui est le patron.
-          Classements en temps réel, badges à décrocher et chambrage garanti.
+          Un classement unique, des trophées à débloquer et un seul champion à la fin.
         </motion.p>
 
         {/* Hierarchy: when leagues exist, *joining* one (the cards below) is the

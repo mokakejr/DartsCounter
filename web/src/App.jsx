@@ -118,9 +118,9 @@ function AppInner() {
     ? [...new Set(allGames.flatMap(g => g.players ?? []))].sort((a, b) => a.localeCompare(b, 'fr'))
     : [];
 
-  // In league mode, the leaderboard surfaces (Hero champion, Standings, players)
-  // should only crown league *members*. The game filter still keeps games played
-  // against guests (so members' wins count), we just don't list the guests.
+  // In league mode the game filter is already a closed group (every player must
+  // be a member), so `ranked` only contains members. This filter is therefore a
+  // defensive no-op kept in case a roster changes while data is in flight.
   const displayRanked = activeLeague
     ? ranked.filter(s => activeLeague.players.includes(s.name))
     : ranked;

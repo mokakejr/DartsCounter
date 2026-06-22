@@ -4,7 +4,19 @@ import { useLeague } from '../lib/useLeague.jsx';
 import IdentityPicker from '../components/IdentityPicker.jsx';
 import './Leagues.css';
 
-const SWATCHES = ['#E61E2A', '#F5833F', '#E6A93C', '#34D399', '#2DD4BF', '#4C9BE6', '#A974E6', '#EC4899'];
+// Palette restreinte, validée pour le contraste sur le thème sombre (cf. tokens.css).
+// Pas de couleur libre : une teinte trop sombre/claire casserait la lisibilité des
+// accents et des courbes dérivées dans useLeagueTheme.
+const SWATCHES = [
+  { hex: '#E61E2A', name: 'Rouge' },
+  { hex: '#F5833F', name: 'Orange' },
+  { hex: '#E6A93C', name: 'Ambre' },
+  { hex: '#34D399', name: 'Vert' },
+  { hex: '#2DD4BF', name: 'Turquoise' },
+  { hex: '#4C9BE6', name: 'Bleu' },
+  { hex: '#A974E6', name: 'Violet' },
+  { hex: '#EC4899', name: 'Rose' },
+];
 
 export default function Leagues({ knownPlayers }) {
   const {
@@ -128,7 +140,7 @@ export default function Leagues({ knownPlayers }) {
 function LeagueForm({ league, knownPlayers, onSave, onCancel }) {
   const [name, setName] = useState(league?.name ?? '');
   const [players, setPlayers] = useState(league?.players ?? []);
-  const [color, setColor] = useState(league?.color ?? SWATCHES[0]);
+  const [color, setColor] = useState(league?.color ?? SWATCHES[0].hex);
 
   function togglePlayer(p) {
     setPlayers(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
@@ -157,20 +169,17 @@ function LeagueForm({ league, knownPlayers, onSave, onCancel }) {
 
         <label className="leagues__label">Couleur de la ligue</label>
         <div className="leagues__colors">
-          {SWATCHES.map(c => (
+          {SWATCHES.map(({ hex, name }) => (
             <button
-              key={c}
+              key={hex}
               type="button"
-              className={`leagues__swatch${color.toLowerCase() === c.toLowerCase() ? ' leagues__swatch--on' : ''}`}
-              style={{ background: c }}
-              onClick={() => setColor(c)}
-              aria-label={`Couleur ${c}`}
+              className={`leagues__swatch${color.toLowerCase() === hex.toLowerCase() ? ' leagues__swatch--on' : ''}`}
+              style={{ background: hex }}
+              onClick={() => setColor(hex)}
+              aria-label={name}
+              aria-pressed={color.toLowerCase() === hex.toLowerCase()}
             />
           ))}
-          <label className="leagues__swatch leagues__swatch--custom" style={{ background: color }}>
-            <input type="color" value={color} onChange={e => setColor(e.target.value)} />
-            <span>+</span>
-          </label>
         </div>
 
         <label className="leagues__label">Joueurs ({players.length} sélectionné{players.length !== 1 ? 's' : ''})</label>

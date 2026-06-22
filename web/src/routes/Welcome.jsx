@@ -65,14 +65,20 @@ export default function Welcome({ allGames, knownPlayers }) {
           a son classement, ses trophées et son winner.
         </motion.p>
 
+        {/* Hierarchy: when leagues exist, *joining* one (the cards below) is the
+            primary goal, so the hero only offers the secondary "see everything"
+            escape hatch. With no league yet, creating is the only path → promote
+            it to the primary CTA. */}
         <motion.div
           className="welcome__cta-row"
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <button className="welcome__cta" onClick={() => { markSeen(); navigate('/ligues?new=1'); }}>
-            + Créer une ligue
-          </button>
+          {leagues.length === 0 && (
+            <button className="welcome__cta" onClick={() => { markSeen(); navigate('/ligues?new=1'); }}>
+              + Créer une ligue
+            </button>
+          )}
           <button className="welcome__cta welcome__cta--ghost" onClick={seeEverything}>
             Voir toutes les parties
           </button>
@@ -118,6 +124,14 @@ export default function Welcome({ allGames, knownPlayers }) {
               );
             })}
           </div>
+        )}
+        {leagues.length > 0 && (
+          <button
+            className="welcome__create-link"
+            onClick={() => { markSeen(); navigate('/ligues?new=1'); }}
+          >
+            + Créer une nouvelle ligue
+          </button>
         )}
       </section>
 

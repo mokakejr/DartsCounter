@@ -130,3 +130,20 @@
   transition: background 0.15s;
 }
 .welcome__join:hover { background: color-mix(in srgb, var(--card-accent) 22%, var(--surface)); }
+
+.welcome__create-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 24px;
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--muted-2);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.welcome__create-link:hover { border-color: var(--muted); color: var(--text); }

@@ -110,6 +110,15 @@
 .league-banner__name {
   font-weight: 700;
   color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--primary) 50%, transparent);
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 0.12s, text-decoration-color 0.12s;
+}
+.league-banner__name:hover {
+  color: var(--primary);
+  text-decoration-color: var(--primary);
 }
 .league-banner__players {
   color: var(--muted);

@@ -20,6 +20,8 @@ class GoogleChatTarget:
             body = _game_finished_body(event.data)
         elif event.type == "weekly_recap":
             body = _weekly_recap_body(event.data)
+        elif event.type == "player_ping":
+            body = _player_ping_body(event.data)
         else:
             return
         async with httpx.AsyncClient(timeout=10) as client:
@@ -38,6 +40,10 @@ def _game_finished_body(data: dict) -> dict:
         else f"🤝 Égalité en *{label}* !\n{lines}\n⏱ {duration}"
     )
     return {"text": text}
+
+
+def _player_ping_body(data: dict) -> dict:
+    return {"text": f"🎯 *{data['by']}* propose une partie de fléchettes ! Qui est chaud ?"}
 
 
 def _weekly_recap_body(data: dict) -> dict:

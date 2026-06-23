@@ -16,6 +16,8 @@ class DiscordTarget:
             body = _game_finished_body(event.data)
         elif event.type == "weekly_recap":
             body = _weekly_recap_body(event.data)
+        elif event.type == "player_ping":
+            body = _player_ping_body(event.data)
         else:
             return
         async with httpx.AsyncClient(timeout=10) as client:
@@ -36,6 +38,10 @@ def _game_finished_body(data: dict) -> dict:
             "footer": {"text": f"⏱ {fmt_duration(data.get('duration', 0))}"},
         }],
     }
+
+
+def _player_ping_body(data: dict) -> dict:
+    return {"content": f"🎯 **{data['by']}** propose une partie de fléchettes ! Qui est chaud ?"}
 
 
 def _weekly_recap_body(data: dict) -> dict:

@@ -64,6 +64,24 @@
 }
 .nav__count { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
 
+.nav__account {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s;
+}
+.nav__account:hover { color: var(--text); }
+
+@media (max-width: 600px) {
+  .nav__account { display: none; }
+}
+
 .nav__callout {
   font-size: 11px;
   font-weight: 700;

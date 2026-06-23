@@ -7,8 +7,9 @@ import './Hero.css';
 
 const COUNTER_URL = import.meta.env.VITE_COUNTER_URL || 'http://localhost:5174';
 
-export default function Hero({ ranked, games }) {
+export default function Hero({ ranked, games, profiles = {} }) {
   const champ = ranked[0];
+  const champProfile = champ ? profiles[champ.name] : null;
   const last = games && games.length ? games[0] : null;
   const others = last ? (last.players || []).filter(p => p !== last.winner) : [];
 
@@ -16,7 +17,7 @@ export default function Hero({ ranked, games }) {
     <header className="hero">
       <div className="hero__dart">
         <Suspense fallback={null}>
-          <Dart />
+          <Dart accentColor={champProfile?.accent_color} flightImageUrl={champProfile?.flight_image_url} />
         </Suspense>
       </div>
 

@@ -1,7 +1,25 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.models import Player
+from app.schemas.player import PlayerRead
+
+
+def image_url(path: str | None) -> str | None:
+    return f"{get_settings().public_api_url}/uploads/{path}" if path else None
+
+
+def player_to_read(player: Player) -> PlayerRead:
+    return PlayerRead(
+        id=player.id,
+        name=player.name,
+        display_name=player.display_name,
+        avatar_url=image_url(player.avatar_path),
+        flight_image_url=image_url(player.flight_image_path),
+        accent_color=player.accent_color,
+        created_at=player.created_at,
+    )
 
 
 async def get_or_create_player(
@@ -19,5 +37,38 @@ async def get_or_create_player(
     return player
 
 
-async def list_players(session: AsyncSession) -> list[Player]:
-    return list((await session.execute(select(Player).order_by(Player.name))).scalars().all())
+async def list_players(session: AsyncSession) -> list[PlayerRead]:
+    rows = (await session.execute(select(Player).order_by(Player.name))).scalars().all()
+    return [player_to_read(p) for p in rows]
+
+
+class NameTakenError(Exception):
+    pass
+
+
+async def update_profile(session: AsyncSession, player: Player, updates: dict) -> Player:
+    """`updates` should come from `payload.model_dump(exclude_unset=True)` so
+    omitted fields are left untouched and an explicit null still clears one."""
+    if "name" in updates and updates["name"] != player.name:
+        clash = (
+            await session.execute(select(Player).where(Player.name == updates["name"]))
+        ).scalar_one_or_none()
+        if clash is not None:
+            raise NameTakenError(updates["name"])
+        player.name = updates["name"]
+    if "display_name" in updates:
+        player.display_name = updates["display_name"]
+    if "accent_color" in updates:
+        player.accent_color = updates["accent_color"]
+
+    await session.commit()
+    return player
+
+
+async def set_image_path(session: AsyncSession, player: Player, slot: str, path: str) -> Player:
+    if slot == "avatar":
+        player.avatar_path = path
+    else:
+        player.flight_image_path = path
+    await session.commit()
+    return player

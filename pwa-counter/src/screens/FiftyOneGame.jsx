@@ -16,6 +16,8 @@ export default function FiftyOneGame() {
   const [input, setInput] = useState('');
   const [phase, setPhase] = useState('playing'); // 'playing' | 'finished'
   const [showExit, setShowExit] = useState(false);
+  // [{game}] — lets a player undo a confirmed turn, not just the in-progress input
+  const [history, setHistory] = useState([]);
   const startedAt = useRef(Date.now());
 
   const player = game.currentPlayer;
@@ -38,6 +40,7 @@ export default function FiftyOneGame() {
   }
 
   function confirm() {
+    setHistory(h => [...h, { game }]);
     // Invalid score (not multiple of 5, or bust) → pass turn with 0
     const scored = scoreTurn(game, player, validScore ? turnTotal : 0);
     if (scored.winner !== null) {
@@ -52,6 +55,14 @@ export default function FiftyOneGame() {
     } else {
       setGame(nextPlayer(scored));
     }
+    setInput('');
+  }
+
+  function undo() {
+    if (!history.length) return;
+    const prev = history[history.length - 1];
+    setGame(prev.game);
+    setHistory(h => h.slice(0, -1));
     setInput('');
   }
 
@@ -151,6 +162,9 @@ export default function FiftyOneGame() {
           OK
         </button>
       </div>
+
+      {/* Undo — traverses confirmed turns too */}
+      <button className="f51__undo" onClick={undo} disabled={history.length === 0}>⟲ Annuler</button>
     </div>
   );
 }

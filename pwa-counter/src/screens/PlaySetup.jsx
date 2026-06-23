@@ -37,14 +37,18 @@ const MODE_LABEL = {
   fiftyOne: '51',
 };
 
+const CRICKET_FAMILY = new Set(['cricket', 'superCricket']);
+
 export default function PlaySetup() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const mode = state?.mode ?? 'shanghai';
+  const isCricketFamily = CRICKET_FAMILY.has(mode);
 
   const [known, setKnown] = useState(loadKnown);
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState('');
+  const [variant, setVariant] = useState(state?.variant === 'cutthroat' ? 'cutthroat' : 'normal');
 
   // Enrich known players from the backend on mount (best-effort — offline-safe).
   useEffect(() => {
@@ -82,7 +86,7 @@ export default function PlaySetup() {
   }
 
   function start() {
-    navigate(MODE_ROUTE[mode] ?? '/shanghai', { state: { players: selected } });
+    navigate(MODE_ROUTE[mode] ?? '/shanghai', { state: { players: selected, variant, mode } });
   }
 
   return (
@@ -92,6 +96,27 @@ export default function PlaySetup() {
       </button>
 
       <h2 className="play-setup__title">Qui joue ?</h2>
+
+      {/* Variant — Cricket / Super Cricket only */}
+      {isCricketFamily && (
+        <div className="play-setup__variant">
+          <p className="play-setup__variant-label">VARIANTE</p>
+          <div className="play-setup__variant-row">
+            <button
+              className={`play-setup__variant-btn${variant === 'normal' ? ' play-setup__variant-btn--on' : ''}`}
+              onClick={() => setVariant('normal')}
+            >
+              NORMAL
+            </button>
+            <button
+              className={`play-setup__variant-btn${variant === 'cutthroat' ? ' play-setup__variant-btn--on' : ''}`}
+              onClick={() => setVariant('cutthroat')}
+            >
+              CUT THROAT
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Search / add input */}
       <div className="play-setup__search-row">
@@ -112,8 +137,8 @@ export default function PlaySetup() {
         )}
       </div>
 
-      {/* Player chips — only shown when user is typing (fix: don't reveal all known players by default) */}
-      {q && filtered.length > 0 && (
+      {/* Player chips — always visible, filtered live by the search box */}
+      {filtered.length > 0 && (
         <div className="play-setup__chips">
           {filtered.map(name => (
             <button

@@ -11,7 +11,13 @@ function useFlightTexture(url) {
   useEffect(() => {
     if (!url) { setTexture(null); return; }
     let active = true;
-    new THREE.TextureLoader().load(url, tex => { if (active) setTexture(tex); });
+    new THREE.TextureLoader().load(url, tex => {
+      // Without this, three.js treats the photo's sRGB pixel data as linear
+      // light values — every color renders far too bright, washing dark
+      // images out toward white.
+      tex.colorSpace = THREE.SRGBColorSpace;
+      if (active) setTexture(tex);
+    });
     return () => { active = false; };
   }, [url]);
   return texture;
@@ -87,15 +93,23 @@ function DartMesh({ accentColor, flightImageUrl }) {
         return (
           <group key={i} position={[0, 0.78, 0]} rotation={[0, (i * Math.PI) / 2, 0]}>
             <mesh geometry={flightGeo}>
-              <meshStandardMaterial
-                color={flightTexture ? '#ffffff' : baseColor}
-                map={flightTexture ?? null}
-                metalness={0.35}
-                roughness={0.4}
-                emissive={flightTexture ? '#000000' : (red ? baseColor : '#2a2a2e')}
-                emissiveIntensity={flightTexture ? 0 : (red ? 0.18 : 0.08)}
-                side={THREE.DoubleSide}
-              />
+              {flightTexture ? (
+                // Unlit on purpose: the studio Environment/Lightformer rig below
+                // is tuned for a shiny metal dart, and even at low roughness its
+                // specular/IBL contribution washes a photo out toward white.
+                // meshBasicMaterial ignores scene lighting entirely, so the
+                // uploaded image renders exactly as uploaded.
+                <meshBasicMaterial map={flightTexture} toneMapped={false} side={THREE.DoubleSide} />
+              ) : (
+                <meshStandardMaterial
+                  color={baseColor}
+                  metalness={0.35}
+                  roughness={0.4}
+                  emissive={red ? baseColor : '#2a2a2e'}
+                  emissiveIntensity={red ? 0.18 : 0.08}
+                  side={THREE.DoubleSide}
+                />
+              )}
             </mesh>
             {/* thin edge to detach the vane from the background */}
             <lineSegments>

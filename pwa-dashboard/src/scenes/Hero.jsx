@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import Dart from '../components/Dart.jsx';
 import { MODE_LABEL, fmtDuration, relDate } from '../lib/data.js';
+import { displayName } from '../lib/profiles.js';
 import './Hero.css';
 
 const COUNTER_URL = import.meta.env.VITE_COUNTER_URL || 'http://localhost:5174';
@@ -40,7 +41,7 @@ export default function Hero({ ranked, games, profiles = {} }) {
           >
             {champ ? (
               <>
-                <span className="hero__line">{champ.name}</span>
+                <span className="hero__line">{displayName(profiles, champ.name)}</span>
                 <span className="hero__line hero__accent">règne.</span>
               </>
             ) : (
@@ -93,12 +94,12 @@ export default function Hero({ ranked, games, profiles = {} }) {
               to={`/joueur/${encodeURIComponent(last.winner || '')}`}
               className="ticket__winner display"
             >
-              {last.winner || '—'}
+              {last.winner ? displayName(profiles, last.winner) : '—'}
             </Link>
 
             {others.length > 0 && (
               <p className="ticket__beat">
-                bat {others.join(' · ')}
+                bat {others.map(p => displayName(profiles, p)).join(' · ')}
               </p>
             )}
 

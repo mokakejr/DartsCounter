@@ -1,8 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { displayName, avatarStyle } from '../lib/profiles.js';
 import './TrophyModal.css';
 
-export default function TrophyModal({ trophy, onClose }) {
+export default function TrophyModal({ trophy, onClose, profiles = {} }) {
   return (
     <AnimatePresence>
       {trophy && (
@@ -53,8 +54,10 @@ export default function TrophyModal({ trophy, onClose }) {
                       className="modal__earner"
                       onClick={onClose}
                     >
-                      <span className="modal__earner-av">{e.name.charAt(0)}</span>
-                      {e.name}
+                      <span className="modal__earner-av" style={avatarStyle(profiles, e.name)}>
+                        {!profiles[e.name]?.avatar_url && e.name.charAt(0)}
+                      </span>
+                      {displayName(profiles, e.name)}
                     </Link>
                   ))}
                 </div>

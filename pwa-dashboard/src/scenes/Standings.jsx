@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ALL_MODES } from '../lib/stats.js';
 import { MODE_LABEL } from '../lib/data.js';
+import { displayName, avatarStyle } from '../lib/profiles.js';
 import './Standings.css';
 
 const FILTERS = ['Global', ...ALL_MODES];
@@ -11,7 +12,7 @@ function rankClass(i) {
   return i < 3 ? `r${i + 1}` : 'rn';
 }
 
-export default function Standings({ ranked }) {
+export default function Standings({ ranked, profiles = {} }) {
   const [filter, setFilter] = useState('Global');
 
   const rows = useMemo(() => {
@@ -59,11 +60,11 @@ export default function Standings({ ranked }) {
               transition={{ duration: 0.45, delay: Math.min(i * 0.04, 0.3) }}
             >
               <span className={`ladder__rank ${rankClass(i)}`}>{i + 1}</span>
-              <Link to={`/joueur/${encodeURIComponent(s.name)}`} className="ladder__avatar">
-                {s.name.charAt(0)}
+              <Link to={`/joueur/${encodeURIComponent(s.name)}`} className="ladder__avatar" style={avatarStyle(profiles, s.name)}>
+                {!profiles[s.name]?.avatar_url && s.name.charAt(0)}
               </Link>
               <Link to={`/joueur/${encodeURIComponent(s.name)}`} className="ladder__name">
-                {s.name}
+                {displayName(profiles, s.name)}
                 <span className="ladder__lv">niv. {s.level.lv} · {s.level.name}</span>
               </Link>
               <span className="ladder__stat">

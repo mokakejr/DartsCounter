@@ -46,6 +46,7 @@ export default function PlaySetup() {
   const isCricketFamily = CRICKET_FAMILY.has(mode);
 
   const [known, setKnown] = useState(loadKnown);
+  const [profiles, setProfiles] = useState({}); // name -> {display_name, avatar_url} — display only, selection stays keyed by canonical name
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState('');
   const [variant, setVariant] = useState(state?.variant === 'cutthroat' ? 'cutthroat' : 'normal');
@@ -54,6 +55,7 @@ export default function PlaySetup() {
   useEffect(() => {
     fetchPlayers()
       .then(players => {
+        setProfiles(Object.fromEntries(players.map(p => [p.name, p])));
         const fromServer = players.map(p => p.name);
         setKnown(prev => {
           const merged = mergeWithGames(prev, fromServer);
@@ -63,6 +65,10 @@ export default function PlaySetup() {
       })
       .catch(() => {});
   }, []);
+
+  function label(name) {
+    return profiles[name]?.display_name || name;
+  }
 
   const q = search.trim();
   const filtered = q ? known.filter(n => norm(n).includes(norm(q))) : known;
@@ -146,8 +152,14 @@ export default function PlaySetup() {
               className={`play-setup__chip${selected.includes(name) ? ' play-setup__chip--on' : ''}`}
               onClick={() => toggle(name)}
             >
+              {profiles[name]?.avatar_url && (
+                <span
+                  className="play-setup__chip-avatar"
+                  style={{ backgroundImage: `url(${profiles[name].avatar_url})` }}
+                />
+              )}
               {selected.includes(name) && <span className="play-setup__check">✓</span>}
-              {name}
+              {label(name)}
             </button>
           ))}
         </div>
@@ -176,7 +188,7 @@ export default function PlaySetup() {
             {selected.map((name, i) => (
               <div key={name} className="play-setup__order-item">
                 <span className="play-setup__order-num">{i + 1}</span>
-                <span className="play-setup__order-name">{name}</span>
+                <span className="play-setup__order-name">{label(name)}</span>
                 <button className="play-setup__order-remove" onClick={() => toggle(name)}>×</button>
               </div>
             ))}

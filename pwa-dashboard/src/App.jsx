@@ -20,14 +20,14 @@ import Login from './routes/Login.jsx';
 import MyProfile from './routes/MyProfile.jsx';
 import './App.css';
 
-function Home({ games, stats, ranked, profiles }) {
+function Home({ games, stats, ranked, profiles = {} }) {
   return (
     <main>
       <Hero ranked={ranked} games={games} profiles={profiles} />
-      <Standings ranked={ranked} />
-      <Feed games={games} />
+      <Standings ranked={ranked} profiles={profiles} />
+      <Feed games={games} profiles={profiles} />
       <Trends games={games} ranked={ranked} />
-      <Trophies stats={stats} />
+      <Trophies stats={stats} profiles={profiles} />
     </main>
   );
 }
@@ -188,8 +188,8 @@ function AppInner() {
       <Routes>
         <Route path="/" element={<Home games={games} stats={stats} ranked={ranked} profiles={profiles} />} />
         <Route path="/joueur/:name" element={<PlayerProfile games={games} stats={stats} profiles={profiles} />} />
-        <Route path="/profils" element={<PlayersIndex ranked={ranked} />} />
-        <Route path="/trophees" element={<TrophiesPage stats={stats} />} />
+        <Route path="/profils" element={<PlayersIndex ranked={ranked} profiles={profiles} />} />
+        <Route path="/trophees" element={<TrophiesPage stats={stats} profiles={profiles} />} />
         <Route path="/xp" element={<XpGuide />} />
         <Route path="/ligues" element={<Leagues knownPlayers={knownPlayers} />} />
         <Route path="/login" element={<Login />} />

@@ -23,7 +23,7 @@ const FILTERS = [
   ['locked',   'Verrouillés'],
 ];
 
-export default function TrophiesPage({ stats }) {
+export default function TrophiesPage({ stats, profiles = {} }) {
   const [selected, setSelected] = useState(null);
   const [filter, setFilter]     = useState('all');
 
@@ -112,7 +112,7 @@ export default function TrophiesPage({ stats }) {
         );
       })}
 
-      <TrophyModal trophy={selected} onClose={() => setSelected(null)} />
+      <TrophyModal trophy={selected} onClose={() => setSelected(null)} profiles={profiles} />
     </div>
   );
 }

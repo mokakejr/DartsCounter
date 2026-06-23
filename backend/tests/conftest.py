@@ -66,6 +66,14 @@ async def client() -> AsyncIterator[AsyncClient]:
         yield c
 
 
+@pytest.fixture(autouse=True)
+def _isolated_upload_dir(tmp_path, monkeypatch):
+    """Image uploads (avatar/flight) would otherwise land in the real
+    ./uploads dir next to the repo — point them at pytest's per-test tmp_path
+    instead, which it cleans up on its own."""
+    monkeypatch.setattr(get_settings(), "upload_dir", str(tmp_path / "uploads"))
+
+
 class FakeAsyncClient:
     """Stands in for httpx.AsyncClient in notification targets so tests
     never hit a real webhook."""
@@ -101,3 +109,36 @@ def fake_httpx(monkeypatch):
     monkeypatch.setattr("app.services.targets.google_chat.httpx.AsyncClient", FakeAsyncClient)
     monkeypatch.setattr("app.services.targets.discord.httpx.AsyncClient", FakeAsyncClient)
     yield FakeAsyncClient
+
+
+class FakeRedis:
+    """Stands in for app.core.redis.redis_client — an in-memory dict is plenty
+    for exercising the ping cooldown's NX/EX/TTL semantics in tests."""
+
+    def __init__(self) -> None:
+        self.store: dict[str, tuple[str, float | None]] = {}
+
+    async def set(self, key: str, value: str, nx: bool = False, ex: int | None = None) -> bool | None:
+        import time
+
+        now = time.monotonic()
+        existing = self.store.get(key)
+        if nx and existing is not None and (existing[1] is None or existing[1] > now):
+            return None
+        self.store[key] = (value, now + ex if ex is not None else None)
+        return True
+
+    async def ttl(self, key: str) -> int:
+        import time
+
+        existing = self.store.get(key)
+        if existing is None or existing[1] is None:
+            return -1
+        return max(int(existing[1] - time.monotonic()), 0)
+
+
+@pytest.fixture
+def fake_redis(monkeypatch):
+    fake = FakeRedis()
+    monkeypatch.setattr("app.services.ping.redis_client", fake)
+    yield fake

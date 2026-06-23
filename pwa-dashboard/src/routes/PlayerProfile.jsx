@@ -7,9 +7,10 @@ import { buildTrophies } from '../lib/trophies.js';
 import TrophyModal from '../components/TrophyModal.jsx';
 import './PlayerProfile.css';
 
-export default function PlayerProfile({ games, stats }) {
+export default function PlayerProfile({ games, stats, profiles = {} }) {
   const { name } = useParams();
   const s = stats[name];
+  const profile = profiles[name];
   const [selectedTrophy, setSelectedTrophy] = useState(null);
 
   const earned = useMemo(() => {
@@ -57,14 +58,21 @@ export default function PlayerProfile({ games, stats }) {
     { k: 'Mode favori', v: MODE_LABEL[s.favoriteMode] || '—' },
   ];
 
+  const accentStyle = profile?.accent_color ? { '--player-accent': profile.accent_color } : undefined;
+
   return (
-    <div className="profile shell">
+    <div className="profile shell" style={accentStyle}>
       <Link to="/" className="back">← La Ligue</Link>
 
       <header className="profile__head">
-        <span className="profile__avatar">{name.charAt(0)}</span>
+        <span
+          className="profile__avatar"
+          style={profile?.avatar_url ? { backgroundImage: `url(${profile.avatar_url})`, backgroundSize: 'cover' } : undefined}
+        >
+          {!profile?.avatar_url && name.charAt(0)}
+        </span>
         <div>
-          <h1 className="display profile__name">{name}</h1>
+          <h1 className="display profile__name">{profile?.display_name || name}</h1>
           <p className="profile__lv">Niveau {s.level.lv} · {s.level.name}</p>
           {isGoat && <span className="profile__goat">🐐 GOAT du groupe</span>}
         </div>

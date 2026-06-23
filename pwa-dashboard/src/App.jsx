@@ -1,8 +1,10 @@
-import { Routes, Route, Link, NavLink, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useLenis } from './lib/useLenis.js';
 import { useGames } from './lib/useGames.js';
 import { LeagueProvider, useLeague } from './lib/useLeague.jsx';
+import { AuthProvider, useAuth } from './lib/useAuth.jsx';
+import { fetchPlayers } from './api/players.js';
 import CalloutModal from './components/CalloutModal.jsx';
 import Hero from './scenes/Hero.jsx';
 import Standings from './scenes/Standings.jsx';
@@ -14,18 +16,33 @@ import PlayersIndex from './routes/PlayersIndex.jsx';
 import TrophiesPage from './routes/TrophiesPage.jsx';
 import XpGuide from './routes/XpGuide.jsx';
 import Leagues from './routes/Leagues.jsx';
+import Login from './routes/Login.jsx';
+import MyProfile from './routes/MyProfile.jsx';
 import './App.css';
 
-function Home({ games, stats, ranked }) {
+function Home({ games, stats, ranked, profiles }) {
   return (
     <main>
-      <Hero ranked={ranked} games={games} />
+      <Hero ranked={ranked} games={games} profiles={profiles} />
       <Standings ranked={ranked} />
       <Feed games={games} />
       <Trends games={games} ranked={ranked} />
       <Trophies stats={stats} />
     </main>
   );
+}
+
+// Backend player rows (display_name/avatar_url/flight_image_url/accent_color),
+// looked up by name to enrich the client-computed stats — fetched once,
+// independent of login state since it's plain public GET /players data.
+function usePlayerProfiles() {
+  const [profiles, setProfiles] = useState({});
+  useEffect(() => {
+    fetchPlayers()
+      .then(rows => setProfiles(Object.fromEntries(rows.map(p => [p.name, p]))))
+      .catch(() => {});
+  }, []);
+  return profiles;
 }
 
 function ScrollTop() {
@@ -50,6 +67,9 @@ function fmtCountdown(ms) {
 function AppInner() {
   useLenis();
   const location = useLocation();
+  const navigate = useNavigate();
+  const auth = useAuth();
+  const profiles = usePlayerProfiles();
   const { activeLeague, activateLeague } = useLeague();
   const { games, allGames, stats, ranked, loading, error } = useGames(activeLeague?.players ?? null);
   const [calloutOpen, setCalloutOpen] = useState(false);
@@ -57,6 +77,20 @@ function AppInner() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => setMenuOpen(false), [location.pathname]);
+
+  // Local cache of the cooldown countdown — Redis on the backend is the
+  // actual source of truth (per-account, not per-browser); this just seeds
+  // the UI optimistically and gets corrected by a 429's retry_after_seconds
+  // if another device already pinged within the window.
+  function markCooldown(remainingMs) {
+    localStorage.setItem(CALLOUT_TS_KEY, (Date.now() - (COOLDOWN_MS - remainingMs)).toString());
+    setCalloutRemaining(remainingMs);
+  }
+
+  function openCallout() {
+    if (!auth.player) { navigate('/login'); return; }
+    setCalloutOpen(true);
+  }
 
   useEffect(() => {
     if (calloutRemaining <= 0) return;
@@ -99,10 +133,13 @@ function AppInner() {
       <nav className="nav">
         <Link to="/" className="nav__brand display">DC</Link>
         <div className="nav__right">
+          <Link to={auth.player ? '/profile' : '/login'} className="nav__account">
+            {auth.player ? (auth.player.display_name || auth.player.name) : 'Connexion'}
+          </Link>
           <button
             className="nav__callout"
             disabled={calloutRemaining > 0}
-            onClick={() => setCalloutOpen(true)}
+            onClick={openCallout}
           >
             {calloutRemaining > 0 ? `⏳ ${fmtCountdown(calloutRemaining)}` : '🔔'}
           </button>
@@ -142,19 +179,22 @@ function AppInner() {
       <CalloutModal
         open={calloutOpen}
         onClose={() => setCalloutOpen(false)}
-        onSent={() => setCalloutRemaining(COOLDOWN_MS)}
-        players={ranked.map(s => s.name)}
-        leagueName={activeLeague?.name ?? null}
+        onSent={() => markCooldown(COOLDOWN_MS)}
+        onCooldown={(retryAfterSeconds) => markCooldown(retryAfterSeconds * 1000)}
+        token={auth.token}
+        name={auth.player?.display_name || auth.player?.name}
       />
 
       <Routes>
-        <Route path="/" element={<Home games={games} stats={stats} ranked={ranked} />} />
-        <Route path="/joueur/:name" element={<PlayerProfile games={games} stats={stats} />} />
+        <Route path="/" element={<Home games={games} stats={stats} ranked={ranked} profiles={profiles} />} />
+        <Route path="/joueur/:name" element={<PlayerProfile games={games} stats={stats} profiles={profiles} />} />
         <Route path="/profils" element={<PlayersIndex ranked={ranked} />} />
         <Route path="/trophees" element={<TrophiesPage stats={stats} />} />
         <Route path="/xp" element={<XpGuide />} />
         <Route path="/ligues" element={<Leagues knownPlayers={knownPlayers} />} />
-        <Route path="*" element={<Home games={games} stats={stats} ranked={ranked} />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/profile" element={<MyProfile />} />
+        <Route path="*" element={<Home games={games} stats={stats} ranked={ranked} profiles={profiles} />} />
       </Routes>
 
       <footer className="footer shell">
@@ -169,8 +209,10 @@ function AppInner() {
 
 export default function App() {
   return (
-    <LeagueProvider>
-      <AppInner />
-    </LeagueProvider>
+    <AuthProvider>
+      <LeagueProvider>
+        <AppInner />
+      </LeagueProvider>
+    </AuthProvider>
   );
 }

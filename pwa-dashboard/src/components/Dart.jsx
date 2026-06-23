@@ -1,12 +1,29 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Environment, Float, Lightformer } from '@react-three/drei';
 
+// Loads a champion's custom flight image without the conditional-hook
+// problems of drei's suspending useTexture — there may be no URL at all,
+// and the dart must still render its default colors while one loads.
+function useFlightTexture(url) {
+  const [texture, setTexture] = useState(null);
+  useEffect(() => {
+    if (!url) { setTexture(null); return; }
+    let active = true;
+    new THREE.TextureLoader().load(url, tex => { if (active) setTexture(tex); });
+    return () => { active = false; };
+  }, [url]);
+  return texture;
+}
+
 // A turned-metal dart built from lathe profiles — looks sculpted, not blocky.
 // Tip (steel needle) → barrel (knurled tungsten) → shaft → 4 kite flights.
-function DartMesh() {
+// accentColor / flightImageUrl come from the reigning champion's profile —
+// both optional, falling back to the original crimson/off-white scheme.
+function DartMesh({ accentColor, flightImageUrl }) {
   const spin = useRef();
+  const flightTexture = useFlightTexture(flightImageUrl);
 
   // Slow spin around the dart's own long axis for the metal shimmer.
   useFrame((_, delta) => {
@@ -60,19 +77,23 @@ function DartMesh() {
         <cylinderGeometry args={[0.04, 0.045, 0.96, 24]} />
         <meshStandardMaterial color="#0e0e10" metalness={0.6} roughness={0.5} />
       </mesh>
-      {/* Flights — 4 vanes, alternating crimson / off-white so they always
-          read against the near-black background (graphite blended into it). */}
+      {/* Flights — 4 vanes. A champion's uploaded flight image (if any) is
+          textured onto all 4; otherwise alternating crimson/off-white (the
+          crimson swapped for the champion's accent color, if set) so they
+          always read against the near-black background. */}
       {[0, 1, 2, 3].map(i => {
         const red = i % 2 === 0;
+        const baseColor = red ? (accentColor || '#E61E2A') : '#EDEDE8';
         return (
           <group key={i} position={[0, 0.78, 0]} rotation={[0, (i * Math.PI) / 2, 0]}>
             <mesh geometry={flightGeo}>
               <meshStandardMaterial
-                color={red ? '#E61E2A' : '#EDEDE8'}
+                color={flightTexture ? '#ffffff' : baseColor}
+                map={flightTexture ?? null}
                 metalness={0.35}
                 roughness={0.4}
-                emissive={red ? '#E61E2A' : '#2a2a2e'}
-                emissiveIntensity={red ? 0.18 : 0.08}
+                emissive={flightTexture ? '#000000' : (red ? baseColor : '#2a2a2e')}
+                emissiveIntensity={flightTexture ? 0 : (red ? 0.18 : 0.08)}
                 side={THREE.DoubleSide}
               />
             </mesh>
@@ -88,7 +109,7 @@ function DartMesh() {
   );
 }
 
-export default function Dart() {
+export default function Dart({ accentColor, flightImageUrl }) {
   return (
     <Canvas camera={{ position: [0, 0, 8], fov: 34 }} dpr={[1, 2]}>
       <ambientLight intensity={0.45} />
@@ -97,7 +118,7 @@ export default function Dart() {
       <Float speed={1.2} rotationIntensity={0.25} floatIntensity={0.5}>
         {/* Lean the whole dart for a dynamic read; spin stays on its own axis. */}
         <group rotation={[0.18, 0, -0.32]}>
-          <DartMesh />
+          <DartMesh accentColor={accentColor} flightImageUrl={flightImageUrl} />
         </group>
       </Float>
       {/* Studio environment built in-scene (no external HDR fetch). */}

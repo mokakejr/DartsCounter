@@ -37,6 +37,19 @@ class Settings(BaseSettings):
     google_chat_webhook: str | None = None
     discord_webhook_url: str | None = None
 
+    # JWT signing — MUST be overridden via env in .env.main/.env.dev. The default
+    # is intentionally obviously-insecure so a deployment that forgot to set it
+    # is easy to spot rather than silently shipping a guessable secret.
+    auth_secret_key: str = "INSECURE-DEV-SECRET-CHANGE-ME"
+    auth_token_expire_minutes: int = 60 * 24 * 30  # 30 days — casual app, avoid re-login friction
+
+    # Where uploaded avatar/flight images are written, and the public base URL
+    # used to turn a stored relative path into an absolute one in API responses
+    # (mirrors dashboard_url's existing pattern).
+    upload_dir: str = "uploads"
+    public_api_url: str = "http://localhost:8000"
+    max_upload_bytes: int = 5 * 1024 * 1024
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

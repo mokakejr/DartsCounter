@@ -9,6 +9,8 @@ services:
     depends_on:
       - postgres
       - redis
+    volumes:
+      - uploads_data:/app/uploads
     networks:
       - default
       - caddy
@@ -67,3 +69,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  uploads_data:

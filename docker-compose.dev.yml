@@ -3,6 +3,8 @@ services:
     container_name: dartscounter-dev-backend
     env_file: !override
       - .env.dev
+    volumes: !override
+      - uploads_data_dev:/app/uploads
 
   postgres:
     container_name: dartscounter-dev-postgres
@@ -31,3 +33,4 @@ services:
 volumes:
   postgres_data_dev:
   redis_data_dev:
+  uploads_data_dev:

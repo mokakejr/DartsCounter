@@ -26,9 +26,14 @@
   flex-shrink: 0;
 }
 .cg__back:hover { border-color: var(--muted); }
+.cg__title-wrap { display: flex; flex-direction: column; align-items: center; gap: 1px; }
 .cg__title {
   font-size: 12px; letter-spacing: 0.18em;
   text-transform: uppercase; color: var(--muted);
+}
+.cg__title-sub {
+  font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: #E57373;
 }
 .cg__dart-slots { display: flex; gap: 6px; }
 .cg__dart-slot {
@@ -312,6 +317,98 @@
   color: #333333;
   cursor: not-allowed;
 }
+
+/* ── Super Cricket scoring dialogs (DBL/TRP/BED) ────── */
+.cg__dlg-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 16px;
+}
+.cg__dlg {
+  background: #1E1E1E;
+  border-radius: 16px;
+  padding: 20px;
+  width: min(420px, 95vw);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+}
+.cg__dlg-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #FFD700;
+  text-align: center;
+  margin: 0 0 8px;
+}
+.cg__dlg-sub { font-size: 13px; color: #888888; text-align: center; margin: 0 0 12px; }
+.cg__dlg-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.cg__dlg-grid--mult { grid-template-columns: repeat(4, 1fr); }
+.cg__dlg-num {
+  height: 50px;
+  border-radius: 10px;
+  border: none;
+  background: #2A2A2A;
+  color: #E0E0E0;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cg__dlg-num:hover { background: #333333; }
+.cg__dlg-mult {
+  height: 70px;
+  border-radius: 10px;
+  border: none;
+  background: #2A2A2A;
+  color: #E0E0E0;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.cg__dlg-mult:hover { background: #333333; }
+.cg__dlg-mult-x { font-size: 20px; font-weight: 700; }
+.cg__dlg-mult-pts { font-size: 12px; color: #888888; }
+.cg__dlg-bull {
+  height: 50px;
+  margin-top: 4px;
+  border-radius: 10px;
+  border: none;
+  background: #2A2A2A;
+  color: #E0E0E0;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cg__dlg-bull:hover { background: #333333; }
+.cg__dlg-actions { display: flex; gap: 8px; margin-top: 4px; }
+.cg__dlg-cancel {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #888888;
+  cursor: pointer;
+}
+.cg__dlg-cancel:hover { color: #B6B6BB; }
 
 /* ── Finished screen ────────────────────────────────── */
 .cg--finished {

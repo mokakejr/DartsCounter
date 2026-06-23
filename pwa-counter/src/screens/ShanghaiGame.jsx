@@ -31,6 +31,8 @@ export default function ShanghaiGame() {
   // phase: 'playing' | 'turn-done' | 'shanghai' | 'finished'
   const [phase, setPhase] = useState('playing');
   const [showExit, setShowExit] = useState(false);
+  // [{game, darts, pending, phase}] — undo traverses confirmed turns too, not just the current one
+  const [history, setHistory] = useState([]);
   const startedAt = useRef(Date.now());
   const isKill = useRef(false);
 
@@ -39,9 +41,14 @@ export default function ShanghaiGame() {
   const target = round + 1;
   const turnPts = darts.reduce((s, z) => s + z * target, 0);
 
+  function pushHistory() {
+    setHistory(h => [...h, { game, darts, pending, phase }]);
+  }
+
   function tapZone(zone) {
-    if (phase !== 'playing') return;
-    setDarts(prev => prev.length >= 3 ? prev : [...prev, zone]);
+    if (phase !== 'playing' || darts.length >= 3) return;
+    pushHistory();
+    setDarts(prev => [...prev, zone]);
   }
 
   // Commit turn once 3 darts are entered
@@ -56,12 +63,42 @@ export default function ShanghaiGame() {
   }, [darts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function undo() {
-    if (phase !== 'playing') return;
-    setDarts(d => d.slice(0, -1));
+    if (!history.length) return;
+    const prev = history[history.length - 1];
+    setGame(prev.game);
+    setDarts(prev.darts);
+    setPending(prev.pending);
+    setPhase(prev.phase);
+    setHistory(h => h.slice(0, -1));
+  }
+
+  // Tap "next" without filling all 3 darts — remaining darts count as miss.
+  function skipToNext() {
+    if (phase !== 'playing' || darts.length >= 3) return;
+    pushHistory();
+    const padded = [...darts, ...Array(3 - darts.length).fill(0)];
+    const pts = padded.reduce((s, z) => s + z * target, 0);
+    const ng = addScore(game, player, round, pts, false);
+    setGame(ng);
+    setDarts([]);
+    setPending(null);
+    if (ng.finished) {
+      const win = leader(ng);
+      postGame({
+        mode: 'Shanghai', variant: 'Normal',
+        players, scores: players.map((_, i) => totalScore(ng, i)),
+        winner: win !== null ? players[win] : '',
+        startedAt: startedAt.current,
+      });
+      setPhase('finished');
+    } else {
+      setPhase('playing');
+    }
   }
 
   function confirmTurn() {
     if (!pending) return;
+    pushHistory();
     const ng = pending.nextGame;
     setGame(ng);
     setDarts([]);
@@ -223,6 +260,13 @@ export default function ShanghaiGame() {
         </div>
       )}
 
+      {/* Playing — skip straight to next player, remaining darts count as miss */}
+      {phase === 'playing' && (
+        <button className="sg__skip" onClick={skipToNext}>
+          SUIVANT → <span className="sg__skip-hint">(reste en miss)</span>
+        </button>
+      )}
+
       {/* Turn done — confirm */}
       {phase === 'turn-done' && (
         <div className="sg__confirm">
@@ -233,11 +277,12 @@ export default function ShanghaiGame() {
         </div>
       )}
 
-      {/* Undo */}
-      {phase === 'playing' && darts.length > 0 && (
-        <button className="sg__undo" onClick={undo}>⟲ Annuler</button>
+      {/* Undo — traverses confirmed turns too */}
+      {(phase === 'playing' || phase === 'turn-done') ? (
+        <button className="sg__undo" onClick={undo} disabled={history.length === 0}>⟲ Annuler</button>
+      ) : (
+        <div className="sg__undo-placeholder" />
       )}
-      {(phase !== 'playing' || darts.length === 0) && <div className="sg__undo-placeholder" />}
 
       {/* Score table */}
       <div className="sg__scores">

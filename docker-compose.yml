@@ -52,6 +52,7 @@ services:
       context: ./pwa-counter
       args:
         VITE_API_URL: https://darts.api.${DOMAIN}
+        VITE_DASHBOARD_URL: https://darts.${DOMAIN}
     container_name: dartscounter-counter
     restart: unless-stopped
     networks:

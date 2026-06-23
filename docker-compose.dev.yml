@@ -26,6 +26,7 @@ services:
     build:
       args:
         VITE_API_URL: https://darts.api.dev.${DOMAIN}
+        VITE_DASHBOARD_URL: https://darts.dev.${DOMAIN}
 
 volumes:
   postgres_data_dev:

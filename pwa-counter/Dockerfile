@@ -10,7 +10,9 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
 
 FROM base AS build
 ARG VITE_API_URL
+ARG VITE_DASHBOARD_URL
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_DASHBOARD_URL=$VITE_DASHBOARD_URL
 COPY . .
 RUN npm run build
 

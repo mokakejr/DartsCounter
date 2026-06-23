@@ -4,6 +4,7 @@ import { ALL_MODES } from '../lib/stats.js';
 import { MODE_LABEL, fmtDuration } from '../lib/data.js';
 import { rivalries } from '../lib/derive.js';
 import { buildTrophies } from '../lib/trophies.js';
+import { displayName } from '../lib/profiles.js';
 import TrophyModal from '../components/TrophyModal.jsx';
 import './PlayerProfile.css';
 
@@ -122,7 +123,7 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
             const other = r.a === name ? r.b : r.a;
             return (
               <div key={other} className="h2h">
-                <span>{other}</span>
+                <span>{displayName(profiles, other)}</span>
                 <span className="h2h__score">
                   <b style={{ color: me >= opp ? 'var(--win)' : 'var(--text)' }}>{me}</b>–{opp}
                 </span>
@@ -162,7 +163,7 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
         </section>
       </div>
 
-      <TrophyModal trophy={selectedTrophy} onClose={() => setSelectedTrophy(null)} />
+      <TrophyModal trophy={selectedTrophy} onClose={() => setSelectedTrophy(null)} profiles={profiles} />
     </div>
   );
 }

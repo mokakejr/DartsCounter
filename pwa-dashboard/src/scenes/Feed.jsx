@@ -3,9 +3,10 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { recentGames, rivalries } from '../lib/derive.js';
 import { MODE_LABEL, fmtDuration, relDate } from '../lib/data.js';
+import { displayName } from '../lib/profiles.js';
 import './Feed.css';
 
-export default function Feed({ games }) {
+export default function Feed({ games, profiles = {} }) {
   const recent = recentGames(games, 8);
   const rivals = rivalries(games, 5);
 
@@ -35,7 +36,7 @@ export default function Feed({ games }) {
                       to={`/joueur/${encodeURIComponent(p)}`}
                       className={p === g.winner ? 'feed__win' : 'feed__player'}
                     >
-                      {p}
+                      {displayName(profiles, p)}
                     </Link>
                     {k < g.players.length - 1 ? ' · ' : ''}
                   </Fragment>
@@ -56,9 +57,9 @@ export default function Feed({ games }) {
             return (
               <div key={`${r.a}-${r.b}`} className="rival">
                 <div className="rival__names">
-                  <span>{r.a}</span>
+                  <span>{displayName(profiles, r.a)}</span>
                   <span className="rival__vs">{r.aWins}–{r.bWins}</span>
-                  <span>{r.b}</span>
+                  <span>{displayName(profiles, r.b)}</span>
                 </div>
                 <div className="rival__bar">
                   <span style={{ width: `${pct}%` }} />

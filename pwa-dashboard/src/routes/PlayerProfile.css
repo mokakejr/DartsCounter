@@ -35,7 +35,7 @@
 
 .xpbar { margin: 8px 0 40px; }
 .xpbar__track { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
-.xpbar__track span { display: block; height: 100%; background: var(--primary); }
+.xpbar__track span { display: block; height: 100%; background: var(--player-accent, var(--primary)); }
 .xpbar__meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px; color: var(--muted); }
 
 .tiles {
@@ -62,7 +62,7 @@
 .modebar { display: grid; grid-template-columns: 90px 1fr auto; align-items: center; gap: 12px; margin-bottom: 10px; }
 .modebar__label { font-size: 14px; color: var(--muted); }
 .modebar__track { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
-.modebar__track span { display: block; height: 100%; background: var(--primary); }
+.modebar__track span { display: block; height: 100%; background: var(--player-accent, var(--primary)); }
 .modebar__val { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .modebar__val em { font-style: normal; color: var(--muted); font-weight: 400; }
 

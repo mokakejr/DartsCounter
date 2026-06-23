@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
+import { displayName, avatarStyle } from '../lib/profiles.js';
 import './PlayersIndex.css';
 
-export default function PlayersIndex({ ranked }) {
+export default function PlayersIndex({ ranked, profiles = {} }) {
   return (
     <div className="players shell">
       <Link to="/" className="back">← La Ligue</Link>
@@ -11,8 +12,10 @@ export default function PlayersIndex({ ranked }) {
       <div className="players__grid">
         {ranked.map((s, i) => (
           <Link key={s.name} to={`/joueur/${encodeURIComponent(s.name)}`} className="pcard">
-            <span className="pcard__avatar">{s.name.charAt(0)}</span>
-            <span className="pcard__name">{s.name}</span>
+            <span className="pcard__avatar" style={avatarStyle(profiles, s.name)}>
+              {!profiles[s.name]?.avatar_url && s.name.charAt(0)}
+            </span>
+            <span className="pcard__name">{displayName(profiles, s.name)}</span>
             <span className="pcard__lv">niv. {s.level.lv} · {s.level.name}</span>
             <span className="pcard__stats">
               <b>{s.wins}</b> {s.wins === 1 ? 'victoire' : 'victoires'} · {s.games} {s.games === 1 ? 'partie' : 'parties'}

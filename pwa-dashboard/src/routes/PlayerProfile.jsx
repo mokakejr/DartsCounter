@@ -4,12 +4,14 @@ import { ALL_MODES } from '../lib/stats.js';
 import { MODE_LABEL, fmtDuration } from '../lib/data.js';
 import { rivalries } from '../lib/derive.js';
 import { buildTrophies } from '../lib/trophies.js';
+import { displayName } from '../lib/profiles.js';
 import TrophyModal from '../components/TrophyModal.jsx';
 import './PlayerProfile.css';
 
-export default function PlayerProfile({ games, stats }) {
+export default function PlayerProfile({ games, stats, profiles = {} }) {
   const { name } = useParams();
   const s = stats[name];
+  const profile = profiles[name];
   const [selectedTrophy, setSelectedTrophy] = useState(null);
 
   const earned = useMemo(() => {
@@ -57,14 +59,21 @@ export default function PlayerProfile({ games, stats }) {
     { k: 'Mode favori', v: MODE_LABEL[s.favoriteMode] || '—' },
   ];
 
+  const accentStyle = profile?.accent_color ? { '--player-accent': profile.accent_color } : undefined;
+
   return (
-    <div className="profile shell">
+    <div className="profile shell" style={accentStyle}>
       <Link to="/" className="back">← La Ligue</Link>
 
       <header className="profile__head">
-        <span className="profile__avatar">{name.charAt(0)}</span>
+        <span
+          className="profile__avatar"
+          style={profile?.avatar_url ? { backgroundImage: `url(${profile.avatar_url})`, backgroundSize: 'cover' } : undefined}
+        >
+          {!profile?.avatar_url && name.charAt(0)}
+        </span>
         <div>
-          <h1 className="display profile__name">{name}</h1>
+          <h1 className="display profile__name">{profile?.display_name || name}</h1>
           <p className="profile__lv">Niveau {s.level.lv} · {s.level.name}</p>
           {isGoat && <span className="profile__goat">🐐 GOAT du groupe</span>}
         </div>
@@ -114,7 +123,7 @@ export default function PlayerProfile({ games, stats }) {
             const other = r.a === name ? r.b : r.a;
             return (
               <div key={other} className="h2h">
-                <span>{other}</span>
+                <span>{displayName(profiles, other)}</span>
                 <span className="h2h__score">
                   <b style={{ color: me >= opp ? 'var(--win)' : 'var(--text)' }}>{me}</b>–{opp}
                 </span>
@@ -154,7 +163,7 @@ export default function PlayerProfile({ games, stats }) {
         </section>
       </div>
 
-      <TrophyModal trophy={selectedTrophy} onClose={() => setSelectedTrophy(null)} />
+      <TrophyModal trophy={selectedTrophy} onClose={() => setSelectedTrophy(null)} profiles={profiles} />
     </div>
   );
 }

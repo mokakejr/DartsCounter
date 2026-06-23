@@ -35,6 +35,7 @@ __pycache__/
 backend/.venv/
 .pytest_cache/
 .ruff_cache/
+backend/uploads/
 
 # Env files with real secrets
 .env

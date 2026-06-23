@@ -9,6 +9,8 @@ services:
     depends_on:
       - postgres
       - redis
+    volumes:
+      - uploads_data:/app/uploads
     networks:
       - default
       - caddy
@@ -52,6 +54,7 @@ services:
       context: ./pwa-counter
       args:
         VITE_API_URL: https://darts.api.${DOMAIN}
+        VITE_DASHBOARD_URL: https://darts.${DOMAIN}
     container_name: dartscounter-counter
     restart: unless-stopped
     networks:
@@ -66,3 +69,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  uploads_data:

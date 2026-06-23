@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import EloHistory, Game, GamePlayer, Player
 from app.schemas.stats import PlayerStats
 from app.services.elo import DEFAULT_RATING
+from app.services.players import image_url
 
 
 async def get_leaderboard(session: AsyncSession) -> list[PlayerStats]:
@@ -36,7 +37,7 @@ async def get_leaderboard(session: AsyncSession) -> list[PlayerStats]:
     elo_col = func.coalesce(elo_subq.c.elo_after, DEFAULT_RATING)
 
     stmt = (
-        select(Player.id, Player.name, games_col.label("games"), wins_col.label("wins"), elo_col.label("elo"))
+        select(Player, games_col.label("games"), wins_col.label("wins"), elo_col.label("elo"))
         .outerjoin(games_subq, games_subq.c.player_id == Player.id)
         .outerjoin(wins_subq, wins_subq.c.player_id == Player.id)
         .outerjoin(elo_subq, elo_subq.c.player_id == Player.id)
@@ -46,8 +47,12 @@ async def get_leaderboard(session: AsyncSession) -> list[PlayerStats]:
 
     return [
         PlayerStats(
-            id=r.id,
-            name=r.name,
+            id=r.Player.id,
+            name=r.Player.name,
+            display_name=r.Player.display_name,
+            avatar_url=image_url(r.Player.avatar_path),
+            flight_image_url=image_url(r.Player.flight_image_path),
+            accent_color=r.Player.accent_color,
             games=r.games,
             wins=r.wins,
             win_rate=round(r.wins / r.games, 3) if r.games else 0.0,

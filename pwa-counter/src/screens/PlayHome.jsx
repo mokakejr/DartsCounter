@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import './PlayHome.css';
 
+const DASHBOARD_URL = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:5174';
+
 const MODES = [
   { id: 'shanghai', label: 'Shanghai', desc: '7 rounds · cible 1 → 7' },
   { id: 'cricket', label: 'Cricket', desc: '15-20 + bull' },
@@ -28,6 +30,9 @@ export default function PlayHome() {
           </button>
         ))}
       </div>
+      <a className="play-home__dashboard-link" href={DASHBOARD_URL}>
+        Voir le tableau de bord →
+      </a>
     </div>
   );
 }

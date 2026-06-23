@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ACHIEVEMENTS, computeAchievements } from '../lib/stats.js';
+import { avatarStyle } from '../lib/profiles.js';
 import TrophyModal from '../components/TrophyModal.jsx';
 import './Trophies.css';
 
-export default function Trophies({ stats }) {
+export default function Trophies({ stats, profiles = {} }) {
   const [selected, setSelected] = useState(null);
 
   const { preview, totalUnlocked } = useMemo(() => {
@@ -47,8 +48,8 @@ export default function Trophies({ stats }) {
             <span className="trophy__desc">{a.desc}</span>
             <div className="trophy__earners">
               {a.earners.slice(0, 5).map(e => (
-                <span key={e.name} className="trophy__earner" title={e.name}>
-                  {e.name.charAt(0)}
+                <span key={e.name} className="trophy__earner" title={e.name} style={avatarStyle(profiles, e.name)}>
+                  {!profiles[e.name]?.avatar_url && e.name.charAt(0)}
                 </span>
               ))}
             </div>
@@ -60,7 +61,7 @@ export default function Trophies({ stats }) {
         Voir les {ACHIEVEMENTS.length} trophées →
       </Link>
 
-      <TrophyModal trophy={selected} onClose={() => setSelected(null)} />
+      <TrophyModal trophy={selected} onClose={() => setSelected(null)} profiles={profiles} />
     </section>
   );
 }

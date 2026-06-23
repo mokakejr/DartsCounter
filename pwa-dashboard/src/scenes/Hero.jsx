@@ -3,12 +3,14 @@ import { Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import Dart from '../components/Dart.jsx';
 import { MODE_LABEL, fmtDuration, relDate } from '../lib/data.js';
+import { displayName } from '../lib/profiles.js';
 import './Hero.css';
 
 const COUNTER_URL = import.meta.env.VITE_COUNTER_URL || 'http://localhost:5174';
 
-export default function Hero({ ranked, games }) {
+export default function Hero({ ranked, games, profiles = {} }) {
   const champ = ranked[0];
+  const champProfile = champ ? profiles[champ.name] : null;
   const last = games && games.length ? games[0] : null;
   const others = last ? (last.players || []).filter(p => p !== last.winner) : [];
 
@@ -16,7 +18,7 @@ export default function Hero({ ranked, games }) {
     <header className="hero">
       <div className="hero__dart">
         <Suspense fallback={null}>
-          <Dart />
+          <Dart accentColor={champProfile?.accent_color} flightImageUrl={champProfile?.flight_image_url} />
         </Suspense>
       </div>
 
@@ -39,7 +41,7 @@ export default function Hero({ ranked, games }) {
           >
             {champ ? (
               <>
-                <span className="hero__line">{champ.name}</span>
+                <span className="hero__line">{displayName(profiles, champ.name)}</span>
                 <span className="hero__line hero__accent">règne.</span>
               </>
             ) : (
@@ -92,12 +94,12 @@ export default function Hero({ ranked, games }) {
               to={`/joueur/${encodeURIComponent(last.winner || '')}`}
               className="ticket__winner display"
             >
-              {last.winner || '—'}
+              {last.winner ? displayName(profiles, last.winner) : '—'}
             </Link>
 
             {others.length > 0 && (
               <p className="ticket__beat">
-                bat {others.join(' · ')}
+                bat {others.map(p => displayName(profiles, p)).join(' · ')}
               </p>
             )}
 

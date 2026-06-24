@@ -14,3 +14,4 @@ class PlayerStats(BaseModel):
     wins: int
     win_rate: float
     elo: int
+    rank: str

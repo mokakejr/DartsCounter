@@ -83,7 +83,7 @@ export default function PlaySetup() {
   }
 
   const q = search.trim();
-  const filtered = q ? known.filter(n => norm(n).includes(norm(q))) : known;
+  const filtered = q ? known.filter(n => norm(n).includes(norm(q))) : [];
   const exactMatch = known.some(n => norm(n) === norm(q));
   const canAdd = q.length > 0 && q.length <= 20 && !exactMatch;
 

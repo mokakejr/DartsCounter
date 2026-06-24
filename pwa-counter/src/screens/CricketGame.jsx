@@ -11,6 +11,7 @@ import {
 } from '../modes/superCricket.js';
 import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
+import ElapsedTimer from '../components/ElapsedTimer.jsx';
 import './CricketGame.css';
 
 const CRICKET_LABELS = ['20', '19', '18', '17', '16', '15', 'BULL'];
@@ -330,6 +331,7 @@ export default function CricketGame() {
         <div className="cg__title-wrap">
           <span className="cg__title">{isSC ? 'SUPER CRICKET' : 'CRICKET'}</span>
           {variant === 'cutthroat' && <span className="cg__title-sub">CUT THROAT</span>}
+          <ElapsedTimer startedAt={startedAt.current} />
         </div>
         <div className="cg__dart-slots">
           {[0, 1, 2].map(i => (
@@ -460,7 +462,7 @@ export default function CricketGame() {
         {(isAPK ? phase === 'playing' : phase === 'turn-done') && (
           <div className="cg__confirm">
             <button className="cg__btn cg__btn--primary cg__btn--wide" onClick={confirmTurn}>
-              SUIVANT →
+              →
             </button>
           </div>
         )}

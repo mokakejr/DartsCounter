@@ -72,15 +72,18 @@ function DartMesh({ accentColor, flightImageUrl }) {
 
   return (
     <group ref={spin}>
+      {/* Lathe tubes are open shells — render both sides so you never see the
+          near-black background through their open ends (the "hole" bug). */}
       <mesh geometry={tipGeo}>
-        <meshStandardMaterial color="#dce0e6" metalness={1} roughness={0.16} />
+        <meshStandardMaterial color="#dce0e6" metalness={1} roughness={0.16} side={THREE.DoubleSide} />
       </mesh>
       <mesh geometry={barrelGeo}>
-        <meshStandardMaterial color="#17171b" metalness={0.95} roughness={0.3} />
+        <meshStandardMaterial color="#17171b" metalness={0.95} roughness={0.3} side={THREE.DoubleSide} />
       </mesh>
-      {/* Shaft */}
-      <mesh position={[0, 0.12, 0]}>
-        <cylinderGeometry args={[0.04, 0.045, 0.96, 24]} />
+      {/* Shaft — a solid core that overlaps the barrel (bottom) and the flight
+          base (top) so there is no gap between the pieces along the axis. */}
+      <mesh position={[0, 0.21, 0]}>
+        <cylinderGeometry args={[0.05, 0.05, 1.24, 24]} />
         <meshStandardMaterial color="#0e0e10" metalness={0.6} roughness={0.5} />
       </mesh>
       {/* Flights — 4 vanes. A champion's uploaded flight image (if any) is

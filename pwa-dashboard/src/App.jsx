@@ -1,4 +1,4 @@
-import { Routes, Route, Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, NavLink, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useLenis } from './lib/useLenis.js';
 import { useGames } from './lib/useGames.js';
@@ -6,6 +6,7 @@ import { LeagueProvider, useLeague } from './lib/useLeague.jsx';
 import { AuthProvider, useAuth } from './lib/useAuth.jsx';
 import { fetchPlayers } from './api/players.js';
 import CalloutModal from './components/CalloutModal.jsx';
+import Welcome from './routes/Welcome.jsx';
 import Hero from './scenes/Hero.jsx';
 import Standings from './scenes/Standings.jsx';
 import Feed from './scenes/Feed.jsx';
@@ -67,15 +68,21 @@ function fmtCountdown(ms) {
 function AppInner() {
   useLenis();
   const location = useLocation();
-  const navigate = useNavigate();
   const auth = useAuth();
   const profiles = usePlayerProfiles();
-  const { activeLeague, activateLeague } = useLeague();
+  const { leagues, activeLeague, activateLeague } = useLeague();
   // Leagues are account-gated: a league filter only applies while signed in.
   // A league activated in a previous session (localStorage) is ignored when
   // logged out, so "no account → no league access" holds across the dashboard.
   const effectiveLeague = auth.player ? activeLeague : null;
   const { games, allGames, stats, ranked, loading, error } = useGames(effectiveLeague?.players ?? null);
+
+  // Onboarding wall: the dashboard (leaderboard, scroll, nav) is reachable only
+  // once you're signed in AND a member of a league. Until then we show a single
+  // full-screen Welcome with no escape hatch into the dashboard.
+  const me = auth.player ? (auth.player.display_name || auth.player.name) : null;
+  const hasLeague = !!me && leagues.some(l => l.players.includes(me));
+  const onboardingDone = !!(auth.player && hasLeague);
   const [calloutOpen, setCalloutOpen] = useState(false);
   const [calloutRemaining, setCalloutRemaining] = useState(calloutRemainingMs);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -91,8 +98,8 @@ function AppInner() {
     setCalloutRemaining(remainingMs);
   }
 
+  // The bell only ever renders while signed in (see nav), so no auth redirect.
   function openCallout() {
-    if (!auth.player) { navigate('/login'); return; }
     setCalloutOpen(true);
   }
 
@@ -131,6 +138,30 @@ function AppInner() {
     ? [...new Set(allGames.flatMap(g => g.players ?? []))].sort((a, b) => a.localeCompare(b, 'fr'))
     : [];
 
+  // Onboarding wall — minimal chrome, no dashboard, no scroll. Only /login,
+  // /profile and /ligues are reachable; everything else falls back to Welcome.
+  if (!onboardingDone) {
+    return (
+      <>
+        <ScrollTop />
+        <nav className="nav nav--bare">
+          <Link to="/" className="nav__brand display">DC</Link>
+          <div className="nav__right">
+            <Link to={auth.player ? '/profile' : '/login'} className="nav__account">
+              {auth.player ? (auth.player.display_name || auth.player.name) : 'Connexion'}
+            </Link>
+          </div>
+        </nav>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/profile" element={<MyProfile />} />
+          <Route path="/ligues" element={<Leagues knownPlayers={knownPlayers} />} />
+          <Route path="*" element={<Welcome hasAccount={!!auth.player} />} />
+        </Routes>
+      </>
+    );
+  }
+
   return (
     <>
       <ScrollTop />
@@ -140,13 +171,15 @@ function AppInner() {
           <Link to={auth.player ? '/profile' : '/login'} className="nav__account">
             {auth.player ? (auth.player.display_name || auth.player.name) : 'Connexion'}
           </Link>
-          <button
-            className="nav__callout"
-            disabled={calloutRemaining > 0}
-            onClick={openCallout}
-          >
-            {calloutRemaining > 0 ? `⏳ ${fmtCountdown(calloutRemaining)}` : '🔔'}
-          </button>
+          {auth.player && (
+            <button
+              className="nav__callout"
+              disabled={calloutRemaining > 0}
+              onClick={openCallout}
+            >
+              {calloutRemaining > 0 ? `⏳ ${fmtCountdown(calloutRemaining)}` : '🔔'}
+            </button>
+          )}
           <button className="nav__burger" onClick={() => setMenuOpen(o => !o)} aria-label="Menu">
             {menuOpen ? '✕' : '☰'}
           </button>

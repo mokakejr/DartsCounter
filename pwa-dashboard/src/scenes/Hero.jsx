@@ -6,7 +6,7 @@ import { MODE_LABEL, fmtDuration, relDate } from '../lib/data.js';
 import { displayName } from '../lib/profiles.js';
 import './Hero.css';
 
-const COUNTER_URL = import.meta.env.VITE_COUNTER_URL || 'http://localhost:5174';
+const COUNTER_URL = import.meta.env.VITE_COUNTER_URL || 'http://localhost:5175';
 
 export default function Hero({ ranked, games, profiles = {} }) {
   const champ = ranked[0];
@@ -72,7 +72,7 @@ export default function Hero({ ranked, games, profiles = {} }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <a href={COUNTER_URL} className="hero__cta">
+            <a href={COUNTER_URL} className="hero__cta" target="_blank" rel="noreferrer">
               🎯 Jouer maintenant
             </a>
           </motion.div>

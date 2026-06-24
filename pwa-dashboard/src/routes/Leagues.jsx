@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useLeague } from '../lib/useLeague.jsx';
 import { useAuth } from '../lib/useAuth.jsx';
 import './Leagues.css';
@@ -7,8 +7,18 @@ import './Leagues.css';
 export default function Leagues({ knownPlayers }) {
   const auth = useAuth();
   const { leagues, activeLeague, activateLeague, createLeague, updateLeague, deleteLeague } = useLeague();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [editing, setEditing] = useState(null);    // null | 'new' | league.id
   const [confirmDelete, setConfirmDelete] = useState(null); // league.id pending deletion
+
+  // Onboarding "Créer une ligue" CTA links here with ?new=1 → open the form.
+  useEffect(() => {
+    if (searchParams.get('new') === '1' && auth.player) {
+      setEditing('new');
+      searchParams.delete('new');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, auth.player]);
 
   // Leagues are tied to an account: no session, no access. Wait for auth to
   // resolve (avoid a flash), then gate behind login with a sign-up CTA.

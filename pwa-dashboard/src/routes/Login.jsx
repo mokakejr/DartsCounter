@@ -21,10 +21,10 @@ export default function Login() {
     try {
       if (mode === 'login') await auth.login(name.trim(), password);
       else await auth.signup(name.trim(), password);
-      navigate('/profile');
+      navigate(searchParams.get('next') || '/profile');
     } catch (err) {
       if (err.status === 401) setError('Nom ou mot de passe incorrect.');
-      else if (err.status === 409) setError('Ce nom est déjà pris.');
+      else if (err.status === 409) setError('Ce nom est déjà utilisé par un compte. Choisis-en un autre.');
       else if (err.status === 422) setError('Le mot de passe doit faire au moins 8 caractères.');
       else setError('Une erreur est survenue, réessaie.');
     }

@@ -1,0 +1,62 @@
+/* Onboarding wall — fills the viewport, never scrolls, no dashboard behind it. */
+.welcome {
+  height: 100svh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.welcome__inner {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.welcome__title {
+  font-size: clamp(46px, 11vw, 120px);
+  line-height: 0.92;
+  letter-spacing: -0.01em;
+  margin: 14px 0 0;
+}
+.welcome__line { display: block; }
+.welcome__accent { color: var(--primary); }
+
+.welcome__sub {
+  margin-top: 22px;
+  max-width: 520px;
+  color: var(--muted-2, var(--muted));
+  font-size: clamp(15px, 2.2vw, 18px);
+  line-height: 1.5;
+}
+
+.welcome__cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 34px;
+}
+
+.welcome__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 14px 28px;
+  background: var(--primary);
+  border: 1.5px solid var(--primary);
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  color: #fff;
+  text-decoration: none;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.welcome__cta:hover { opacity: 0.88; transform: translateY(-1px); }
+
+.welcome__cta--ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+.welcome__cta--ghost:hover { border-color: var(--muted); opacity: 1; }

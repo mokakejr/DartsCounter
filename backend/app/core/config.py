@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     auth_secret_key: str = "INSECURE-DEV-SECRET-CHANGE-ME"
     auth_token_expire_minutes: int = 60 * 24 * 30  # 30 days — casual app, avoid re-login friction
 
+    # Password seeded onto players that exist without an account (created from
+    # counter games, or back-filled by scripts/seed_default_passwords.py) so they
+    # can log in straight away and change it from their profile. Never overwrites
+    # a password a player already set.
+    default_player_password: str = "darts2026"
+
     # Where uploaded avatar/flight images are written, and the public base URL
     # used to turn a stored relative path into an absolute one in API responses
     # (mirrors dashboard_url's existing pattern).

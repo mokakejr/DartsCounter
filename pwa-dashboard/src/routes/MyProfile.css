@@ -104,6 +104,12 @@
   margin-top: 4px;
 }
 
+.myprofile__notice {
+  color: var(--win, #34D399);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
 .myprofile__actions {
   display: flex;
   justify-content: space-between;

@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.security import hash_password
 from app.models import Player
 from app.schemas.player import PlayerRead
 
@@ -29,7 +30,10 @@ async def get_or_create_player(
         return cache[name]
     player = (await session.execute(select(Player).where(Player.name == name))).scalar_one_or_none()
     if player is None:
-        player = Player(name=name)
+        # Seed the shared default password so a player created from a game can
+        # log in immediately and personalise it later. Existing players are
+        # never touched here.
+        player = Player(name=name, password_hash=hash_password(get_settings().default_player_password))
         session.add(player)
         await session.flush()
     if cache is not None:
@@ -60,6 +64,8 @@ async def update_profile(session: AsyncSession, player: Player, updates: dict) -
         player.display_name = updates["display_name"]
     if "accent_color" in updates:
         player.accent_color = updates["accent_color"]
+    if updates.get("password"):
+        player.password_hash = hash_password(updates["password"])
 
     await session.commit()
     return player

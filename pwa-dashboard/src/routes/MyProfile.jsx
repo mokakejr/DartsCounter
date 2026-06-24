@@ -11,8 +11,10 @@ export default function MyProfile() {
   const [displayName, setDisplayName] = useState(p?.display_name ?? '');
   const [name, setName] = useState(p?.name ?? '');
   const [accentColor, setAccentColor] = useState(p?.accent_color ?? '#E61E2A');
+  const [password, setPassword] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
   const [uploading, setUploading] = useState(null); // 'avatar' | 'flight' | null
 
   if (!auth.ready) return null;
@@ -20,15 +22,24 @@ export default function MyProfile() {
 
   async function save(e) {
     e.preventDefault();
+    if (password && password.length < 8) {
+      setError('Le mot de passe doit faire au moins 8 caractères.');
+      return;
+    }
     setSaving(true);
     setError(null);
+    setNotice(null);
     try {
-      const updated = await updateProfile(auth.token, {
+      const payload = {
         name: name.trim(),
         display_name: displayName.trim() || null,
         accent_color: accentColor,
-      });
+      };
+      if (password) payload.password = password;
+      const updated = await updateProfile(auth.token, payload);
       auth.updatePlayer(updated);
+      setPassword('');
+      setNotice(password ? 'Profil et mot de passe mis à jour.' : 'Profil mis à jour.');
     } catch (err) {
       setError(err.status === 409 ? 'Ce nom est déjà pris.' : "Échec de l'enregistrement.");
     }
@@ -108,7 +119,20 @@ export default function MyProfile() {
           onChange={e => setAccentColor(e.target.value)}
         />
 
+        <label className="myprofile__label">Nouveau mot de passe</label>
+        <input
+          className="myprofile__input"
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          placeholder="Laisser vide pour ne pas changer"
+          autoComplete="new-password"
+          minLength={8}
+        />
+        <p className="myprofile__hint">Tu utilises encore le mot de passe par défaut ? Change-le ici.</p>
+
         {error && <p className="myprofile__error">{error}</p>}
+        {notice && <p className="myprofile__notice">{notice}</p>}
 
         <div className="myprofile__actions">
           <button type="button" className="myprofile__logout" onClick={auth.logout}>

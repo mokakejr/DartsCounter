@@ -23,6 +23,7 @@ class ProfileUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=20)
     display_name: str | None = Field(default=None, max_length=40)
     accent_color: str | None = None
+    password: str | None = Field(default=None, min_length=8, max_length=128)
 
     @field_validator("accent_color")
     @classmethod

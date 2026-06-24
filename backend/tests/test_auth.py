@@ -1,3 +1,8 @@
+from app.core.config import get_settings
+
+DEFAULT_PW = get_settings().default_player_password
+
+
 async def test_signup_new_name_creates_player(client):
     resp = await client.post("/auth/signup", json={"name": "Alice", "password": "hunter22"})
     assert resp.status_code == 201
@@ -9,9 +14,10 @@ async def test_signup_new_name_creates_player(client):
     assert {p["name"] for p in players} == {"Alice"}
 
 
-async def test_signup_claims_existing_unclaimed_player(client):
-    # The counter app creates an anonymous, password-less player just by
-    # recording a game under that name.
+async def test_signup_existing_name_rejected(client):
+    # The counter app creates a player just by recording a game under that name.
+    # Names are unique and never reused, so signing up under it is rejected —
+    # that player logs in with the default password instead.
     await client.post(
         "/games",
         json={
@@ -24,11 +30,11 @@ async def test_signup_claims_existing_unclaimed_player(client):
     )
 
     resp = await client.post("/auth/signup", json={"name": "Alice", "password": "hunter22"})
-    assert resp.status_code == 201
+    assert resp.status_code == 409
 
-    # Claiming the name didn't create a duplicate player row.
+    # No duplicate row was created.
     players = (await client.get("/players")).json()
-    assert len(players) == 2
+    assert {p["name"] for p in players} == {"Alice", "Bob"}
 
 
 async def test_signup_name_already_claimed_is_rejected(client):
@@ -55,8 +61,9 @@ async def test_login_unknown_name_rejected(client):
     assert resp.status_code == 401
 
 
-async def test_login_rejected_for_player_with_no_account(client):
-    # Anonymous player, never signed up — no password to check against.
+async def test_game_created_player_logs_in_with_default_password(client):
+    # A player auto-created from a counter game gets the shared default password
+    # so they can log in straight away.
     await client.post(
         "/games",
         json={
@@ -67,5 +74,26 @@ async def test_login_rejected_for_player_with_no_account(client):
             "winner": "Alice",
         },
     )
-    resp = await client.post("/auth/login", json={"name": "Alice", "password": "anything"})
-    assert resp.status_code == 401
+
+    ok = await client.post("/auth/login", json={"name": "Alice", "password": DEFAULT_PW})
+    assert ok.status_code == 200
+    assert ok.json()["player"]["name"] == "Alice"
+
+    wrong = await client.post("/auth/login", json={"name": "Alice", "password": "not-the-default"})
+    assert wrong.status_code == 401
+
+
+async def test_change_password_from_profile(client):
+    signup = await client.post("/auth/signup", json={"name": "Alice", "password": "hunter22"})
+    token = signup.json()["access_token"]
+
+    patch = await client.patch(
+        "/players/me",
+        json={"password": "brand-new-pw"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert patch.status_code == 200
+
+    # Old password no longer works; the new one does.
+    assert (await client.post("/auth/login", json={"name": "Alice", "password": "hunter22"})).status_code == 401
+    assert (await client.post("/auth/login", json={"name": "Alice", "password": "brand-new-pw"})).status_code == 200

@@ -3,23 +3,32 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { fetchPlayers } from '../api/players.js';
 import './PlaySetup.css';
 
-const STORAGE_KEY = 'dartsKnownPlayers';
+// Two separate caches, so a backend rename can't leave a ghost chip behind:
+// - LOCAL_KEY: names typed in via "+" with no matching backend account (e.g.
+//   a one-off guest). Never pruned — there's no server signal to know if/when
+//   those should disappear.
+// - SERVER_KEY: a snapshot of the last successful GET /players. Replaced
+//   wholesale on every successful fetch (not merged), so a rename or removal
+//   on the backend drops the old name immediately. Still persisted so the
+//   list survives an offline reload between visits.
+const LOCAL_KEY = 'dartsKnownPlayers';
+const SERVER_KEY = 'dartsServerPlayers';
 
-function loadKnown() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+function loadNames(key) {
+  try { return JSON.parse(localStorage.getItem(key) || '[]'); }
   catch { return []; }
 }
 
-function saveKnown(names) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(names));
+function saveNames(key, names) {
+  localStorage.setItem(key, JSON.stringify(names));
 }
 
 function norm(s) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
-function mergeWithGames(stored, fromGames) {
-  const all = new Set([...stored, ...fromGames]);
+function mergeNames(...lists) {
+  const all = new Set(lists.flat());
   return [...all].sort((a, b) => a.localeCompare(b, 'fr'));
 }
 
@@ -45,23 +54,26 @@ export default function PlaySetup() {
   const mode = state?.mode ?? 'shanghai';
   const isCricketFamily = CRICKET_FAMILY.has(mode);
 
-  const [known, setKnown] = useState(loadKnown);
+  const [localNames, setLocalNames] = useState(() => loadNames(LOCAL_KEY));
+  const [serverNames, setServerNames] = useState(() => loadNames(SERVER_KEY));
   const [profiles, setProfiles] = useState({}); // name -> {display_name, avatar_url} — display only, selection stays keyed by canonical name
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState('');
   const [variant, setVariant] = useState(state?.variant === 'cutthroat' ? 'cutthroat' : 'normal');
 
+  const known = mergeNames(localNames, serverNames);
+
   // Enrich known players from the backend on mount (best-effort — offline-safe).
+  // The server list is replaced wholesale (not merged) so a rename or
+  // deletion on the backend is reflected immediately instead of leaving a
+  // stale name cached forever in localStorage.
   useEffect(() => {
     fetchPlayers()
       .then(players => {
         setProfiles(Object.fromEntries(players.map(p => [p.name, p])));
-        const fromServer = players.map(p => p.name);
-        setKnown(prev => {
-          const merged = mergeWithGames(prev, fromServer);
-          saveKnown(merged);
-          return merged;
-        });
+        const names = players.map(p => p.name);
+        setServerNames(names);
+        saveNames(SERVER_KEY, names);
       })
       .catch(() => {});
   }, []);
@@ -84,9 +96,9 @@ export default function PlaySetup() {
 
   function addNew() {
     if (!canAdd) return;
-    const updated = mergeWithGames(known, [q]);
-    setKnown(updated);
-    saveKnown(updated);
+    const updated = mergeNames(localNames, [q]);
+    setLocalNames(updated);
+    saveNames(LOCAL_KEY, updated);
     setSelected(prev => prev.includes(q) ? prev : [...prev, q]);
     setSearch('');
   }

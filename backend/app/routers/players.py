@@ -4,7 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_db
 from app.core.security import get_current_player
 from app.models import Player
+from app.schemas.elo import EloHistoryRead, PlayerRatingRead
 from app.schemas.player import PlayerRead, ProfileUpdate
+from app.services import elo_query
 from app.services import ping as ping_service
 from app.services import players as players_service
 from app.services.notifications import notify
@@ -50,6 +52,28 @@ async def upload_my_image(
         raise HTTPException(400, str(exc))
     player = await players_service.set_image_path(session, player, slot, path)
     return players_service.player_to_read(player)
+
+
+@router.get("/players/{name}/ratings", response_model=list[PlayerRatingRead])
+async def get_player_ratings(name: str, session: AsyncSession = Depends(get_db)) -> list[PlayerRatingRead]:
+    player = await players_service.get_by_name(session, name)
+    if player is None:
+        raise HTTPException(404, "Player not found")
+    rows = await elo_query.get_player_ratings(session, player.id)
+    return [PlayerRatingRead(**r) for r in rows]
+
+
+@router.get("/players/{name}/elo-history", response_model=list[EloHistoryRead])
+async def get_player_elo_history(
+    name: str,
+    scope: str | None = Query(default=None),
+    session: AsyncSession = Depends(get_db),
+) -> list[EloHistoryRead]:
+    player = await players_service.get_by_name(session, name)
+    if player is None:
+        raise HTTPException(404, "Player not found")
+    rows = await elo_query.get_player_elo_history(session, player.id, scope)
+    return [EloHistoryRead(**r) for r in rows]
 
 
 @router.post("/players/ping", status_code=202)

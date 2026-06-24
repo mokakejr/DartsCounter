@@ -19,11 +19,11 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
 
 from app.core.db import async_session, engine
-from app.models import EloHistory, Game, GamePlayer, Player
-from app.services.elo import recompute_elo
+from app.models import Game, GamePlayer, Player
+from app.services import elo_recompute
 from app.services.players import get_or_create_player
 
 logger = logging.getLogger("migrate_json")
@@ -107,41 +107,6 @@ async def import_games(raw_games: list[dict], dry_run: bool) -> tuple[int, int, 
     return imported, skipped, errors
 
 
-async def recompute_all_elo(dry_run: bool) -> int:
-    async with async_session() as session:
-        rows = (
-            await session.execute(select(Game.id, Game.raw_data).order_by(Game.date))
-        ).all()
-        games_for_elo = [
-            {"id": gid, "players": raw_data.get("players", []), "winner": raw_data.get("winner")}
-            for gid, raw_data in rows
-        ]
-        updates = recompute_elo(games_for_elo)
-
-        if dry_run:
-            return len({u.player_name for u in updates})
-
-        players = (await session.execute(select(Player))).scalars().all()
-        player_id_by_name = {p.name: p.id for p in players}
-
-        await session.execute(delete(EloHistory))
-        for u in updates:
-            player_id = player_id_by_name.get(u.player_name)
-            if player_id is None:
-                continue
-            session.add(
-                EloHistory(
-                    player_id=player_id,
-                    game_id=u.game_id,
-                    elo_before=u.elo_before,
-                    elo_after=u.elo_after,
-                    delta=u.delta,
-                )
-            )
-        await session.commit()
-        return len(player_id_by_name)
-
-
 async def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--path", type=Path, default=None, help="Path to games.json")
@@ -159,7 +124,8 @@ async def main() -> None:
     logger.info("%d games %s, %d skipped, %d errors", imported, verb, skipped, errors)
 
     if errors == 0:
-        player_count = await recompute_all_elo(args.dry_run)
+        async with async_session() as session:
+            player_count = await elo_recompute.recompute_all(session, dry_run=args.dry_run)
         verb = "would recompute" if args.dry_run else "recomputed"
         logger.info("Elo %s for %d players", verb, player_count)
     else:

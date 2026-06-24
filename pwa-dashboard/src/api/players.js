@@ -28,3 +28,12 @@ export function uploadImage(token, slot, file) {
 export function ping(token) {
   return apiPost('/players/ping', {}, token);
 }
+
+export function fetchPlayerRatings(name) {
+  return apiGet(`/players/${encodeURIComponent(name)}/ratings`);
+}
+
+// scope: omit for every scope (global + each mode), or pass one to filter.
+export function fetchPlayerEloHistory(name, scope) {
+  return apiGet(`/players/${encodeURIComponent(name)}/elo-history`, scope ? { scope } : {});
+}

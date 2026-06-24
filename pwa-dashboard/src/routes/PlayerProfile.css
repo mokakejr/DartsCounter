@@ -34,6 +34,20 @@
   color: #C9A227;
 }
 
+.formstrip { display: flex; gap: 5px; margin-top: 9px; }
+.formdot {
+  width: 20px; height: 20px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.formdot--win  { color: var(--win); border-color: color-mix(in srgb, var(--win) 40%, var(--border)); }
+.formdot--loss { color: var(--muted); }
+.formdot--draw { color: var(--muted-2); }
+
 .xpbar { margin: 8px 0 40px; }
 .xpbar__track { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
 .xpbar__track span { display: block; height: 100%; background: var(--player-accent, var(--primary)); }
@@ -54,6 +68,19 @@
 }
 .tile__v { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .tile__k { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+.rankrow { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 48px; }
+.rankchip {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 12px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-width: 110px;
+}
+.rankchip__scope { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.rankchip__elo { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.rankchip__tier { font-size: 12px; font-weight: 600; color: var(--player-accent, var(--primary)); }
 
 .profile__cols { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
 .profile__h2 { margin: 28px 0 14px; }
@@ -84,10 +111,16 @@
 }
 .ptrophy:hover { transform: scale(1.14); border-color: var(--muted); }
 
-.profile__games { list-style: none; }
-.profile__games li { display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
-.profile__games .won { color: var(--win); font-weight: 700; }
-.profile__games .lost { color: var(--muted); }
+.profile__games, .profile__elohistory { list-style: none; }
+.profile__games li, .profile__elohistory li {
+  display: grid; grid-template-columns: 90px 1fr auto;
+  gap: 12px; padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.profile__games .won, .profile__elohistory .won { color: var(--win); font-weight: 700; }
+.profile__games .lost, .profile__elohistory .lost { color: var(--muted); }
+.profile__games .drawn, .profile__elohistory .drawn { color: var(--muted-2); font-weight: 700; }
 .profile__gmode { color: var(--muted); }
 .profile__gmeta { color: var(--muted); }
 

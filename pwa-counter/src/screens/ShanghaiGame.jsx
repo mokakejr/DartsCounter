@@ -10,6 +10,7 @@ import {
 } from '../modes/shanghai.js';
 import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
+import ElapsedTimer from '../components/ElapsedTimer.jsx';
 import './ShanghaiGame.css';
 
 const ZONES = [
@@ -198,7 +199,7 @@ export default function ShanghaiGame() {
           <span className="sg__round-sep">/</span>
           {SHANGHAI_ROUNDS}
         </div>
-        <div className="sg__spacer" />
+        <ElapsedTimer startedAt={startedAt.current} />
       </div>
 
       {/* Target */}
@@ -263,7 +264,7 @@ export default function ShanghaiGame() {
       {/* Playing — skip straight to next player, remaining darts count as miss */}
       {phase === 'playing' && (
         <button className="sg__skip" onClick={skipToNext}>
-          SUIVANT → <span className="sg__skip-hint">(reste en miss)</span>
+          SUIVANT
         </button>
       )}
 
@@ -272,7 +273,7 @@ export default function ShanghaiGame() {
         <div className="sg__confirm">
           <p className="sg__confirm-pts">+{pending?.pts ?? 0} pts</p>
           <button className="sg__btn sg__btn--primary sg__btn--wide" onClick={confirmTurn}>
-            SUIVANT →
+            SUIVANT
           </button>
         </div>
       )}

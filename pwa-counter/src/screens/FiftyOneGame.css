@@ -1,9 +1,11 @@
 .f51 {
-  min-height: 100svh;
+  height: 100svh;
   display: flex;
   flex-direction: column;
   background: var(--bg);
   padding: 0 20px 24px;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 /* ── Header ─────────────────────────────────────────── */

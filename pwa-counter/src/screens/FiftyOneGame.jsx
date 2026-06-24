@@ -5,6 +5,7 @@ import {
 } from '../modes/fiftyOne.js';
 import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
+import ElapsedTimer from '../components/ElapsedTimer.jsx';
 import './FiftyOneGame.css';
 
 export default function FiftyOneGame() {
@@ -106,7 +107,7 @@ export default function FiftyOneGame() {
       <div className="f51__header">
         <button className="f51__back" onClick={() => setShowExit(true)}>←</button>
         <span className="f51__title">51</span>
-        <div style={{ width: 36 }} />
+        <ElapsedTimer startedAt={startedAt.current} />
       </div>
 
       {/* Current player */}
@@ -159,7 +160,7 @@ export default function FiftyOneGame() {
           className={`f51__key f51__key--ok${validScore ? ' f51__key--ok-active' : ''}`}
           onClick={confirm}
         >
-          OK
+          ✓
         </button>
       </div>
 

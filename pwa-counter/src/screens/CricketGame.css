@@ -5,6 +5,7 @@
   background: var(--bg);
   padding: 0 16px 16px;
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 /* ── Header ─────────────────────────────────────────── */
@@ -138,7 +139,8 @@
 .cg__row--closed .cg__td-lbl,
 .cg__row--closed .cg__td-mark { opacity: 0.35; }
 
-.cg__row-pts td { height: 36px; }
+.cg__row-pts { position: sticky; bottom: 0; }
+.cg__row-pts td { height: 36px; background: var(--bg); }
 .cg__row-pts .cg__td-lbl {
   font-size: 11px; letter-spacing: 0.16em;
   height: 36px;

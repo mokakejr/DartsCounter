@@ -1,0 +1,30 @@
+.rg { padding: 100px var(--gutter) 80px; min-height: 100svh; max-width: 720px; }
+
+.rg__title { font-size: clamp(40px, 8vw, 80px); }
+.rg__sub { color: var(--muted); margin: 8px 0 40px; }
+.rg__h2 { margin: 40px 0 16px; }
+.rg__muted { color: var(--muted); font-size: 14px; }
+
+.rg__ladder { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.rg__tier {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 6px 0;
+}
+.rg__tier-range { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.rg__prose { display: flex; flex-direction: column; gap: 16px; font-size: 15px; line-height: 1.6; color: var(--muted-2); }
+.rg__prose b { color: var(--text); }
+
+.rg__kschedule { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.rg__kschedule li {
+  font-size: 14px;
+  color: var(--muted-2);
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.rg__kschedule b { color: var(--text); font-variant-numeric: tabular-nums; }

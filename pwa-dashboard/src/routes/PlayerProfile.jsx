@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ALL_MODES } from '../lib/stats.js';
 import { MODE_LABEL, fmtDuration } from '../lib/data.js';
@@ -6,6 +6,7 @@ import { rivalries } from '../lib/derive.js';
 import { buildTrophies } from '../lib/trophies.js';
 import { displayName } from '../lib/profiles.js';
 import TrophyModal from '../components/TrophyModal.jsx';
+import Dart from '../components/Dart.jsx';
 import './PlayerProfile.css';
 
 export default function PlayerProfile({ games, stats, profiles = {} }) {
@@ -77,6 +78,20 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
           <p className="profile__lv">Niveau {s.level.lv} · {s.level.name}</p>
           {isGoat && <span className="profile__goat">🐐 GOAT du groupe</span>}
         </div>
+
+        {profile?.flight_image_url && (
+          <div className="profile__dart" title="Dart personnalisé">
+            <Suspense fallback={null}>
+              <Dart
+                accentColor={profile.accent_color}
+                flightImageUrl={profile.flight_image_url}
+                flightCropA={profile.flight_crop_a}
+                flightCropB={profile.flight_crop_b}
+                flightMode={profile.flight_mode}
+              />
+            </Suspense>
+          </div>
+        )}
       </header>
 
       <div className="xpbar">

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
@@ -28,6 +28,14 @@ class Player(Base):
     avatar_path: Mapped[str | None] = mapped_column(nullable=True)
     flight_image_path: Mapped[str | None] = mapped_column(nullable=True)
     accent_color: Mapped[str | None] = mapped_column(nullable=True)
+
+    # Relative (0.0-1.0) crop region within the source flight image, e.g.
+    # {"x": .1, "y": .1, "w": .5, "h": .5, "scale": 1.0} — survives the
+    # upload pipeline's resize since that preserves aspect ratio.
+    flight_crop_a: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # Only used when flight_mode == "paired" (vanes 1+3); null in "symmetric" mode.
+    flight_crop_b: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    flight_mode: Mapped[str] = mapped_column(nullable=False, server_default="symmetric")
 
     game_links: Mapped[list["GamePlayer"]] = relationship(back_populates="player")
     elo_history: Mapped[list["EloHistory"]] = relationship(back_populates="player")

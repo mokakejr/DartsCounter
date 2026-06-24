@@ -135,3 +135,12 @@
 }
 .myprofile__save:hover:not(:disabled) { opacity: 0.85; }
 .myprofile__save:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.myprofile__flight-section {
+  margin-top: 40px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+.myprofile__flight-section .myprofile__hint {
+  margin: 6px 0 18px;
+}

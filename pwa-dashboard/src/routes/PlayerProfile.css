@@ -10,7 +10,8 @@
 }
 .back:hover { color: var(--text); }
 
-.profile__head { display: flex; align-items: center; gap: 22px; margin-bottom: 28px; }
+.profile__head { display: flex; align-items: center; gap: 22px; margin-bottom: 28px; flex-wrap: wrap; }
+.profile__dart { width: 120px; height: 120px; margin-left: auto; flex-shrink: 0; }
 .profile__avatar {
   width: 76px; height: 76px;
   display: grid; place-items: center;
@@ -92,4 +93,5 @@
 
 @media (max-width: 760px) {
   .profile__cols { grid-template-columns: 1fr; gap: 24px; }
+  .profile__dart { width: 90px; height: 90px; }
 }

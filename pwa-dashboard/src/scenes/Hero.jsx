@@ -18,7 +18,13 @@ export default function Hero({ ranked, games, profiles = {} }) {
     <header className="hero">
       <div className="hero__dart">
         <Suspense fallback={null}>
-          <Dart accentColor={champProfile?.accent_color} flightImageUrl={champProfile?.flight_image_url} />
+          <Dart
+            accentColor={champProfile?.accent_color}
+            flightImageUrl={champProfile?.flight_image_url}
+            flightCropA={champProfile?.flight_crop_a}
+            flightCropB={champProfile?.flight_crop_b}
+            flightMode={champProfile?.flight_mode}
+          />
         </Suspense>
       </div>
 

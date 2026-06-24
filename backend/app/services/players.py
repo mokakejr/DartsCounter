@@ -17,6 +17,9 @@ def player_to_read(player: Player) -> PlayerRead:
         display_name=player.display_name,
         avatar_url=image_url(player.avatar_path),
         flight_image_url=image_url(player.flight_image_path),
+        flight_crop_a=player.flight_crop_a,
+        flight_crop_b=player.flight_crop_b,
+        flight_mode=player.flight_mode,
         accent_color=player.accent_color,
         created_at=player.created_at,
     )
@@ -60,6 +63,12 @@ async def update_profile(session: AsyncSession, player: Player, updates: dict) -
         player.display_name = updates["display_name"]
     if "accent_color" in updates:
         player.accent_color = updates["accent_color"]
+    if "flight_crop_a" in updates:
+        player.flight_crop_a = updates["flight_crop_a"]
+    if "flight_crop_b" in updates:
+        player.flight_crop_b = updates["flight_crop_b"]
+    if "flight_mode" in updates:
+        player.flight_mode = updates["flight_mode"]
 
     await session.commit()
     return player

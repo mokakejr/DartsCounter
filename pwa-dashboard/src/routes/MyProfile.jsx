@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../lib/useAuth.jsx';
 import { updateProfile, uploadImage } from '../api/players.js';
+import FlightEditor from '../components/FlightEditor.jsx';
 import './MyProfile.css';
 
 export default function MyProfile() {
@@ -48,6 +49,21 @@ export default function MyProfile() {
     setUploading(null);
   }
 
+  async function uploadFlightImage(file) {
+    const updated = await uploadImage(auth.token, 'flight', file);
+    auth.updatePlayer(updated);
+    return updated;
+  }
+
+  async function saveFlightCrop({ flightCropA, flightCropB, flightMode }) {
+    const updated = await updateProfile(auth.token, {
+      flight_crop_a: flightCropA,
+      flight_crop_b: flightCropB,
+      flight_mode: flightMode,
+    });
+    auth.updatePlayer(updated);
+  }
+
   return (
     <div className="myprofile shell">
       <Link to="/" className="back">← La Ligue</Link>
@@ -65,20 +81,6 @@ export default function MyProfile() {
             {uploading === 'avatar' ? 'Envoi…' : 'Changer la photo'}
             <input type="file" accept="image/*" hidden onChange={e => onImage('avatar', e.target.files[0])} />
           </label>
-        </div>
-
-        <div className="myprofile__image-slot">
-          <div
-            className="myprofile__flight-preview"
-            style={p.flight_image_url ? { backgroundImage: `url(${p.flight_image_url})` } : undefined}
-          >
-            {!p.flight_image_url && '🎯'}
-          </div>
-          <label className="myprofile__upload-btn">
-            {uploading === 'flight' ? 'Envoi…' : 'Flight de champion'}
-            <input type="file" accept="image/*" hidden onChange={e => onImage('flight', e.target.files[0])} />
-          </label>
-          <p className="myprofile__hint">Visible sur la page d'accueil si tu es champion en titre.</p>
         </div>
       </div>
 
@@ -119,6 +121,21 @@ export default function MyProfile() {
           </button>
         </div>
       </form>
+
+      <section className="myprofile__flight-section">
+        <p className="eyebrow">Mon dart</p>
+        <p className="myprofile__hint">
+          Visible sur la page d'accueil si tu es champion en titre, et sur ta page de profil.
+        </p>
+        <FlightEditor
+          currentImageUrl={p.flight_image_url}
+          currentCropA={p.flight_crop_a}
+          currentCropB={p.flight_crop_b}
+          currentMode={p.flight_mode}
+          onUpload={uploadFlightImage}
+          onSave={saveFlightCrop}
+        />
+      </section>
     </div>
   );
 }

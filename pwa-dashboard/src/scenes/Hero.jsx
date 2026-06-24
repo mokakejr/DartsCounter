@@ -18,7 +18,7 @@ export default function Hero({ ranked, games, profiles = {} }) {
     <header className="hero">
       <div className="hero__dart">
         <Suspense fallback={null}>
-          <Dart accentColor={champProfile?.accent_color} flightImageUrl={champProfile?.flight_image_url} />
+          <Dart accentColor={champProfile?.accent_color} flightImageUrl={champProfile?.flight_image_url || '/test_flight_square.png'} />
         </Suspense>
       </div>
 

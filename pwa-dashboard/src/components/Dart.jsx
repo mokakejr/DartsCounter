@@ -3,6 +3,11 @@ import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Environment, Float, Lightformer } from '@react-three/drei';
 
+// The flight shape's bounding box (see its points below: x spans 0..0.5,
+// y spans 0..0.8) — ShapeGeometry auto-generates UVs by normalizing against
+// this box, so a texture's "cover" crop must target this same aspect ratio.
+const FLIGHT_BOX_ASPECT = 0.5 / 0.8;
+
 // Loads a champion's custom flight image without the conditional-hook
 // problems of drei's suspending useTexture — there may be no URL at all,
 // and the dart must still render its default colors while one loads.
@@ -16,6 +21,21 @@ function useFlightTexture(url) {
       // light values — every color renders far too bright, washing dark
       // images out toward white.
       tex.colorSpace = THREE.SRGBColorSpace;
+
+      // Crop to "cover" the flight's bounding box (like CSS background-size:
+      // cover) instead of stretching to fit it — without this, a landscape
+      // photo gets squashed into the flight's tall, narrow silhouette.
+      const imgAspect = tex.image.width / tex.image.height;
+      if (imgAspect > FLIGHT_BOX_ASPECT) {
+        tex.repeat.set(FLIGHT_BOX_ASPECT / imgAspect, 1);
+        tex.offset.set((1 - FLIGHT_BOX_ASPECT / imgAspect) / 2, 0);
+      } else {
+        tex.repeat.set(1, imgAspect / FLIGHT_BOX_ASPECT);
+        tex.offset.set(0, (1 - imgAspect / FLIGHT_BOX_ASPECT) / 2);
+      }
+      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.needsUpdate = true;
+
       if (active) setTexture(tex);
     });
     return () => { active = false; };

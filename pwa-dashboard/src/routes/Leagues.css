@@ -208,3 +208,66 @@
   margin-top: 8px;
   justify-content: flex-end;
 }
+
+/* ── "Toi" markers (account = identity) ────────────────── */
+.leagues__me { color: var(--primary); font-weight: 700; }
+.leagues__chip--me { border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); }
+.leagues__chip--me:hover { border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); cursor: default; }
+.leagues__chip-tag {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-left: 2px;
+}
+
+/* ── Account gate (no session → no leagues) ────────────── */
+.leagues__gate {
+  max-width: 460px;
+  margin: 24px auto 0;
+  padding: 36px 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  text-align: center;
+}
+.leagues__gate-ico { font-size: 40px; line-height: 1; }
+.leagues__gate-title {
+  font-size: clamp(20px, 4vw, 26px);
+  font-weight: 700;
+  margin: 14px 0 10px;
+}
+.leagues__gate-sub {
+  color: var(--muted-2, var(--muted));
+  font-size: 15px;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+.leagues__gate-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.leagues__gate-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 28px;
+  background: var(--primary);
+  border-radius: 10px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  color: #fff;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+.leagues__gate-cta:hover { opacity: 0.85; }
+.leagues__gate-link {
+  color: var(--muted);
+  font-size: 14px;
+  text-decoration: none;
+}
+.leagues__gate-link:hover { color: var(--text); text-decoration: underline; }

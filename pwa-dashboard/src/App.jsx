@@ -71,7 +71,11 @@ function AppInner() {
   const auth = useAuth();
   const profiles = usePlayerProfiles();
   const { activeLeague, activateLeague } = useLeague();
-  const { games, allGames, stats, ranked, loading, error } = useGames(activeLeague?.players ?? null);
+  // Leagues are account-gated: a league filter only applies while signed in.
+  // A league activated in a previous session (localStorage) is ignored when
+  // logged out, so "no account → no league access" holds across the dashboard.
+  const effectiveLeague = auth.player ? activeLeague : null;
+  const { games, allGames, stats, ranked, loading, error } = useGames(effectiveLeague?.players ?? null);
   const [calloutOpen, setCalloutOpen] = useState(false);
   const [calloutRemaining, setCalloutRemaining] = useState(calloutRemainingMs);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -161,14 +165,14 @@ function AppInner() {
         </>
       )}
 
-      {activeLeague && (
+      {effectiveLeague && (
         <div className="league-banner">
           <span className="league-banner__label">Ligue active :</span>
-          <span className="league-banner__name">{activeLeague.name}</span>
-          <span className="league-banner__players">{activeLeague.players.join(' · ')}</span>
+          <span className="league-banner__name">{effectiveLeague.name}</span>
+          <span className="league-banner__players">{effectiveLeague.players.join(' · ')}</span>
           <button
             className="league-banner__clear"
-            onClick={() => activateLeague(activeLeague.id)}
+            onClick={() => activateLeague(effectiveLeague.id)}
             title="Désactiver le filtre ligue"
           >
             × Tout voir

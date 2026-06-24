@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../lib/useAuth.jsx';
 import './Login.css';
 
 export default function Login() {
   const navigate = useNavigate();
   const auth = useAuth();
-  const [mode, setMode] = useState('login'); // 'login' | 'signup'
+  const [searchParams] = useSearchParams();
+  // The leagues gate links here with ?mode=signup to open straight on sign-up.
+  const [mode, setMode] = useState(searchParams.get('mode') === 'signup' ? 'signup' : 'login'); // 'login' | 'signup'
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);

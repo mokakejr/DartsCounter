@@ -143,7 +143,113 @@ uv run python -m app.scripts.migrate_json --path ../docs/data/games.json
 ```
 
 Idempotent (skips games whose id already exists), creates unknown players on
-the fly, recomputes Elo for every player in chronological order at the end.
+the fly, recomputes Elo for every player in chronological order at the end
+(see [Elo rating & ranks](#elo-rating--ranks) for the algorithm and admin config).
+
+## Elo rating & ranks
+
+Every player has an Elo rating per scope — `global` and one per game mode
+(`Cricket`, `Shanghai`, ...) — derived entirely from game history, never
+hand-edited. Each game is a full pairwise round-robin: every pair of
+participants faces off directly by score (a tie produces a real draw, not
+an arbitrary winner), scaled by a performance multiplier (how far a
+player's score was from that game's average, clamped 0.5–2.0) and a
+K-factor that decays as a player accumulates games. Ratings start at
+10000; rank tiers (Bronze → Grand Champion, with Silver/Gold/Platinum/
+Diamond each split into 3 sub-ranks) are derived from a handful of config
+values rather than hardcoded thresholds. The engine is
+`backend/app/services/elo.py`; storage is `PlayerRating` (the live current
+rating per player+scope) and `EloHistory` (the audit trail, also exposed
+per-player for a profile timeline).
+
+```bash
+curl http://localhost:8000/elo/settings                       # current config
+curl http://localhost:8000/elo/score-directions                # lower-is-better overrides
+curl http://localhost:8000/players/<name>/ratings               # current rating + rank, per scope
+curl http://localhost:8000/players/<name>/elo-history           # per-game history, optional ?scope=
+```
+
+### Admin config
+
+Reading `/elo/settings` and `/elo/score-directions` (which (mode, variant)
+combos are "lower score wins", e.g. Cricket Cut Throat — anything not
+listed defaults to higher-is-better) needs no auth. Writing to either, plus
+`POST /elo/recompute`, requires `is_admin` on your player row — which
+nothing in the API can grant, on purpose (every admin-gated endpoint needs
+an existing admin, so the first one has to be set directly):
+
+```bash
+cd backend && uv run python -m app.scripts.set_admin <name>
+```
+
+(on a deployed VPS, that's `docker compose --env-file .env.dev -f docker-compose.yml
+-f docker-compose.dev.yml exec backend uv run python -m app.scripts.set_admin <name>`
+— see [Deployment](#deployment) for the full flags and the prod equivalent.)
+
+Changing K-factors/thresholds/clamp/rank values via `PATCH /elo/settings`
+doesn't retroactively recompute anything by itself — follow it with
+`POST /elo/recompute` (admin-only) to rebuild every rating under the new
+config.
+
+### Merging duplicate players
+
+Players created before the account system existed (free-text names typed
+into the counter app) sometimes turn out to be the same person under two
+different strings (`alice` vs `Alice`). Elo can't be hand-merged — there's
+no sound way to combine two separate rating trajectories — so this rewrites
+the underlying game history instead (`game_players`, `games.winner_id`, and
+the `games.raw_data` JSON the recompute actually reads from) and deletes
+the duplicate:
+
+```bash
+cd backend
+uv run python -m app.scripts.merge_players <keep> <absorb> --dry-run
+uv run python -m app.scripts.merge_players <keep> <absorb> --recompute
+```
+
+(on a deployed VPS, prefix with the same `docker compose ... exec backend` as above.)
+
+The first name survives with its profile/account untouched; the second is
+deleted. If both names appear in the *same* game (one person playing under
+both in one sitting), that game is left alone and the duplicate isn't
+deleted until it's resolved by hand — re-run the same command afterward to
+finish.
+
+### One-time setup after the Elo migration lands
+
+`alembic upgrade head` only creates the new tables/columns — it doesn't
+backfill ratings from existing games, and there's no admin yet to use the
+config endpoints above. Run, in order — substitute the dev/prod `docker
+compose` invocation per [Deployment](#deployment) (dev needs `--env-file
+.env.dev -f docker-compose.yml -f docker-compose.dev.yml`; prod just
+`--env-file .env.main`), shown here for dev:
+
+```bash
+# 1. schema
+docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml \
+  exec backend uv run alembic upgrade head
+
+# 2. merge any known duplicate players (see above) BEFORE recomputing —
+#    merging rewrites the history the recompute reads from
+
+# 3. populate ratings from full history
+docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml \
+  exec backend uv run python -c "
+import asyncio
+from app.core.db import async_session
+from app.services import elo_recompute
+
+async def main():
+    async with async_session() as session:
+        print(f'recomputed for {await elo_recompute.recompute_all(session)} players')
+
+asyncio.run(main())
+"
+
+# 4. bootstrap yourself as admin
+docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml \
+  exec backend uv run python -m app.scripts.set_admin <name>
+```
 
 ## Deployment
 
@@ -273,11 +379,12 @@ backend/            FastAPI app (uv, Python 3.12+)
     core/            settings, DB, redis
     models/          SQLAlchemy models
     schemas/         Pydantic schemas
-    routers/         games, players, stats, webhooks
-    services/        business logic (games, stats, elo, notifications, recap)
+    routers/         games, players, stats, elo, webhooks
+    services/        business logic (games, stats, elo/elo_config/elo_recompute/elo_query,
+                     notifications, recap)
       targets/        NotificationTarget implementations (google_chat, discord)
     workers/         APScheduler (weekly recap)
-    scripts/         migrate_json.py
+    scripts/         migrate_json.py, merge_players.py, set_admin.py
     migrations/      Alembic
   tests/
 pwa-counter/         scoring PWA (Vite + React, offline queue + service worker)

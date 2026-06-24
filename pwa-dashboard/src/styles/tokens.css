@@ -38,6 +38,17 @@
   --rar-epic:      #A974E6;
   --rar-legendary: #E6A93C;
 
+  /* Paliers de classement Elo — une couleur dédiée par palier (badges de rang
+     uniquement ; distinct des --rank-1/2/3 ci-dessus, qui restent réservés au
+     podium du classement). */
+  --tier-bronze:         #A9682F;
+  --tier-silver:         #AEB6C2;
+  --tier-gold:           #E0B23C;
+  --tier-platinum:       #7FE0CC;
+  --tier-diamond:        #3FA9F5;
+  --tier-champion:       #14C38E;
+  --tier-grand-champion: #A855F7;
+
   /* Typo */
   --font-display: 'Anton', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, sans-serif;

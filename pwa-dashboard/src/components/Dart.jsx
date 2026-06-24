@@ -2,11 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Environment, Float, Lightformer } from '@react-three/drei';
-
-// The flight shape's bounding box (see its points below: x spans 0..0.5,
-// y spans 0..0.8) — ShapeGeometry auto-generates UVs by normalizing against
-// this box, so a texture's "cover" crop must target this same aspect ratio.
-const FLIGHT_BOX_ASPECT = 0.5 / 0.8;
+import { defaultCoverCrop } from '../lib/flightCrop.js';
 
 // Loads a champion's custom flight image without the conditional-hook
 // problems of drei's suspending useTexture — there may be no URL at all,
@@ -21,21 +17,6 @@ function useFlightTexture(url) {
       // light values — every color renders far too bright, washing dark
       // images out toward white.
       tex.colorSpace = THREE.SRGBColorSpace;
-
-      // Crop to "cover" the flight's bounding box (like CSS background-size:
-      // cover) instead of stretching to fit it — without this, a landscape
-      // photo gets squashed into the flight's tall, narrow silhouette.
-      const imgAspect = tex.image.width / tex.image.height;
-      if (imgAspect > FLIGHT_BOX_ASPECT) {
-        tex.repeat.set(FLIGHT_BOX_ASPECT / imgAspect, 1);
-        tex.offset.set((1 - FLIGHT_BOX_ASPECT / imgAspect) / 2, 0);
-      } else {
-        tex.repeat.set(1, imgAspect / FLIGHT_BOX_ASPECT);
-        tex.offset.set(0, (1 - imgAspect / FLIGHT_BOX_ASPECT) / 2);
-      }
-      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-      tex.needsUpdate = true;
-
       if (active) setTexture(tex);
     });
     return () => { active = false; };
@@ -43,13 +24,44 @@ function useFlightTexture(url) {
   return texture;
 }
 
+// repeat/offset live on the Texture instance, not the mesh — so symmetric
+// vs. paired mode (two different crops from the same source image) needs
+// two cloned textures, not one shared one.
+function cropTexture(baseTexture, crop) {
+  const tex = baseTexture.clone();
+  tex.repeat.set(crop.w, crop.h);
+  // crop.y is "distance from the top" (how the crop editor expresses it,
+  // and how FlightEditor's SVG overlay works) — UV space's v=0 is the
+  // bottom of the image, hence the flip.
+  tex.offset.set(crop.x, 1 - crop.y - crop.h);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function resolveCrop(crop, baseTexture) {
+  if (crop) return crop;
+  const img = baseTexture.image;
+  return defaultCoverCrop(img.width / img.height);
+}
+
 // A turned-metal dart built from lathe profiles — looks sculpted, not blocky.
 // Tip (steel needle) → barrel (knurled tungsten) → shaft → 4 kite flights.
-// accentColor / flightImageUrl come from the reigning champion's profile —
-// both optional, falling back to the original crimson/off-white scheme.
-function DartMesh({ accentColor, flightImageUrl }) {
+// accentColor / flightImageUrl(+crop/mode) come from a player's profile —
+// all optional, falling back to the original crimson/off-white scheme.
+function DartMesh({ accentColor, flightImageUrl, flightCropA, flightCropB, flightMode = 'symmetric' }) {
   const spin = useRef();
-  const flightTexture = useFlightTexture(flightImageUrl);
+  const baseTexture = useFlightTexture(flightImageUrl);
+
+  // textureA covers vanes 0+2, textureB covers vanes 1+3 in "paired" mode;
+  // in "symmetric" mode all 4 vanes share textureA.
+  const { textureA, textureB } = useMemo(() => {
+    if (!baseTexture) return { textureA: null, textureB: null };
+    const a = cropTexture(baseTexture, resolveCrop(flightCropA, baseTexture));
+    if (flightMode !== 'paired') return { textureA: a, textureB: a };
+    const b = cropTexture(baseTexture, resolveCrop(flightCropB ?? flightCropA, baseTexture));
+    return { textureA: a, textureB: b };
+  }, [baseTexture, flightCropA, flightCropB, flightMode]);
 
   // Slow spin around the dart's own long axis for the metal shimmer.
   useFrame((_, delta) => {
@@ -108,8 +120,9 @@ function DartMesh({ accentColor, flightImageUrl }) {
           crimson swapped for the champion's accent color, if set) so they
           always read against the near-black background. */}
       {[0, 1, 2, 3].map(i => {
-        const red = i % 2 === 0;
+        const red = i % 2 === 0; // also vanes 0+2 vs 1+3, used below for paired mode
         const baseColor = red ? (accentColor || '#E61E2A') : '#EDEDE8';
+        const flightTexture = red ? textureA : textureB;
         return (
           <group key={i} position={[0, 0.78, 0]} rotation={[0, (i * Math.PI) / 2, 0]}>
             <mesh geometry={flightGeo}>
@@ -143,7 +156,7 @@ function DartMesh({ accentColor, flightImageUrl }) {
   );
 }
 
-export default function Dart({ accentColor, flightImageUrl }) {
+export default function Dart({ accentColor, flightImageUrl, flightCropA, flightCropB, flightMode }) {
   return (
     <Canvas camera={{ position: [0, 0, 8], fov: 34 }} dpr={[1, 2]}>
       <ambientLight intensity={0.45} />
@@ -152,7 +165,13 @@ export default function Dart({ accentColor, flightImageUrl }) {
       <Float speed={1.2} rotationIntensity={0.25} floatIntensity={0.5}>
         {/* Lean the whole dart for a dynamic read; spin stays on its own axis. */}
         <group rotation={[0.18, 0, -0.32]}>
-          <DartMesh accentColor={accentColor} flightImageUrl={flightImageUrl} />
+          <DartMesh
+            accentColor={accentColor}
+            flightImageUrl={flightImageUrl}
+            flightCropA={flightCropA}
+            flightCropB={flightCropB}
+            flightMode={flightMode}
+          />
         </group>
       </Float>
       {/* Studio environment built in-scene (no external HDR fetch). */}

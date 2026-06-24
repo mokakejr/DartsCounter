@@ -5,9 +5,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import EloHistory, Game, GamePlayer, Player
+from app.models import EloHistory, Game, GamePlayer, Player, PlayerRating
+from app.models.elo import GLOBAL_SCOPE
 from app.schemas.game import GameCreate, GamePlayerRead, GameRead
-from app.services.elo import latest_ratings, recompute_elo
+from app.services.elo import recompute_elo
+from app.services.elo_config import get_engine_config, get_score_direction_map
 from app.services.players import get_or_create_player
 
 _EAGER = (selectinload(Game.players).selectinload(GamePlayer.player), selectinload(Game.winner))
@@ -72,27 +74,51 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
             game.winner_id = player.id
         game_players_read.append(GamePlayerRead(name=name, score=score, position=position))
 
-    current_ratings = await latest_ratings(session, [p.id for p in players_by_name.values()])
-    initial_ratings = {
-        name: current_ratings[player.id]
-        for name, player in players_by_name.items()
-        if player.id in current_ratings
-    }
+    player_ids = [p.id for p in players_by_name.values()]
+    existing_ratings = (
+        await session.execute(select(PlayerRating).where(PlayerRating.player_id.in_(player_ids)))
+    ).scalars().all()
+    ratings_by_player_id = {(r.player_id, r.scope): r for r in existing_ratings}
 
+    initial_ratings: dict[str, dict[str, float]] = {}
+    initial_games_played: dict[str, dict[str, int]] = {}
+    for name, player in players_by_name.items():
+        for scope in (GLOBAL_SCOPE, payload.mode):
+            row = ratings_by_player_id.get((player.id, scope))
+            if row is not None:
+                initial_ratings.setdefault(name, {})[scope] = row.rating
+                initial_games_played.setdefault(name, {})[scope] = row.games_played
+
+    config = await get_engine_config(session)
+    score_direction = await get_score_direction_map(session)
     updates = recompute_elo(
-        [{"id": game_id, "players": payload.players, "winner": payload.winner}],
+        [{"id": game_id, "mode": payload.mode, "variant": payload.variant, "players": payload.players, "scores": payload.scores}],
+        config,
+        score_direction,
         initial_ratings=initial_ratings,
+        initial_games_played=initial_games_played,
     )
     for u in updates:
+        player_id = players_by_name[u.player_name].id
         session.add(
             EloHistory(
-                player_id=players_by_name[u.player_name].id,
+                player_id=player_id,
                 game_id=u.game_id,
+                scope=u.scope,
                 elo_before=u.elo_before,
                 elo_after=u.elo_after,
                 delta=u.delta,
+                perf_multiplier=u.perf_multiplier,
             )
         )
+        row = ratings_by_player_id.get((player_id, u.scope))
+        if row is None:
+            row = PlayerRating(player_id=player_id, scope=u.scope, rating=u.elo_after, games_played=1)
+            session.add(row)
+            ratings_by_player_id[(player_id, u.scope)] = row
+        else:
+            row.rating = u.elo_after
+            row.games_played += 1
 
     await session.commit()
 

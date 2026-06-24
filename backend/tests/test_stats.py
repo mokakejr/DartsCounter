@@ -5,7 +5,7 @@ async def _play(client, day: int, winner: str, loser: str):
             "date": f"2026-01-{day:02d}T10:00:00Z",
             "mode": "Cricket",
             "players": [winner, loser],
-            "scores": [10, 20],
+            "scores": [20, 10],  # winner listed first must also score higher — Elo now ranks by score
             "winner": winner,
         },
     )

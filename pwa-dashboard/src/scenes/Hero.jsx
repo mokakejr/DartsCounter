@@ -2,15 +2,22 @@ import { motion } from 'framer-motion';
 import { Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import Dart from '../components/Dart.jsx';
+import RankBadge from '../components/RankBadge.jsx';
 import { MODE_LABEL, fmtDuration, relDate } from '../lib/data.js';
 import { displayName } from '../lib/profiles.js';
 import './Hero.css';
 
 const COUNTER_URL = import.meta.env.VITE_COUNTER_URL || 'http://localhost:5174';
 
-export default function Hero({ ranked, games, profiles = {} }) {
-  const champ = ranked[0];
-  const champProfile = champ ? profiles[champ.name] : null;
+export default function Hero({ ranked, games, profiles = {}, eloBoard = [] }) {
+  // Reigning champion = highest global Elo (eloBoard is already sorted desc
+  // by the backend), not highest win count. champStats (level/streak — XP
+  // concepts the backend doesn't track) is looked up by name from the
+  // client-computed `ranked` for the same player.
+  const champEntry = eloBoard[0];
+  const champStats = champEntry ? ranked.find(r => r.name === champEntry.name) : null;
+  const champName = champEntry?.name;
+  const champProfile = champName ? profiles[champName] : null;
   const last = games && games.length ? games[0] : null;
   const others = last ? (last.players || []).filter(p => p !== last.winner) : [];
 
@@ -36,7 +43,7 @@ export default function Hero({ ranked, games, profiles = {} }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            {champ ? 'Champion en titre' : 'DartsCounter · La Ligue'}
+            {champEntry ? 'Champion en titre' : 'DartsCounter · La Ligue'}
           </motion.p>
 
           <motion.h1
@@ -45,9 +52,9 @@ export default function Hero({ ranked, games, profiles = {} }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.05 }}
           >
-            {champ ? (
+            {champEntry ? (
               <>
-                <span className="hero__line">{displayName(profiles, champ.name)}</span>
+                <span className="hero__line">{displayName(profiles, champName)}</span>
                 <span className="hero__line hero__accent">règne.</span>
               </>
             ) : (
@@ -55,20 +62,23 @@ export default function Hero({ ranked, games, profiles = {} }) {
             )}
           </motion.h1>
 
-          {champ && (
+          {champEntry && (
             <motion.div
               className="hero__champ"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.25 }}
             >
-              <span className="hero__champ-meta">
-                {champ.wins} victoires · niv. {champ.level.lv} · {champ.level.name}
-              </span>
+              <RankBadge rank={champEntry.rank} elo={champEntry.elo} size="lg" />
+              {champStats && (
+                <span className="hero__champ-meta">
+                  {champStats.wins} victoires · niv. {champStats.level.lv} · {champStats.level.name}
+                </span>
+              )}
               {/* Pourquoi il règne : le détail derrière la 1re place. */}
               <span className="hero__champ-why">
-                {champ.games ? Math.round((champ.wins / champ.games) * 100) : 0}% de winrate
-                {champ.curStreak >= 2 && <> · 🔥 {champ.curStreak} victoires de suite</>}
+                {Math.round((champEntry.win_rate || 0) * 100)}% de winrate
+                {champStats?.curStreak >= 2 && <> · 🔥 {champStats.curStreak} victoires de suite</>}
               </span>
             </motion.div>
           )}

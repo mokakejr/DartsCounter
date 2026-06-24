@@ -8,6 +8,7 @@ import { displayName } from '../lib/profiles.js';
 import { fetchPlayerRatings, fetchPlayerEloHistory } from '../api/players.js';
 import TrophyModal from '../components/TrophyModal.jsx';
 import Dart from '../components/Dart.jsx';
+import RankBadge from '../components/RankBadge.jsx';
 import './PlayerProfile.css';
 
 // win/loss/draw — a tie has no `winner` at all (Shanghai allows it), and
@@ -80,6 +81,8 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
   ];
 
   const accentStyle = profile?.accent_color ? { '--player-accent': profile.accent_color } : undefined;
+  const globalRating = ratings.find(r => r.scope === 'global');
+  const modeRatings = ratings.filter(r => r.scope !== 'global');
 
   return (
     <div className="profile shell" style={accentStyle}>
@@ -96,6 +99,12 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
           <h1 className="display profile__name">{profile?.display_name || name}</h1>
           <p className="profile__lv">Niveau {s.level.lv} · {s.level.name}</p>
           {isGoat && <span className="profile__goat">🐐 GOAT du groupe</span>}
+          {globalRating && (
+            <div className="profile__rankhero">
+              <RankBadge rank={globalRating.rank} elo={globalRating.rating} size="lg" />
+              <Link to="/rangs" className="profile__rankinfo">Comment ça marche ?</Link>
+            </div>
+          )}
           {form.length > 0 && (
             <div className="formstrip" title="Forme récente">
               {form.map((g, i) => {
@@ -143,14 +152,10 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
         ))}
       </div>
 
-      {ratings.length > 0 && (
+      {modeRatings.length > 0 && (
         <div className="rankrow">
-          {ratings.map(r => (
-            <div key={r.scope} className="rankchip">
-              <span className="rankchip__scope">{r.scope === 'global' ? 'Global' : (MODE_LABEL[r.scope] || r.scope)}</span>
-              <span className="rankchip__elo">{r.rating}</span>
-              <span className="rankchip__tier">{r.rank}</span>
-            </div>
+          {modeRatings.map(r => (
+            <RankBadge key={r.scope} label={MODE_LABEL[r.scope] || r.scope} rank={r.rank} elo={r.rating} size="sm" />
           ))}
         </div>
       )}

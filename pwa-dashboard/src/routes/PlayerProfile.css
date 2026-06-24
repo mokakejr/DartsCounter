@@ -34,6 +34,10 @@
   color: #C9A227;
 }
 
+.profile__rankhero { display: flex; align-items: center; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+.profile__rankinfo { font-size: 12px; color: var(--muted); text-decoration: underline; text-decoration-color: var(--border); }
+.profile__rankinfo:hover { color: var(--text); }
+
 .formstrip { display: flex; gap: 5px; margin-top: 9px; }
 .formdot {
   width: 20px; height: 20px;
@@ -70,17 +74,6 @@
 .tile__k { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 
 .rankrow { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 48px; }
-.rankchip {
-  display: flex; flex-direction: column; gap: 2px;
-  padding: 12px 18px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  min-width: 110px;
-}
-.rankchip__scope { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.rankchip__elo { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.rankchip__tier { font-size: 12px; font-weight: 600; color: var(--player-accent, var(--primary)); }
 
 .profile__cols { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
 .profile__h2 { margin: 28px 0 14px; }

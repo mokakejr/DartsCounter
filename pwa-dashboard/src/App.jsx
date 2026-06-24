@@ -5,6 +5,7 @@ import { useGames } from './lib/useGames.js';
 import { LeagueProvider, useLeague } from './lib/useLeague.jsx';
 import { AuthProvider, useAuth } from './lib/useAuth.jsx';
 import { fetchPlayers } from './api/players.js';
+import { fetchLeaderboard } from './api/stats.js';
 import CalloutModal from './components/CalloutModal.jsx';
 import Hero from './scenes/Hero.jsx';
 import Standings from './scenes/Standings.jsx';
@@ -15,21 +16,32 @@ import PlayerProfile from './routes/PlayerProfile.jsx';
 import PlayersIndex from './routes/PlayersIndex.jsx';
 import TrophiesPage from './routes/TrophiesPage.jsx';
 import XpGuide from './routes/XpGuide.jsx';
+import RankGuide from './routes/RankGuide.jsx';
 import Leagues from './routes/Leagues.jsx';
 import Login from './routes/Login.jsx';
 import MyProfile from './routes/MyProfile.jsx';
 import './App.css';
 
-function Home({ games, stats, ranked, profiles = {} }) {
+function Home({ games, stats, ranked, profiles = {}, eloBoard }) {
   return (
     <main>
-      <Hero ranked={ranked} games={games} profiles={profiles} />
+      <Hero ranked={ranked} games={games} profiles={profiles} eloBoard={eloBoard} />
       <Standings ranked={ranked} profiles={profiles} />
       <Feed games={games} profiles={profiles} />
       <Trends games={games} ranked={ranked} />
       <Trophies stats={stats} profiles={profiles} />
     </main>
   );
+}
+
+// Global Elo leaderboard (name/elo/rank/...), fetched once — used to crown
+// the homepage's "reigning champion" by rating instead of by win count.
+function useEloBoard() {
+  const [board, setBoard] = useState([]);
+  useEffect(() => {
+    fetchLeaderboard().then(setBoard).catch(() => {});
+  }, []);
+  return board;
 }
 
 // Backend player rows (display_name/avatar_url/flight_image_url/accent_color),
@@ -70,6 +82,7 @@ function AppInner() {
   const navigate = useNavigate();
   const auth = useAuth();
   const profiles = usePlayerProfiles();
+  const eloBoard = useEloBoard();
   const { activeLeague, activateLeague } = useLeague();
   const { games, allGames, stats, ranked, loading, error } = useGames(activeLeague?.players ?? null);
   const [calloutOpen, setCalloutOpen] = useState(false);
@@ -156,6 +169,7 @@ function AppInner() {
             <NavLink to="/trophees" className={({ isActive }) => isActive ? 'is-active' : undefined}>Trophées</NavLink>
             <NavLink to="/ligues" className={({ isActive }) => isActive ? 'is-active' : undefined}>Ligues</NavLink>
             <NavLink to="/xp" className={({ isActive }) => isActive ? 'is-active' : undefined}>XP</NavLink>
+            <NavLink to="/rangs" className={({ isActive }) => isActive ? 'is-active' : undefined}>Rangs</NavLink>
             <span className="nav__count">{(allGames ?? games).length} parties</span>
           </div>
         </>
@@ -186,15 +200,16 @@ function AppInner() {
       />
 
       <Routes>
-        <Route path="/" element={<Home games={games} stats={stats} ranked={ranked} profiles={profiles} />} />
+        <Route path="/" element={<Home games={games} stats={stats} ranked={ranked} profiles={profiles} eloBoard={eloBoard} />} />
         <Route path="/joueur/:name" element={<PlayerProfile games={games} stats={stats} profiles={profiles} />} />
         <Route path="/profils" element={<PlayersIndex ranked={ranked} profiles={profiles} />} />
         <Route path="/trophees" element={<TrophiesPage stats={stats} profiles={profiles} />} />
         <Route path="/xp" element={<XpGuide />} />
+        <Route path="/rangs" element={<RankGuide />} />
         <Route path="/ligues" element={<Leagues knownPlayers={knownPlayers} />} />
         <Route path="/login" element={<Login />} />
         <Route path="/profile" element={<MyProfile />} />
-        <Route path="*" element={<Home games={games} stats={stats} ranked={ranked} profiles={profiles} />} />
+        <Route path="*" element={<Home games={games} stats={stats} ranked={ranked} profiles={profiles} eloBoard={eloBoard} />} />
       </Routes>
 
       <footer className="footer shell">

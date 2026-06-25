@@ -54,3 +54,9 @@ async def get_current_player(
     if player is None:
         raise unauthorized
     return player
+
+
+async def get_current_admin(player: Player = Depends(get_current_player)) -> Player:
+    if not player.is_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    return player

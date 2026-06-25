@@ -1,6 +1,8 @@
 import json
 
+from app.core.db import async_session
 from app.scripts import migrate_json as mj
+from app.services import elo_recompute
 
 SAMPLE_GAMES = [
     {
@@ -9,7 +11,7 @@ SAMPLE_GAMES = [
         "mode": "Cricket",
         "variant": "Normal",
         "players": ["Alice", "Bob"],
-        "scores": [10, 20],
+        "scores": [20, 10],
         "winner": "Alice",
         "duration": 100,
     },
@@ -49,16 +51,18 @@ async def test_import_games_dry_run_writes_nothing(client):
 
 async def test_recompute_all_elo_covers_every_player():
     await mj.import_games(SAMPLE_GAMES, dry_run=False)
-    player_count = await mj.recompute_all_elo(dry_run=False)
+    async with async_session() as session:
+        player_count = await elo_recompute.recompute_all(session, dry_run=False)
     assert player_count == 3
 
 
 async def test_recompute_all_elo_dry_run_writes_nothing(client):
     await mj.import_games(SAMPLE_GAMES, dry_run=False)
-    await mj.recompute_all_elo(dry_run=True)
+    async with async_session() as session:
+        await elo_recompute.recompute_all(session, dry_run=True)
 
     leaderboard = (await client.get("/stats/leaderboard")).json()
-    assert all(row["elo"] == 1000 for row in leaderboard)
+    assert all(row["elo"] == 10000 for row in leaderboard)
 
 
 async def test_main_cli_dry_run_end_to_end(tmp_path, monkeypatch):

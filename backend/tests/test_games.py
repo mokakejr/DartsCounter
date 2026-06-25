@@ -4,7 +4,7 @@ BASE_GAME = {
     "variant": "Normal",
     "duration": 120,
     "players": ["Alice", "Bob"],
-    "scores": [10, 20],
+    "scores": [20, 10],
     "winner": "Alice",
 }
 
@@ -49,8 +49,10 @@ async def test_create_game_mismatched_scores_rejected(client):
 
 
 async def test_create_game_tie_has_no_winner(client):
-    # Shanghai allows ties — winner is None/absent, not an error.
-    payload = {**BASE_GAME, "winner": None}
+    # Shanghai allows ties — winner is None/absent, not an error. A real tie
+    # (equal scores) moves no Elo when both players start at the same
+    # rating: expected == actual (0.5 each), delta is exactly zero.
+    payload = {**BASE_GAME, "scores": [10, 10], "winner": None}
     resp = await client.post("/games", json=payload)
     assert resp.status_code == 201
     body = resp.json()
@@ -58,7 +60,7 @@ async def test_create_game_tie_has_no_winner(client):
     assert all(p["position"] == 2 for p in body["players"])
 
     leaderboard = (await client.get("/stats/leaderboard")).json()
-    assert all(row["elo"] == 1000 for row in leaderboard)  # no elo movement on a tie
+    assert all(row["elo"] == 10000 for row in leaderboard)  # no elo movement on a tie
 
 
 async def test_list_games_ordered_newest_first(client):

@@ -1,46 +1,41 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import EloHistory, Game, GamePlayer, Player
+from app.models import Game, GamePlayer, Player, PlayerRating
+from app.models.elo import GLOBAL_SCOPE
 from app.schemas.stats import PlayerStats
-from app.services.elo import DEFAULT_RATING
+from app.services.elo import rank_for_rating
+from app.services.elo_config import get_engine_config
 from app.services.players import image_url
 
 
-async def get_leaderboard(session: AsyncSession) -> list[PlayerStats]:
-    games_subq = (
-        select(GamePlayer.player_id, func.count().label("games"))
-        .group_by(GamePlayer.player_id)
-        .subquery()
-    )
-    wins_subq = (
-        select(GamePlayer.player_id, func.count().label("wins"))
-        .where(GamePlayer.position == 1)
-        .group_by(GamePlayer.player_id)
-        .subquery()
-    )
-    elo_ranked = (
-        select(
-            EloHistory.player_id,
-            EloHistory.elo_after,
-            func.row_number()
-            .over(partition_by=EloHistory.player_id, order_by=Game.date.desc())
-            .label("rn"),
-        )
-        .join(Game, Game.id == EloHistory.game_id)
-        .subquery()
-    )
-    elo_subq = select(elo_ranked.c.player_id, elo_ranked.c.elo_after).where(elo_ranked.c.rn == 1).subquery()
+async def get_leaderboard(session: AsyncSession, mode: str | None = None) -> list[PlayerStats]:
+    """`mode=None` is the global leaderboard (games/wins across every mode,
+    elo = the "global" scope rating). Passing a mode name scopes all three
+    to just that mode — used by the dashboard's per-mode Standings filter."""
+    games_query = select(GamePlayer.player_id, func.count().label("games"))
+    wins_query = select(GamePlayer.player_id, func.count().label("wins")).where(GamePlayer.position == 1)
+    if mode is not None:
+        games_query = games_query.join(Game, Game.id == GamePlayer.game_id).where(Game.mode == mode)
+        wins_query = wins_query.join(Game, Game.id == GamePlayer.game_id).where(Game.mode == mode)
+    games_subq = games_query.group_by(GamePlayer.player_id).subquery()
+    wins_subq = wins_query.group_by(GamePlayer.player_id).subquery()
+
+    config = await get_engine_config(session)
+    scope = mode or GLOBAL_SCOPE
 
     games_col = func.coalesce(games_subq.c.games, 0)
     wins_col = func.coalesce(wins_subq.c.wins, 0)
-    elo_col = func.coalesce(elo_subq.c.elo_after, DEFAULT_RATING)
+    elo_col = func.coalesce(PlayerRating.rating, config.starting_rating)
 
     stmt = (
         select(Player, games_col.label("games"), wins_col.label("wins"), elo_col.label("elo"))
         .outerjoin(games_subq, games_subq.c.player_id == Player.id)
         .outerjoin(wins_subq, wins_subq.c.player_id == Player.id)
-        .outerjoin(elo_subq, elo_subq.c.player_id == Player.id)
+        .outerjoin(
+            PlayerRating,
+            (PlayerRating.player_id == Player.id) & (PlayerRating.scope == scope),
+        )
         .order_by(elo_col.desc())
     )
     rows = (await session.execute(stmt)).all()
@@ -57,6 +52,7 @@ async def get_leaderboard(session: AsyncSession) -> list[PlayerStats]:
             wins=r.wins,
             win_rate=round(r.wins / r.games, 3) if r.games else 0.0,
             elo=r.elo,
+            rank=rank_for_rating(r.elo, config),
         )
         for r in rows
     ]

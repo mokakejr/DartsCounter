@@ -21,6 +21,7 @@ def player_to_read(player: Player) -> PlayerRead:
         flight_crop_b=player.flight_crop_b,
         flight_mode=player.flight_mode,
         accent_color=player.accent_color,
+        is_admin=player.is_admin,
         created_at=player.created_at,
     )
 
@@ -43,6 +44,10 @@ async def get_or_create_player(
 async def list_players(session: AsyncSession) -> list[PlayerRead]:
     rows = (await session.execute(select(Player).order_by(Player.name))).scalars().all()
     return [player_to_read(p) for p in rows]
+
+
+async def get_by_name(session: AsyncSession, name: str) -> Player | None:
+    return (await session.execute(select(Player).where(Player.name == name))).scalar_one_or_none()
 
 
 class NameTakenError(Exception):

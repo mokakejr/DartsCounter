@@ -32,6 +32,7 @@ class PlayerRead(BaseModel):
     flight_crop_b: FlightCrop | None = None
     flight_mode: FlightMode = "symmetric"
     accent_color: str | None = None
+    is_admin: bool = False
     created_at: datetime
 
 

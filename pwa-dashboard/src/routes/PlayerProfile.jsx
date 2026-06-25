@@ -1,19 +1,35 @@
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ALL_MODES } from '../lib/stats.js';
 import { MODE_LABEL, fmtDuration } from '../lib/data.js';
 import { rivalries } from '../lib/derive.js';
 import { buildTrophies } from '../lib/trophies.js';
 import { displayName } from '../lib/profiles.js';
+import { fetchPlayerRatings, fetchPlayerEloHistory } from '../api/players.js';
 import TrophyModal from '../components/TrophyModal.jsx';
 import Dart from '../components/Dart.jsx';
+import RankBadge from '../components/RankBadge.jsx';
 import './PlayerProfile.css';
+
+// win/loss/draw — a tie has no `winner` at all (Shanghai allows it), and
+// is its own outcome, not just "not a win".
+function outcome(game, name) {
+  if (!game.winner) return 'draw';
+  return game.winner === name ? 'win' : 'loss';
+}
 
 export default function PlayerProfile({ games, stats, profiles = {} }) {
   const { name } = useParams();
   const s = stats[name];
   const profile = profiles[name];
   const [selectedTrophy, setSelectedTrophy] = useState(null);
+  const [ratings, setRatings] = useState([]);
+  const [eloHistory, setEloHistory] = useState([]);
+
+  useEffect(() => {
+    fetchPlayerRatings(name).then(setRatings).catch(() => setRatings([]));
+    fetchPlayerEloHistory(name, 'global').then(setEloHistory).catch(() => setEloHistory([]));
+  }, [name]);
 
   const earned = useMemo(() => {
     if (!s) return [];
@@ -28,6 +44,10 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
         .slice(0, 8),
     [games, name]
   );
+
+  // Oldest → newest, left to right, ending on the most recent game — the
+  // usual "recent form" reading order.
+  const form = useMemo(() => [...recent].reverse(), [recent]);
 
   const h2h = useMemo(
     () => rivalries(games, 99).filter(r => r.a === name || r.b === name).slice(0, 5),
@@ -61,6 +81,8 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
   ];
 
   const accentStyle = profile?.accent_color ? { '--player-accent': profile.accent_color } : undefined;
+  const globalRating = ratings.find(r => r.scope === 'global');
+  const modeRatings = ratings.filter(r => r.scope !== 'global');
 
   return (
     <div className="profile shell" style={accentStyle}>
@@ -77,6 +99,24 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
           <h1 className="display profile__name">{profile?.display_name || name}</h1>
           <p className="profile__lv">Niveau {s.level.lv} · {s.level.name}</p>
           {isGoat && <span className="profile__goat">🐐 GOAT du groupe</span>}
+          {globalRating && (
+            <div className="profile__rankhero">
+              <RankBadge rank={globalRating.rank} elo={globalRating.rating} size="lg" />
+              <Link to="/rangs" className="profile__rankinfo">Comment ça marche ?</Link>
+            </div>
+          )}
+          {form.length > 0 && (
+            <div className="formstrip" title="Forme récente">
+              {form.map((g, i) => {
+                const o = outcome(g, name);
+                return (
+                  <span key={g.id || i} className={`formdot formdot--${o}`}>
+                    {o === 'win' ? '✓' : o === 'loss' ? '✕' : '–'}
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {profile?.flight_image_url && (
@@ -111,6 +151,14 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
           </div>
         ))}
       </div>
+
+      {modeRatings.length > 0 && (
+        <div className="rankrow">
+          {modeRatings.map(r => (
+            <RankBadge key={r.scope} label={MODE_LABEL[r.scope] || r.scope} rank={r.rank} elo={r.rating} size="sm" />
+          ))}
+        </div>
+      )}
 
       <div className="profile__cols">
         <section>
@@ -165,15 +213,32 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
 
           <h2 className="profile__h2 eyebrow">Dernières parties</h2>
           <ul className="profile__games">
-            {recent.map((g, i) => (
+            {recent.map((g, i) => {
+              const o = outcome(g, name);
+              return (
               <li key={g.id || i}>
-                <span className={g.winner === name ? 'won' : 'lost'}>
-                  {g.winner === name ? 'Victoire' : 'Défaite'}
+                <span className={o === 'win' ? 'won' : o === 'loss' ? 'lost' : 'drawn'}>
+                  {o === 'win' ? 'Victoire' : o === 'loss' ? 'Défaite' : 'Égalité'}
                 </span>
                 <span className="profile__gmode">{MODE_LABEL[g.mode]}</span>
                 <span className="profile__gmeta">{fmtDuration(g.duration)}</span>
               </li>
+              );
+            })}
+          </ul>
+
+          <h2 className="profile__h2 eyebrow">Historique Elo</h2>
+          <ul className="profile__elohistory">
+            {eloHistory.slice(0, 8).map((h, i) => (
+              <li key={i}>
+                <span className={h.delta > 0 ? 'won' : h.delta < 0 ? 'lost' : 'drawn'}>
+                  {h.delta > 0 ? `+${h.delta}` : h.delta}
+                </span>
+                <span className="profile__gmode">{MODE_LABEL[h.game_mode] || h.game_mode}</span>
+                <span className="profile__gmeta">{h.elo_before} → {h.elo_after}</span>
+              </li>
             ))}
+            {eloHistory.length === 0 && <p className="profile__muted">Pas encore d'historique.</p>}
           </ul>
         </section>
       </div>

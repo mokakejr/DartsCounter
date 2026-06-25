@@ -111,7 +111,8 @@
 .cg__th--active { color: var(--text); border-bottom-color: var(--primary); }
 
 /* Rows fill the table's available height equally */
-.cg__board tbody tr { height: auto; }
+.cg__board tbody tr { height: 44px; }
+.cg__row-sc-divider { height: 8px !important; }
 
 .cg__td-lbl {
   padding: 6px 4px;

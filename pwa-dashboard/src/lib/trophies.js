@@ -32,7 +32,8 @@ export function buildTrophies(stats, playerName = null) {
       }
     }
 
-    return { ...a, earners, unlocked, rarity, progress };
+    const myEarner = playerName ? earners.find(e => e.name === playerName) : null;
+    return { ...a, earners, unlocked, rarity, progress, myValue: myEarner?.value ?? null };
   });
 }
 

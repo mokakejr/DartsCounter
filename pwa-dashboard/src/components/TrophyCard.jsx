@@ -23,6 +23,9 @@ export default function TrophyCard({ trophy, delay = 0, onClick, showcase = fals
       <span className="tcard__body">
         <span className="tcard__name">{trophy.name}</span>
         <span className="tcard__desc">{trophy.desc}</span>
+        {trophy.unlocked && trophy.myValue && (
+          <span className="tcard__value">{trophy.myValue}</span>
+        )}
         {!trophy.unlocked && trophy.progress && (
           <span className="tcard__prog">
             <span className="tcard__prog-track">

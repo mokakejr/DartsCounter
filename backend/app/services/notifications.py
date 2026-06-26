@@ -61,16 +61,20 @@ async def dispatch_game_finished(game: GameRead) -> None:
         settings = get_settings()
 
         players_sorted = sorted(game.players, key=lambda p: p.position)
+        player_names = [p.name for p in players_sorted]
+        display = await games_service.get_display_names(
+            session, player_names + ([game.winner] if game.winner else [])
+        )
         event = GameEvent(
             type="game_finished",
             data={
                 "mode": game.mode,
                 "variant": game.variant,
-                "players": [p.name for p in players_sorted],
+                "players": [display.get(n, n) for n in player_names],
                 "scores": [p.score for p in players_sorted],
-                "winner": game.winner,
+                "winner": display.get(game.winner) if game.winner else None,
                 "duration": game.duration,
-                "trophies": trophies,
+                "trophies": {display.get(k, k): v for k, v in trophies.items()},
                 "dashboard_url": settings.dashboard_url,
             },
         )

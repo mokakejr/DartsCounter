@@ -150,6 +150,16 @@ async def list_all_games_raw(session: AsyncSession) -> list[dict]:
     return [_to_achievement_dict(g) for g in rows]
 
 
+async def get_display_names(session: AsyncSession, names: list[str]) -> dict[str, str]:
+    """Returns {canonical_name: display_name_or_name} for the given player names."""
+    if not names:
+        return {}
+    rows = (
+        await session.execute(select(Player).where(Player.name.in_(names)))
+    ).scalars().all()
+    return {p.name: p.display_name or p.name for p in rows}
+
+
 def _to_achievement_dict(g: Game) -> dict:
     return {
         "id": str(g.id),

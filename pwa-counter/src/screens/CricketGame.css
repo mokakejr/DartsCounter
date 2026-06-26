@@ -110,33 +110,26 @@
 }
 .cg__th--active { color: var(--text); border-bottom-color: var(--primary); }
 
-/* Rows: fixed height enforced via line-height on cells (tr height alone is min-height in table layout) */
-.cg__board tbody tr { height: 44px; }
-.cg__row-sc-divider { height: 8px !important; }
+/* Rows: table distributes height automatically via height:100% on .cg__board — no fixed px heights */
+.cg__row-sc-divider { height: 4px !important; }
 
 .cg__td-lbl {
-  padding: 0 4px;
-  line-height: 44px;
-  height: 44px;
-  font-size: 12px;
+  padding: 2% 4px;
+  font-size: clamp(10px, 2.8vmin, 13px);
   letter-spacing: 0.06em;
   color: var(--muted);
   font-weight: 600;
   vertical-align: middle;
   white-space: nowrap;
-  overflow: hidden;
 }
 .cg__td-mark {
-  padding: 0 8px;
-  line-height: 44px;
-  height: 44px;
+  padding: 2% 8px;
   text-align: center;
-  font-size: 18px;
+  font-size: clamp(14px, 4vmin, 20px);
   font-weight: 700;
   color: var(--muted);
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
-  overflow: hidden;
 }
 .cg__td-mark--active { color: var(--text); background: color-mix(in srgb, var(--primary) 6%, transparent); }
 
@@ -180,11 +173,11 @@
 }
 .cg__sound-btn {
   flex: 1;
-  height: 54px;
+  height: clamp(42px, 7vmin, 54px);
   border-radius: 10px;
   border: 1px solid;
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: clamp(11px, 3vmin, 13px);
   font-weight: 700;
   letter-spacing: 0.1em;
   cursor: pointer;
@@ -221,11 +214,11 @@
 
 /* ── Buttons ────────────────────────────────────────── */
 .cg__btn {
-  padding: 14px 28px;
+  padding: clamp(10px, 2vmin, 14px) 28px;
   border-radius: 10px;
   border: none;
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: clamp(15px, 4vmin, 18px);
   letter-spacing: 0.06em;
   cursor: pointer;
   transition: opacity 0.15s;

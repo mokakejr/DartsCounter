@@ -23,8 +23,9 @@ async def test_game_finished_notification_dispatched(client, fake_httpx):
     assert len(fake_httpx.calls) == 1
     url, body = fake_httpx.calls[0]
     assert url == "https://chat.example/x"
-    assert "Alice" in body["text"]
-    assert "Cricket" in body["text"]
+    card = body["cardsV2"][0]["card"]
+    assert "Alice" in card["header"]["title"]
+    assert "Cricket" in card["header"]["title"]
 
 
 async def test_idempotent_retry_does_not_renotify(client, fake_httpx):
@@ -44,7 +45,8 @@ async def test_tie_game_sends_egalite_message(client, fake_httpx):
     assert resp.status_code == 201
 
     _, body = fake_httpx.calls[0]
-    assert "Égalité" in body["text"]
+    card = body["cardsV2"][0]["card"]
+    assert "Égalité" in card["header"]["title"]
 
 
 def test_week_bounds_starts_on_monday():

@@ -142,6 +142,26 @@ async def list_games(session: AsyncSession, limit: int = 50, offset: int = 0) ->
     return [_to_game_read(g) for g in rows]
 
 
+async def list_all_games_raw(session: AsyncSession) -> list[dict]:
+    """All games as plain dicts for the achievement engine, ascending chronological order."""
+    rows = (
+        await session.execute(select(Game).options(*_EAGER).order_by(Game.date))
+    ).scalars().all()
+    return [_to_achievement_dict(g) for g in rows]
+
+
+def _to_achievement_dict(g: Game) -> dict:
+    return {
+        "id": str(g.id),
+        "date": g.date.isoformat(),
+        "mode": g.mode,
+        "variant": g.variant,
+        "players": [gp.player.name for gp in g.players],
+        "winner": g.winner.name if g.winner else None,
+        "duration": g.duration or 0,
+    }
+
+
 async def list_games_between(session: AsyncSession, start: datetime, end: datetime) -> list[GameRead]:
     rows = (
         await session.execute(

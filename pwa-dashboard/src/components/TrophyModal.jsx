@@ -57,7 +57,10 @@ export default function TrophyModal({ trophy, onClose, profiles = {} }) {
                       <span className="modal__earner-av" style={avatarStyle(profiles, e.name)}>
                         {!profiles[e.name]?.avatar_url && e.name.charAt(0)}
                       </span>
-                      {displayName(profiles, e.name)}
+                      <span className="modal__earner-name">
+                        {displayName(profiles, e.name)}
+                        {e.value && <span className="modal__earner-value">{e.value}</span>}
+                      </span>
                     </Link>
                   ))}
                 </div>

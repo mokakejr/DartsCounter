@@ -189,7 +189,7 @@ export function hasModeLowScore(s, all, mode) {
 }
 
 // Trophées de rang XP : un par niveau (généré depuis LEVELS pour rester synchro).
-export const LEVEL_ICONS = ['🦴','🍺','🐎','🍷','🎯','🔥','🍻','🎩','🧔','💪','👑','🚀','🐐','🍾'];
+export const LEVEL_ICONS = ['\u{1F9B4}','\u{1F37A}','\u{1F40E}','\u{1F377}','\u{1F3AF}','\u{1F525}','\u{1F37B}','\u{1F3A9}','\u{1F9D4}','\u{1F4AA}','\u{1F451}','\u{1F680}','\u{1F410}','\u{1F37E}'];
 export const XP_RANKS = LEVELS.map((l, i) => ({
   id:'xp_lv' + l.lv, cat:'xp', ico:LEVEL_ICONS[i] || '⭐', name:l.name,
   desc:`Atteindre le niveau ${l.lv}${l.lv === LEVELS.length ? ' (max)' : ''} · ${l.name}`,
@@ -200,102 +200,102 @@ export const XP_RANKS = LEVELS.map((l, i) => ({
 // "globaux" (ex. the_goat) reçoivent (stat, allStats). `cat` = clé de catégorie d'affichage.
 export const ACHIEVEMENTS = [
   // ── Victoires & séries ──
-  { id:'first_blood',       cat:'wins', ico:'🎯', name:'Premier Sang',     desc:'Remporter sa première partie',          cond:s => s.wins >= 1, prog:s => [s.wins, 1] },
-  { id:'hat_trick',         cat:'wins', ico:'🎩', name:'Hat Trick',        desc:'3 victoires consécutives',              cond:s => s.maxStreak >= 3, prog:s => [s.maxStreak, 3] },
-  { id:'on_fire',           cat:'wins', ico:'🔥', name:'En Feu',           desc:'5 victoires consécutives',              cond:s => s.maxStreak >= 5, prog:s => [s.maxStreak, 5] },
+  { id:'first_blood',       cat:'wins', ico:'\u{1F3AF}', name:'Premier Sang',     desc:'Remporter sa première partie',          cond:s => s.wins >= 1, prog:s => [s.wins, 1] },
+  { id:'hat_trick',         cat:'wins', ico:'\u{1F3A9}', name:'Hat Trick',        desc:'3 victoires consécutives',              cond:s => s.maxStreak >= 3, prog:s => [s.maxStreak, 3] },
+  { id:'on_fire',           cat:'wins', ico:'\u{1F525}', name:'En Feu',           desc:'5 victoires consécutives',              cond:s => s.maxStreak >= 5, prog:s => [s.maxStreak, 5] },
   { id:'unstoppable',       cat:'wins', ico:'⚡', name:'Inarrêtable',      desc:'10 victoires consécutives',             cond:s => s.maxStreak >= 10, prog:s => [s.maxStreak, 10] },
   { id:'triple_threat',     cat:'wins', ico:'⚔️', name:'Triple Menace',    desc:'3 victoires dans la même journée',      cond:s => s.maxWinsInDay >= 3, prog:s => [s.maxWinsInDay, 3] },
-  { id:'legend_week',       cat:'wins', ico:'🗓️', name:'Semaine Légendaire',desc:'5 victoires en 7 jours',               cond:s => s.maxWinsInWeek >= 5, prog:s => [s.maxWinsInWeek, 5] },
-  { id:'dominator',         cat:'wins', ico:'👑', name:'Dominateur',       desc:'Win rate > 60% sur 20+ parties',        cond:s => s.games >= 20 && s.wins / s.games > 0.6 },
-  { id:'untouchable',       cat:'wins', ico:'🛡️', name:'Intouchable',      desc:'Win rate > 75% sur 30+ parties',        cond:s => s.games >= 30 && s.wins / s.games > 0.75 },
-  { id:'quarter_century',   cat:'wins', ico:'🥈', name:'Quart de Siècle',  desc:'25 victoires',                          cond:s => s.wins >= 25, prog:s => [s.wins, 25] },
-  { id:'the_goat',          cat:'wins', ico:'🐐', name:'GOAT',             desc:'Le plus de victoires, tous modes',      cond:(s,all) => isGoat(s, all) },
-  { id:'underdog',          cat:'wins', ico:'🐕', name:'Underdog',         desc:'Gagner après 3 défaites de suite',      cond:s => s.underdog },
-  { id:'comeback_king',     cat:'wins', ico:'🔄', name:'Roi du Retour',    desc:'Gagner après 5 défaites de suite',      cond:s => s.comeback },
-  { id:'phoenix',           cat:'wins', ico:'🦅', name:'Phénix',           desc:'Gagner après 7 défaites de suite',      cond:s => s.phoenix },
+  { id:'legend_week',       cat:'wins', ico:'\u{1F5D3}️', name:'Semaine Légendaire',desc:'5 victoires en 7 jours',               cond:s => s.maxWinsInWeek >= 5, prog:s => [s.maxWinsInWeek, 5] },
+  { id:'dominator',         cat:'wins', ico:'\u{1F451}', name:'Dominateur',       desc:'Win rate > 60% sur 20+ parties',        cond:s => s.games >= 20 && s.wins / s.games > 0.6 },
+  { id:'untouchable',       cat:'wins', ico:'\u{1F6E1}️', name:'Intouchable',      desc:'Win rate > 75% sur 30+ parties',        cond:s => s.games >= 30 && s.wins / s.games > 0.75 },
+  { id:'quarter_century',   cat:'wins', ico:'\u{1F948}', name:'Quart de Siècle',  desc:'25 victoires',                          cond:s => s.wins >= 25, prog:s => [s.wins, 25] },
+  { id:'the_goat',          cat:'wins', ico:'\u{1F410}', name:'GOAT',             desc:'Le plus de victoires, tous modes',      cond:(s,all) => isGoat(s, all) },
+  { id:'underdog',          cat:'wins', ico:'\u{1F415}', name:'Underdog',         desc:'Gagner après 3 défaites de suite',      cond:s => s.underdog },
+  { id:'comeback_king',     cat:'wins', ico:'\u{1F504}', name:'Roi du Retour',    desc:'Gagner après 5 défaites de suite',      cond:s => s.comeback },
+  { id:'phoenix',           cat:'wins', ico:'\u{1F985}', name:'Phénix',           desc:'Gagner après 7 défaites de suite',      cond:s => s.phoenix },
 
   // ── Défaites ──
-  { id:'rough_patch',       cat:'loss', ico:'🩹', name:'Mauvaise Passe',   desc:'3 défaites consécutives',               cond:s => s.maxLossStreak >= 3,  prog:s => [s.maxLossStreak, 3] },
-  { id:'punching_ball',     cat:'loss', ico:'🥊', name:'Punching Ball',    desc:'5 défaites consécutives',               cond:s => s.maxLossStreak >= 5,  prog:s => [s.maxLossStreak, 5] },
-  { id:'desert_crossing',   cat:'loss', ico:'🏜️', name:'Traversée du Désert',desc:'7 défaites consécutives',             cond:s => s.maxLossStreak >= 7,  prog:s => [s.maxLossStreak, 7] },
-  { id:'cursed',            cat:'loss', ico:'🪦', name:'Maudit',           desc:'10 défaites consécutives',              cond:s => s.maxLossStreak >= 10, prog:s => [s.maxLossStreak, 10] },
-  { id:'bottomless_pit',    cat:'loss', ico:'🕳️', name:'Puits sans Fond',  desc:'12 défaites consécutives',              cond:s => s.maxLossStreak >= 12, prog:s => [s.maxLossStreak, 12] },
-  { id:'are_you_serious',   cat:'loss', ico:'😐', name:"T'es sérieux ?",    desc:'20 défaites consécutives',              cond:s => s.maxLossStreak >= 20, prog:s => [s.maxLossStreak, 20] },
+  { id:'rough_patch',       cat:'loss', ico:'\u{1FA79}', name:'Mauvaise Passe',   desc:'3 défaites consécutives',               cond:s => s.maxLossStreak >= 3,  prog:s => [s.maxLossStreak, 3] },
+  { id:'punching_ball',     cat:'loss', ico:'\u{1F94A}', name:'Punching Ball',    desc:'5 défaites consécutives',               cond:s => s.maxLossStreak >= 5,  prog:s => [s.maxLossStreak, 5] },
+  { id:'desert_crossing',   cat:'loss', ico:'\u{1F3DC}️', name:'Traversée du Désert',desc:'7 défaites consécutives',             cond:s => s.maxLossStreak >= 7,  prog:s => [s.maxLossStreak, 7] },
+  { id:'cursed',            cat:'loss', ico:'\u{1FAA6}', name:'Maudit',           desc:'10 défaites consécutives',              cond:s => s.maxLossStreak >= 10, prog:s => [s.maxLossStreak, 10] },
+  { id:'bottomless_pit',    cat:'loss', ico:'\u{1F573}️', name:'Puits sans Fond',  desc:'12 défaites consécutives',              cond:s => s.maxLossStreak >= 12, prog:s => [s.maxLossStreak, 12] },
+  { id:'are_you_serious',   cat:'loss', ico:'\u{1F610}', name:"T'es sérieux ?",    desc:'20 défaites consécutives',              cond:s => s.maxLossStreak >= 20, prog:s => [s.maxLossStreak, 20] },
 
   // ── Modes de jeu ──
-  { id:'cricket_master',    cat:'modes', ico:'🦗', name:'Maître du Cricket',desc:'10 victoires en Cricket',              cond:s => (s.modeWins.Cricket||0) >= 10, prog:s => [s.modeWins.Cricket||0, 10] },
-  { id:'shanghai_killer',   cat:'modes', ico:'💥', name:'Shanghai Killer',  desc:'Gagner par Shanghai Kill',             cond:s => s.shanghaiKillWins >= 1 },
-  { id:'shanghai_hunter',   cat:'modes', ico:'🏹', name:'Chasseur Shanghai',desc:'5 victoires par Shanghai Kill',        cond:s => s.shanghaiKillWins >= 5, prog:s => [s.shanghaiKillWins, 5] },
-  { id:'cricket_tactician', cat:'modes', ico:'🧠', name:'Tacticien',        desc:'5 victoires en Cut Throat',            cond:s => s.cutThroatWins >= 5, prog:s => [s.cutThroatWins, 5] },
-  { id:'all_rounder',       cat:'modes', ico:'🌀', name:'All-Rounder',      desc:'Une victoire dans chaque mode',        cond:s => ALL_MODES.every(m => (s.modeWins[m]||0) >= 1) },
-  { id:'mode_explorer',     cat:'modes', ico:'🗺️', name:'Explorateur',      desc:'Jouer les 4 modes de jeu',             cond:s => ALL_MODES.every(m => s.modesPlayed.has(m)) },
+  { id:'cricket_master',    cat:'modes', ico:'\u{1F997}', name:'Maître du Cricket',desc:'10 victoires en Cricket',              cond:s => (s.modeWins.Cricket||0) >= 10, prog:s => [s.modeWins.Cricket||0, 10] },
+  { id:'shanghai_killer',   cat:'modes', ico:'\u{1F4A5}', name:'Shanghai Killer',  desc:'Gagner par Shanghai Kill',             cond:s => s.shanghaiKillWins >= 1 },
+  { id:'shanghai_hunter',   cat:'modes', ico:'\u{1F3F9}', name:'Chasseur Shanghai',desc:'5 victoires par Shanghai Kill',        cond:s => s.shanghaiKillWins >= 5, prog:s => [s.shanghaiKillWins, 5] },
+  { id:'cricket_tactician', cat:'modes', ico:'\u{1F9E0}', name:'Tacticien',        desc:'5 victoires en Cut Throat',            cond:s => s.cutThroatWins >= 5, prog:s => [s.cutThroatWins, 5] },
+  { id:'all_rounder',       cat:'modes', ico:'\u{1F300}', name:'All-Rounder',      desc:'Une victoire dans chaque mode',        cond:s => ALL_MODES.every(m => (s.modeWins[m]||0) >= 1) },
+  { id:'mode_explorer',     cat:'modes', ico:'\u{1F5FA}️', name:'Explorateur',      desc:'Jouer les 4 modes de jeu',             cond:s => ALL_MODES.every(m => s.modesPlayed.has(m)) },
 
   // ── Performance ──
-  { id:'speed_demon',       cat:'perf', ico:'🏎️', name:'Speed Demon',      desc:'Victoire en moins de 2 minutes',        cond:s => s.speedWin },
-  { id:'marathon',          cat:'perf', ico:'🏃', name:'Marathonien',      desc:'Une partie de plus de 30 minutes',      cond:s => s.marathon },
+  { id:'speed_demon',       cat:'perf', ico:'\u{1F3CE}️', name:'Speed Demon',      desc:'Victoire en moins de 2 minutes',        cond:s => s.speedWin },
+  { id:'marathon',          cat:'perf', ico:'\u{1F3C3}', name:'Marathonien',      desc:'Une partie de plus de 30 minutes',      cond:s => s.marathon },
 
   // ── Assiduité ──
-  { id:'fifty',             cat:'volume', ico:'🏅', name:'Fidèle',          desc:'50 parties jouées',                    cond:s => s.games >= 50, prog:s => [s.games, 50] },
-  { id:'centurion',         cat:'volume', ico:'💯', name:'Centurion',       desc:'100 parties jouées',                   cond:s => s.games >= 100, prog:s => [s.games, 100] },
-  { id:'veteran',           cat:'volume', ico:'🎖️', name:'Vétéran Assidu',  desc:'250 parties jouées',                   cond:s => s.games >= 250, prog:s => [s.games, 250] },
-  { id:'social',            cat:'volume', ico:'👥', name:'Sociable',        desc:'Jouer avec 3 adversaires différents',  cond:s => s.opponents.size >= 3, prog:s => [s.opponents.size, 3] },
+  { id:'fifty',             cat:'volume', ico:'\u{1F3C5}', name:'Fidèle',          desc:'50 parties jouées',                    cond:s => s.games >= 50, prog:s => [s.games, 50] },
+  { id:'centurion',         cat:'volume', ico:'\u{1F4AF}', name:'Centurion',       desc:'100 parties jouées',                   cond:s => s.games >= 100, prog:s => [s.games, 100] },
+  { id:'veteran',           cat:'volume', ico:'\u{1F396}️', name:'Vétéran Assidu',  desc:'250 parties jouées',                   cond:s => s.games >= 250, prog:s => [s.games, 250] },
+  { id:'social',            cat:'volume', ico:'\u{1F465}', name:'Sociable',        desc:'Jouer avec 3 adversaires différents',  cond:s => s.opponents.size >= 3, prog:s => [s.opponents.size, 3] },
 
   // ── Itération 2 — nouveaux trophées ──
-  { id:'perfectionist',     cat:'wins',  ico:'💎', name:'Perfectionniste', desc:'100% de victoires sur 10+ parties',     cond:s => s.games >= 10 && s.wins === s.games, prog:s => [s.wins === s.games ? s.games : 0, 10] },
-  { id:'giant_slayer',      cat:'wins',  ico:'🗡️', name:'Tueur de GOAT',    desc:'Battre le n°1 du classement',           cond:(s,all) => { const g = Object.values(all).sort((a,b)=>b.wins-a.wins||b.games-a.games)[0]; return g && g.name !== s.name && (s.beat[g.name]||0) >= 1; } },
-  { id:'nemesis',           cat:'wins',  ico:'😈', name:'Némésis',          desc:'Battre le même adversaire 5 fois',      cond:s => Math.max(0, ...Object.values(s.beat)) >= 5, prog:s => [Math.max(0, ...Object.values(s.beat)), 5] },
-  { id:'perfect_day',       cat:'wins',  ico:'🎰', name:'Carton Plein',     desc:'Une journée de 3+ victoires sans défaite', cond:s => s.perfectDay },
-  { id:'half_century',      cat:'wins',  ico:'🏆', name:'Demi-Siècle',      desc:'50 victoires',                          cond:s => s.wins >= 50, prog:s => [s.wins, 50] },
-  { id:'double_mode',       cat:'modes', ico:'🤹', name:'Doublé',           desc:'Gagner 2 modes différents le même jour', cond:s => s.maxModesWonInDay >= 2, prog:s => [s.maxModesWonInDay, 2] },
-  { id:'master_of_four',    cat:'modes', ico:'🎲', name:'Maître des 4',     desc:'5 victoires dans chacun des 4 modes',   cond:s => ALL_MODES.every(m => (s.modeWins[m]||0) >= 5), prog:s => [ALL_MODES.filter(m => (s.modeWins[m]||0) >= 5).length, 4] },
-  { id:'sniper',            cat:'perf',  ico:'🥷', name:'Sniper',           desc:'3 victoires éclair (< 2 min)',          cond:s => s.speedWinCount >= 3, prog:s => [s.speedWinCount, 3] },
-  { id:'cold_blood',        cat:'perf',  ico:'🧊', name:'Sang-Froid',       desc:'Gagner une partie de plus de 30 min',   cond:s => s.longWin },
-  { id:'stakhanoviste',     cat:'volume',ico:'🛠️', name:'Stakhanoviste',    desc:'Le plus de parties jouées',             cond:(s,all) => { const t = Object.values(all).sort((a,b)=>b.games-a.games)[0]; return t && t.name === s.name && s.games > 0; } },
-  { id:'regular',           cat:'volume',ico:'📅', name:'Habitué',          desc:'Jouer 10 jours différents',             cond:s => s.distinctDays >= 10, prog:s => [s.distinctDays, 10] },
+  { id:'perfectionist',     cat:'wins',  ico:'\u{1F48E}', name:'Perfectionniste', desc:'100% de victoires sur 10+ parties',     cond:s => s.games >= 10 && s.wins === s.games, prog:s => [s.wins === s.games ? s.games : 0, 10] },
+  { id:'giant_slayer',      cat:'wins',  ico:'\u{1F5E1}️', name:'Tueur de GOAT',    desc:'Battre le n°1 du classement',           cond:(s,all) => { const g = Object.values(all).sort((a,b)=>b.wins-a.wins||b.games-a.games)[0]; return g && g.name !== s.name && (s.beat[g.name]||0) >= 1; } },
+  { id:'nemesis',           cat:'wins',  ico:'\u{1F608}', name:'Némésis',          desc:'Battre le même adversaire 5 fois',      cond:s => Math.max(0, ...Object.values(s.beat)) >= 5, prog:s => [Math.max(0, ...Object.values(s.beat)), 5] },
+  { id:'perfect_day',       cat:'wins',  ico:'\u{1F3B0}', name:'Carton Plein',     desc:'Une journée de 3+ victoires sans défaite', cond:s => s.perfectDay },
+  { id:'half_century',      cat:'wins',  ico:'\u{1F3C6}', name:'Demi-Siècle',      desc:'50 victoires',                          cond:s => s.wins >= 50, prog:s => [s.wins, 50] },
+  { id:'double_mode',       cat:'modes', ico:'\u{1F939}', name:'Doublé',           desc:'Gagner 2 modes différents le même jour', cond:s => s.maxModesWonInDay >= 2, prog:s => [s.maxModesWonInDay, 2] },
+  { id:'master_of_four',    cat:'modes', ico:'\u{1F3B2}', name:'Maître des 4',     desc:'5 victoires dans chacun des 4 modes',   cond:s => ALL_MODES.every(m => (s.modeWins[m]||0) >= 5), prog:s => [ALL_MODES.filter(m => (s.modeWins[m]||0) >= 5).length, 4] },
+  { id:'sniper',            cat:'perf',  ico:'\u{1F977}', name:'Sniper',           desc:'3 victoires éclair (< 2 min)',          cond:s => s.speedWinCount >= 3, prog:s => [s.speedWinCount, 3] },
+  { id:'cold_blood',        cat:'perf',  ico:'\u{1F9CA}', name:'Sang-Froid',       desc:'Gagner une partie de plus de 30 min',   cond:s => s.longWin },
+  { id:'stakhanoviste',     cat:'volume',ico:'\u{1F6E0}️', name:'Stakhanoviste',    desc:'Le plus de parties jouées',             cond:(s,all) => { const t = Object.values(all).sort((a,b)=>b.games-a.games)[0]; return t && t.name === s.name && s.games > 0; } },
+  { id:'regular',           cat:'volume',ico:'\u{1F4C5}', name:'Habitué',          desc:'Jouer 10 jours différents',             cond:s => s.distinctDays >= 10, prog:s => [s.distinctDays, 10] },
   { id:'consistency',       cat:'volume',ico:'⏳', name:'Régularité',       desc:'Jouer 3 jours de suite',                cond:s => s.maxDayStreak >= 3, prog:s => [s.maxDayStreak, 3] },
 
   // ── Champions par mode (un seul détenteur) ──
-  { id:'cricket_champ',      cat:'modes', ico:'🏆', name:'Champion Cricket',             desc:'Le plus de victoires en Cricket',              cond:(s,all) => isModeChampion(s, all, 'Cricket') },
-  { id:'sc_champ',           cat:'modes', ico:'🏆', name:'Champion Super Cricket',       desc:'Le plus de victoires en Super Cricket',        cond:(s,all) => isModeChampion(s, all, 'SuperCricket') },
-  { id:'shanghai_champ',     cat:'modes', ico:'🏆', name:'Champion Shanghai',            desc:'Le plus de victoires en Shanghai',             cond:(s,all) => isModeChampion(s, all, 'Shanghai') },
-  { id:'fiftyone_champ',     cat:'modes', ico:'🏆', name:'Champion Fifty-One',           desc:'Le plus de victoires en Fifty-One',           cond:(s,all) => isModeChampion(s, all, 'FiftyOne') },
+  { id:'cricket_champ',      cat:'modes', ico:'\u{1F3C6}', name:'Champion Cricket',             desc:'Le plus de victoires en Cricket',              cond:(s,all) => isModeChampion(s, all, 'Cricket'),      value:s => { const n = s.modeWins['Cricket']||0; return `${n} victoire${n>1?'s':''}`; } },
+  { id:'sc_champ',           cat:'modes', ico:'\u{1F3C6}', name:'Champion Super Cricket',       desc:'Le plus de victoires en Super Cricket',        cond:(s,all) => isModeChampion(s, all, 'SuperCricket'), value:s => { const n = s.modeWins['SuperCricket']||0; return `${n} victoire${n>1?'s':''}`; } },
+  { id:'shanghai_champ',     cat:'modes', ico:'\u{1F3C6}', name:'Champion Shanghai',            desc:'Le plus de victoires en Shanghai',             cond:(s,all) => isModeChampion(s, all, 'Shanghai'),     value:s => { const n = s.modeWins['Shanghai']||0; return `${n} victoire${n>1?'s':''}`; } },
+  { id:'fiftyone_champ',     cat:'modes', ico:'\u{1F3C6}', name:'Champion Fifty-One',           desc:'Le plus de victoires en Fifty-One',           cond:(s,all) => isModeChampion(s, all, 'FiftyOne'),     value:s => { const n = s.modeWins['FiftyOne']||0; return `${n} victoire${n>1?'s':''}`; } },
 
   // ── Records de score par mode (un seul détenteur) ──
-  { id:'cricket_top_score',  cat:'perf',  ico:'📈', name:'Record Cricket',               desc:'Meilleur score en une partie de Cricket',      cond:(s,all) => hasModeHighScore(s, all, 'Cricket') },
-  { id:'sc_top_score',       cat:'perf',  ico:'📈', name:'Record Super Cricket',         desc:'Meilleur score en une partie de Super Cricket',cond:(s,all) => hasModeHighScore(s, all, 'SuperCricket') },
-  { id:'shanghai_top_score', cat:'perf',  ico:'📈', name:'Record Shanghai',              desc:'Meilleur score en une partie de Shanghai',    cond:(s,all) => hasModeHighScore(s, all, 'Shanghai') },
-  { id:'fiftyone_top_score', cat:'perf',  ico:'📈', name:'Record Fifty-One',             desc:'Meilleur score en une partie de Fifty-One',  cond:(s,all) => hasModeHighScore(s, all, 'FiftyOne') },
+  { id:'cricket_top_score',  cat:'perf',  ico:'\u{1F4C8}', name:'Record Cricket',               desc:'Meilleur score en une partie de Cricket',      cond:(s,all) => hasModeHighScore(s, all, 'Cricket'),      value:s => `Score : ${s.modeMaxScore?.['Cricket']}` },
+  { id:'sc_top_score',       cat:'perf',  ico:'\u{1F4C8}', name:'Record Super Cricket',         desc:'Meilleur score en une partie de Super Cricket',cond:(s,all) => hasModeHighScore(s, all, 'SuperCricket'), value:s => `Score : ${s.modeMaxScore?.['SuperCricket']}` },
+  { id:'shanghai_top_score', cat:'perf',  ico:'\u{1F4C8}', name:'Record Shanghai',              desc:'Meilleur score en une partie de Shanghai',    cond:(s,all) => hasModeHighScore(s, all, 'Shanghai'),     value:s => `Score : ${s.modeMaxScore?.['Shanghai']}` },
+  { id:'fiftyone_top_score', cat:'perf',  ico:'\u{1F4C8}', name:'Record Fifty-One',             desc:'Meilleur score en une partie de Fifty-One',  cond:(s,all) => hasModeHighScore(s, all, 'FiftyOne'),     value:s => `Score : ${s.modeMaxScore?.['FiftyOne']}` },
 
   // ── Pire score par mode (un seul détenteur) ──
-  { id:'cricket_low_score',  cat:'loss',  ico:'📉', name:'Score Plancher Cricket',       desc:'Score le plus bas en une partie de Cricket',   cond:(s,all) => hasModeLowScore(s, all, 'Cricket') },
-  { id:'sc_low_score',       cat:'loss',  ico:'📉', name:'Score Plancher Super Cricket', desc:'Score le plus bas en une partie de Super Cricket',cond:(s,all) => hasModeLowScore(s, all, 'SuperCricket') },
-  { id:'shanghai_low_score', cat:'loss',  ico:'📉', name:'Score Plancher Shanghai',      desc:'Score le plus bas en une partie de Shanghai',  cond:(s,all) => hasModeLowScore(s, all, 'Shanghai') },
-  { id:'fiftyone_low_score', cat:'loss',  ico:'📉', name:'Score Plancher Fifty-One',     desc:'Score le plus bas en une partie de Fifty-One', cond:(s,all) => hasModeLowScore(s, all, 'FiftyOne') },
+  { id:'cricket_low_score',  cat:'loss',  ico:'\u{1F4C9}', name:'Score Plancher Cricket',       desc:'Score le plus bas en une partie de Cricket',   cond:(s,all) => hasModeLowScore(s, all, 'Cricket'),      value:s => `Score : ${s.modeMinScore?.['Cricket']}` },
+  { id:'sc_low_score',       cat:'loss',  ico:'\u{1F4C9}', name:'Score Plancher Super Cricket', desc:'Score le plus bas en une partie de Super Cricket',cond:(s,all) => hasModeLowScore(s, all, 'SuperCricket'), value:s => `Score : ${s.modeMinScore?.['SuperCricket']}` },
+  { id:'shanghai_low_score', cat:'loss',  ico:'\u{1F4C9}', name:'Score Plancher Shanghai',      desc:'Score le plus bas en une partie de Shanghai',  cond:(s,all) => hasModeLowScore(s, all, 'Shanghai'),     value:s => `Score : ${s.modeMinScore?.['Shanghai']}` },
+  { id:'fiftyone_low_score', cat:'loss',  ico:'\u{1F4C9}', name:'Score Plancher Fifty-One',     desc:'Score le plus bas en une partie de Fifty-One', cond:(s,all) => hasModeLowScore(s, all, 'FiftyOne'),     value:s => `Score : ${s.modeMinScore?.['FiftyOne']}` },
 
   // ── XP & progression (un trophée par niveau, généré depuis LEVELS) ──
   ...XP_RANKS,
 
   // ── Jours spéciaux ──
-  { id:'night_owl',         cat:'special', ico:'🦉', name:'Oiseau de Nuit',  desc:'Une partie après 22h',                cond:s => s.nightOwl },
-  { id:'after_hours',       cat:'special', ico:'🌙', name:'After',           desc:'Une partie entre minuit et 5h',       cond:s => s.afterMidnight },
-  { id:'bleus_day',         cat:'special', ico:'🐓', name:'Allez les Bleus', desc:'Jouer un jour de match de la France (CDM 2026)', cond:s => FRANCE_WC_DATES.some(d => s.dayKeys.has(d)) },
-  { id:'darts_final',       cat:'special', ico:'🎯', name:'Finale des Fléchettes', desc:'Jouer un 3 janvier (finale mondiale PDC)',  cond:s => s.dayKeys.has('01-03') },
-  { id:'christmas',         cat:'special', ico:'🎄', name:'Esprit de Noël',  desc:'Jouer le 24 ou 25 décembre',          cond:s => s.dayKeys.has('12-24') || s.dayKeys.has('12-25') },
-  { id:'new_year',          cat:'special', ico:'🎆', name:'Réveillon',       desc:'Jouer le 31 décembre ou le 1er janvier',cond:s => s.dayKeys.has('12-31') || s.dayKeys.has('01-01') },
-  { id:'halloween',         cat:'special', ico:'🎃', name:'Citrouille',      desc:'Jouer un 31 octobre',                 cond:s => s.dayKeys.has('10-31') },
-  { id:'april_fools',       cat:'special', ico:'🐟', name:"Poisson d'Avril", desc:'Jouer un 1er avril',                  cond:s => s.dayKeys.has('04-01') },
-  { id:'pi_day',            cat:'special', ico:'🥧', name:'Pi Day',          desc:'Jouer un 14 mars (3.14)',             cond:s => s.dayKeys.has('03-14') },
-  { id:'friday_13',         cat:'special', ico:'🃏', name:'Vendredi 13',     desc:'Jouer un vendredi 13',                cond:s => s.friday13 },
-  { id:'weekend_warrior',   cat:'special', ico:'🍻', name:'Guerrier du Week-end', desc:'Jouer un samedi et un dimanche', cond:s => s.playedSat && s.playedSun },
+  { id:'night_owl',         cat:'special', ico:'\u{1F989}', name:'Oiseau de Nuit',  desc:'Une partie après 22h',                cond:s => s.nightOwl },
+  { id:'after_hours',       cat:'special', ico:'\u{1F319}', name:'After',           desc:'Une partie entre minuit et 5h',       cond:s => s.afterMidnight },
+  { id:'bleus_day',         cat:'special', ico:'\u{1F413}', name:'Allez les Bleus', desc:'Jouer un jour de match de la France (CDM 2026)', cond:s => FRANCE_WC_DATES.some(d => s.dayKeys.has(d)) },
+  { id:'darts_final',       cat:'special', ico:'\u{1F3AF}', name:'Finale des Fléchettes', desc:'Jouer un 3 janvier (finale mondiale PDC)',  cond:s => s.dayKeys.has('01-03') },
+  { id:'christmas',         cat:'special', ico:'\u{1F384}', name:'Esprit de Noël',  desc:'Jouer le 24 ou 25 décembre',          cond:s => s.dayKeys.has('12-24') || s.dayKeys.has('12-25') },
+  { id:'new_year',          cat:'special', ico:'\u{1F386}', name:'Réveillon',       desc:'Jouer le 31 décembre ou le 1er janvier',cond:s => s.dayKeys.has('12-31') || s.dayKeys.has('01-01') },
+  { id:'halloween',         cat:'special', ico:'\u{1F383}', name:'Citrouille',      desc:'Jouer un 31 octobre',                 cond:s => s.dayKeys.has('10-31') },
+  { id:'april_fools',       cat:'special', ico:'\u{1F41F}', name:"Poisson d'Avril", desc:'Jouer un 1er avril',                  cond:s => s.dayKeys.has('04-01') },
+  { id:'pi_day',            cat:'special', ico:'\u{1F967}', name:'Pi Day',          desc:'Jouer un 14 mars (3.14)',             cond:s => s.dayKeys.has('03-14') },
+  { id:'friday_13',         cat:'special', ico:'\u{1F0CF}', name:'Vendredi 13',     desc:'Jouer un vendredi 13',                cond:s => s.friday13 },
+  { id:'weekend_warrior',   cat:'special', ico:'\u{1F37B}', name:'Guerrier du Week-end', desc:'Jouer un samedi et un dimanche', cond:s => s.playedSat && s.playedSun },
 ];
 
 export function computeAchievements(stats) {
   const all = stats;
-  const earned = {}; // id -> [{name, wins}]
+  const earned = {}; // id -> [{name, wins, value}]
   ACHIEVEMENTS.forEach(a => {
     earned[a.id] = [];
     Object.values(all).forEach(s => {
-      if (a.cond(s, all)) earned[a.id].push({ name: s.name, wins: s.wins });
+      if (a.cond(s, all)) earned[a.id].push({ name: s.name, wins: s.wins, value: a.value ? a.value(s, all) : undefined });
     });
   });
   return earned;

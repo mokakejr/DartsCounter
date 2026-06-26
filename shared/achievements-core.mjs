@@ -42,7 +42,7 @@ export function computePlayerStats(games) {
     if (!S[name]) S[name] = {
       name, wins:0, games:0, totalDuration:0, xp:0,
       curStreak:0, maxStreak:0, lossStreak:0, maxLossStreak:0, underdog:false, comeback:false, phoenix:false,
-      modeWins:{}, modeGames:{}, modesPlayed:new Set(), opponents:new Set(),
+      modeWins:{}, modeGames:{}, modeScores:{}, modesPlayed:new Set(), opponents:new Set(),
       shanghaiKillWins:0, cutThroatWins:0, speedWin:false, marathon:false, nightOwl:false,
       dayKeys:new Set(), friday13:false, afterMidnight:false, playedSat:false, playedSun:false,
       winDates:[], maxWinsInDay:0, maxWinsInWeek:0, allModesBonus:false,
@@ -68,6 +68,8 @@ export function computePlayerStats(games) {
       s.xp += 10; // played
       s.modesPlayed.add(g.mode);
       s.modeGames[g.mode] = (s.modeGames[g.mode] || 0) + 1;
+      const _rawScore = Array.isArray(g.scores) ? g.scores[g.players.indexOf(p)] : undefined;
+      if (_rawScore !== undefined) (s.modeScores[g.mode] = s.modeScores[g.mode] || []).push(_rawScore);
       s.dayGames[ymd] = (s.dayGames[ymd] || 0) + 1;
       g.players.forEach(o => { if (o !== p) s.opponents.add(o); });
       if (dur > 1800) s.marathon = true;
@@ -151,6 +153,12 @@ export function computePlayerStats(games) {
       best = Math.max(best, run);
     }
     s.maxDayStreak = best;
+    // per-mode score records
+    s.modeMaxScore = {};
+    s.modeMinScore = {};
+    Object.entries(s.modeScores).forEach(([m, arr]) => {
+      if (arr.length) { s.modeMaxScore[m] = Math.max(...arr); s.modeMinScore[m] = Math.min(...arr); }
+    });
   });
 
   return S;
@@ -159,6 +167,25 @@ export function computePlayerStats(games) {
 export function isGoat(s, all) {
   const ranked = Object.values(all).sort((a, b) => b.wins - a.wins || b.games - a.games);
   return ranked.length > 0 && ranked[0].name === s.name && s.wins > 0;
+}
+
+export function isModeChampion(s, all, mode) {
+  const best = Object.values(all)
+    .filter(x => (x.modeWins[mode] || 0) > 0)
+    .sort((a, b) => (b.modeWins[mode] || 0) - (a.modeWins[mode] || 0))[0];
+  return !!best && best.name === s.name;
+}
+
+export function hasModeHighScore(s, all, mode) {
+  if (!s.modeMaxScore?.[mode] && s.modeMaxScore?.[mode] !== 0) return false;
+  const max = Math.max(...Object.values(all).map(x => x.modeMaxScore?.[mode] ?? -Infinity));
+  return s.modeMaxScore[mode] === max;
+}
+
+export function hasModeLowScore(s, all, mode) {
+  if (s.modeMinScore?.[mode] === undefined) return false;
+  const min = Math.min(...Object.values(all).map(x => x.modeMinScore?.[mode] ?? Infinity));
+  return s.modeMinScore[mode] === min;
 }
 
 // Trophées de rang XP : un par niveau (généré depuis LEVELS pour rester synchro).
@@ -226,6 +253,24 @@ export const ACHIEVEMENTS = [
   { id:'stakhanoviste',     cat:'volume',ico:'🛠️', name:'Stakhanoviste',    desc:'Le plus de parties jouées',             cond:(s,all) => { const t = Object.values(all).sort((a,b)=>b.games-a.games)[0]; return t && t.name === s.name && s.games > 0; } },
   { id:'regular',           cat:'volume',ico:'📅', name:'Habitué',          desc:'Jouer 10 jours différents',             cond:s => s.distinctDays >= 10, prog:s => [s.distinctDays, 10] },
   { id:'consistency',       cat:'volume',ico:'⏳', name:'Régularité',       desc:'Jouer 3 jours de suite',                cond:s => s.maxDayStreak >= 3, prog:s => [s.maxDayStreak, 3] },
+
+  // ── Champions par mode (un seul détenteur) ──
+  { id:'cricket_champ',      cat:'modes', ico:'🏆', name:'Champion Cricket',             desc:'Le plus de victoires en Cricket',              cond:(s,all) => isModeChampion(s, all, 'Cricket') },
+  { id:'sc_champ',           cat:'modes', ico:'🏆', name:'Champion Super Cricket',       desc:'Le plus de victoires en Super Cricket',        cond:(s,all) => isModeChampion(s, all, 'SuperCricket') },
+  { id:'shanghai_champ',     cat:'modes', ico:'🏆', name:'Champion Shanghai',            desc:'Le plus de victoires en Shanghai',             cond:(s,all) => isModeChampion(s, all, 'Shanghai') },
+  { id:'fiftyone_champ',     cat:'modes', ico:'🏆', name:'Champion Fifty-One',           desc:'Le plus de victoires en Fifty-One',           cond:(s,all) => isModeChampion(s, all, 'FiftyOne') },
+
+  // ── Records de score par mode (un seul détenteur) ──
+  { id:'cricket_top_score',  cat:'perf',  ico:'📈', name:'Record Cricket',               desc:'Meilleur score en une partie de Cricket',      cond:(s,all) => hasModeHighScore(s, all, 'Cricket') },
+  { id:'sc_top_score',       cat:'perf',  ico:'📈', name:'Record Super Cricket',         desc:'Meilleur score en une partie de Super Cricket',cond:(s,all) => hasModeHighScore(s, all, 'SuperCricket') },
+  { id:'shanghai_top_score', cat:'perf',  ico:'📈', name:'Record Shanghai',              desc:'Meilleur score en une partie de Shanghai',    cond:(s,all) => hasModeHighScore(s, all, 'Shanghai') },
+  { id:'fiftyone_top_score', cat:'perf',  ico:'📈', name:'Record Fifty-One',             desc:'Meilleur score en une partie de Fifty-One',  cond:(s,all) => hasModeHighScore(s, all, 'FiftyOne') },
+
+  // ── Pire score par mode (un seul détenteur) ──
+  { id:'cricket_low_score',  cat:'loss',  ico:'📉', name:'Score Plancher Cricket',       desc:'Score le plus bas en une partie de Cricket',   cond:(s,all) => hasModeLowScore(s, all, 'Cricket') },
+  { id:'sc_low_score',       cat:'loss',  ico:'📉', name:'Score Plancher Super Cricket', desc:'Score le plus bas en une partie de Super Cricket',cond:(s,all) => hasModeLowScore(s, all, 'SuperCricket') },
+  { id:'shanghai_low_score', cat:'loss',  ico:'📉', name:'Score Plancher Shanghai',      desc:'Score le plus bas en une partie de Shanghai',  cond:(s,all) => hasModeLowScore(s, all, 'Shanghai') },
+  { id:'fiftyone_low_score', cat:'loss',  ico:'📉', name:'Score Plancher Fifty-One',     desc:'Score le plus bas en une partie de Fifty-One', cond:(s,all) => hasModeLowScore(s, all, 'FiftyOne') },
 
   // ── XP & progression (un trophée par niveau, généré depuis LEVELS) ──
   ...XP_RANKS,

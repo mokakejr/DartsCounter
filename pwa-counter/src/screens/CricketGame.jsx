@@ -275,7 +275,7 @@ export default function CricketGame() {
   if (phase === 'finished') {
     const ranked = players
       .map((name, i) => ({ name, pts: game.points[i] }))
-      .sort((a, b) => b.pts - a.pts);
+      .sort((a, b) => variant === 'cutthroat' ? a.pts - b.pts : b.pts - a.pts);
     return (
       <div className="cg cg--finished">
         <p className="cg__eyebrow">FIN DE PARTIE</p>
@@ -333,11 +333,6 @@ export default function CricketGame() {
           {variant === 'cutthroat' && <span className="cg__title-sub">CUT THROAT</span>}
           <ElapsedTimer startedAt={startedAt.current} />
         </div>
-        <div className="cg__dart-slots">
-          {[0, 1, 2].map(i => (
-            <span key={i} className={`cg__dart-slot${i < dartsUsed ? ' cg__dart-slot--used' : ''}`} />
-          ))}
-        </div>
       </div>
 
       {/* View toggle — Super Cricket's DBL/TRP/BED scoring dialogs only exist in the board view */}
@@ -351,8 +346,7 @@ export default function CricketGame() {
           </button>
           <button
             className={`cg__view-btn${!isAPK ? ' cg__view-btn--on' : ''}`}
-            onClick={() => switchView('classic')}
-          >
+            onClick={() => switchView('classic')}>
             Vue boutons
           </button>
         </div>
@@ -462,7 +456,7 @@ export default function CricketGame() {
         {(isAPK ? phase === 'playing' : phase === 'turn-done') && (
           <div className="cg__confirm">
             <button className="cg__btn cg__btn--primary cg__btn--wide" onClick={confirmTurn}>
-              →
+              SUIVANT →
             </button>
           </div>
         )}

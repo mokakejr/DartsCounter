@@ -255,22 +255,22 @@ export const ACHIEVEMENTS = [
   { id:'consistency',       cat:'volume',ico:'⏳', name:'Régularité',       desc:'Jouer 3 jours de suite',                cond:s => s.maxDayStreak >= 3, prog:s => [s.maxDayStreak, 3] },
 
   // ── Champions par mode (un seul détenteur) ──
-  { id:'cricket_champ',      cat:'modes', ico:'🏆', name:'Champion Cricket',             desc:'Le plus de victoires en Cricket',             cond:(s,all) => isModeChampion(s, all, 'Cricket') },
-  { id:'sc_champ',           cat:'modes', ico:'🏆', name:'Champion Super Cricket',       desc:'Le plus de victoires en Super Cricket',        cond:(s,all) => isModeChampion(s, all, 'SuperCricket') },
-  { id:'shanghai_champ',     cat:'modes', ico:'🏆', name:'Champion Shanghai',            desc:'Le plus de victoires en Shanghai',             cond:(s,all) => isModeChampion(s, all, 'Shanghai') },
-  { id:'fiftyone_champ',     cat:'modes', ico:'🏆', name:'Champion Fifty-One',           desc:'Le plus de victoires en Fifty-One',           cond:(s,all) => isModeChampion(s, all, 'FiftyOne') },
+  { id:'cricket_champ',      cat:'modes', ico:'🏆', name:'Champion Cricket',             desc:'Le plus de victoires en Cricket',              cond:(s,all) => isModeChampion(s, all, 'Cricket'),      value:s => { const n = s.modeWins['Cricket']||0; return `${n} victoire${n>1?'s':''}`; } },
+  { id:'sc_champ',           cat:'modes', ico:'🏆', name:'Champion Super Cricket',       desc:'Le plus de victoires en Super Cricket',        cond:(s,all) => isModeChampion(s, all, 'SuperCricket'), value:s => { const n = s.modeWins['SuperCricket']||0; return `${n} victoire${n>1?'s':''}`; } },
+  { id:'shanghai_champ',     cat:'modes', ico:'🏆', name:'Champion Shanghai',            desc:'Le plus de victoires en Shanghai',             cond:(s,all) => isModeChampion(s, all, 'Shanghai'),     value:s => { const n = s.modeWins['Shanghai']||0; return `${n} victoire${n>1?'s':''}`; } },
+  { id:'fiftyone_champ',     cat:'modes', ico:'🏆', name:'Champion Fifty-One',           desc:'Le plus de victoires en Fifty-One',           cond:(s,all) => isModeChampion(s, all, 'FiftyOne'),     value:s => { const n = s.modeWins['FiftyOne']||0; return `${n} victoire${n>1?'s':''}`; } },
 
   // ── Records de score par mode (un seul détenteur) ──
-  { id:'cricket_top_score',  cat:'perf',  ico:'📈', name:'Record Cricket',               desc:'Meilleur score en une partie de Cricket',     cond:(s,all) => hasModeHighScore(s, all, 'Cricket') },
-  { id:'sc_top_score',       cat:'perf',  ico:'📈', name:'Record Super Cricket',         desc:'Meilleur score en une partie de Super Cricket',cond:(s,all) => hasModeHighScore(s, all, 'SuperCricket') },
-  { id:'shanghai_top_score', cat:'perf',  ico:'📈', name:'Record Shanghai',              desc:'Meilleur score en une partie de Shanghai',    cond:(s,all) => hasModeHighScore(s, all, 'Shanghai') },
-  { id:'fiftyone_top_score', cat:'perf',  ico:'📈', name:'Record Fifty-One',             desc:'Meilleur score en une partie de Fifty-One',  cond:(s,all) => hasModeHighScore(s, all, 'FiftyOne') },
+  { id:'cricket_top_score',  cat:'perf',  ico:'📈', name:'Record Cricket',               desc:'Meilleur score en une partie de Cricket',      cond:(s,all) => hasModeHighScore(s, all, 'Cricket'),      value:s => `Score : ${s.modeMaxScore?.['Cricket']}` },
+  { id:'sc_top_score',       cat:'perf',  ico:'📈', name:'Record Super Cricket',         desc:'Meilleur score en une partie de Super Cricket',cond:(s,all) => hasModeHighScore(s, all, 'SuperCricket'), value:s => `Score : ${s.modeMaxScore?.['SuperCricket']}` },
+  { id:'shanghai_top_score', cat:'perf',  ico:'📈', name:'Record Shanghai',              desc:'Meilleur score en une partie de Shanghai',    cond:(s,all) => hasModeHighScore(s, all, 'Shanghai'),     value:s => `Score : ${s.modeMaxScore?.['Shanghai']}` },
+  { id:'fiftyone_top_score', cat:'perf',  ico:'📈', name:'Record Fifty-One',             desc:'Meilleur score en une partie de Fifty-One',  cond:(s,all) => hasModeHighScore(s, all, 'FiftyOne'),     value:s => `Score : ${s.modeMaxScore?.['FiftyOne']}` },
 
   // ── Pire score par mode (un seul détenteur) ──
-  { id:'cricket_low_score',  cat:'loss',  ico:'📉', name:'Score Plancher Cricket',       desc:'Score le plus bas en une partie de Cricket',  cond:(s,all) => hasModeLowScore(s, all, 'Cricket') },
-  { id:'sc_low_score',       cat:'loss',  ico:'📉', name:'Score Plancher Super Cricket', desc:'Score le plus bas en une partie de Super Cricket',cond:(s,all) => hasModeLowScore(s, all, 'SuperCricket') },
-  { id:'shanghai_low_score', cat:'loss',  ico:'📉', name:'Score Plancher Shanghai',      desc:'Score le plus bas en une partie de Shanghai', cond:(s,all) => hasModeLowScore(s, all, 'Shanghai') },
-  { id:'fiftyone_low_score', cat:'loss',  ico:'📉', name:'Score Plancher Fifty-One',     desc:'Score le plus bas en une partie de Fifty-One',cond:(s,all) => hasModeLowScore(s, all, 'FiftyOne') },
+  { id:'cricket_low_score',  cat:'loss',  ico:'📉', name:'Score Plancher Cricket',       desc:'Score le plus bas en une partie de Cricket',   cond:(s,all) => hasModeLowScore(s, all, 'Cricket'),      value:s => `Score : ${s.modeMinScore?.['Cricket']}` },
+  { id:'sc_low_score',       cat:'loss',  ico:'📉', name:'Score Plancher Super Cricket', desc:'Score le plus bas en une partie de Super Cricket',cond:(s,all) => hasModeLowScore(s, all, 'SuperCricket'), value:s => `Score : ${s.modeMinScore?.['SuperCricket']}` },
+  { id:'shanghai_low_score', cat:'loss',  ico:'📉', name:'Score Plancher Shanghai',      desc:'Score le plus bas en une partie de Shanghai',  cond:(s,all) => hasModeLowScore(s, all, 'Shanghai'),     value:s => `Score : ${s.modeMinScore?.['Shanghai']}` },
+  { id:'fiftyone_low_score', cat:'loss',  ico:'📉', name:'Score Plancher Fifty-One',     desc:'Score le plus bas en une partie de Fifty-One', cond:(s,all) => hasModeLowScore(s, all, 'FiftyOne'),     value:s => `Score : ${s.modeMinScore?.['FiftyOne']}` },
 
   // ── XP & progression (un trophée par niveau, généré depuis LEVELS) ──
   ...XP_RANKS,
@@ -295,7 +295,7 @@ export function computeAchievements(stats) {
   ACHIEVEMENTS.forEach(a => {
     earned[a.id] = [];
     Object.values(all).forEach(s => {
-      if (a.cond(s, all)) earned[a.id].push({ name: s.name, wins: s.wins });
+      if (a.cond(s, all)) earned[a.id].push({ name: s.name, wins: s.wins, value: a.value ? a.value(s, all) : undefined });
     });
   });
   return earned;

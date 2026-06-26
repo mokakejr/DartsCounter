@@ -35,7 +35,7 @@ function playSound(name) {
 }
 
 function markSym(m) {
-  if (!m) return '';
+  if (!m) return ' ';
   if (m === 1) return '/';
   if (m === 2) return 'X';
   return '●';
@@ -75,13 +75,13 @@ function MultiplierPickerModal({ number, onSelect, onBack, onDismiss }) {
         <div className="cg__dlg-grid cg__dlg-grid--mult">
           {MULTIPLIER_ROWS.flat().map(m => (
             <button key={m} className="cg__dlg-mult" onClick={() => onSelect(m)}>
-              <span className="cg__dlg-mult-x">×{m}</span>
+              <span className="cg__dlg-mult-x">&times;{m}</span>
               <span className="cg__dlg-mult-pts">{m * number} pts</span>
             </button>
           ))}
         </div>
         <div className="cg__dlg-actions">
-          <button className="cg__dlg-cancel" onClick={onBack}>↩ Retour</button>
+          <button className="cg__dlg-cancel" onClick={onBack}>&#8617; Retour</button>
           <button className="cg__dlg-cancel" onClick={onDismiss}>Annuler</button>
         </div>
       </div>
@@ -154,7 +154,7 @@ export default function CricketGame() {
     return true;
   }
 
-  // ── APK mode: tap directly on board cell ──────────────────────────────────
+  // ── APK mode: tap directly on board cell ────────────────────────────────────────────
 
   function tapCell(tIdx) {
     if (phase !== 'playing') return;
@@ -225,7 +225,7 @@ export default function CricketGame() {
     if (!isAPK && used >= 3) setPhase('turn-done');
   }
 
-  // ── Classic mode: multiplier + target buttons ────────────────────────────
+  // ── Classic mode: multiplier + target buttons ──────────────────────────────
 
   function tapTarget(tIdx) {
     if (dartsUsed >= 3 || phase !== 'playing') return;
@@ -261,7 +261,7 @@ export default function CricketGame() {
     if (used >= 3) setPhase('turn-done');
   }
 
-  // ── Shared ────────────────────────────────────────────────────────────────
+  // ── Shared ────────────────────────────────────────────────────────────────────────────
 
   function confirmTurn() {
     pushHistory();
@@ -271,11 +271,11 @@ export default function CricketGame() {
     setPhase('playing');
   }
 
-  // ── Finished screen ───────────────────────────────────────────────────────
+  // ── Finished screen ────────────────────────────────────────────────────────────
   if (phase === 'finished') {
     const ranked = players
       .map((name, i) => ({ name, pts: game.points[i] }))
-      .sort((a, b) => b.pts - a.pts);
+      .sort((a, b) => variant === 'cutthroat' ? a.pts - b.pts : b.pts - a.pts);
     return (
       <div className="cg cg--finished">
         <p className="cg__eyebrow">FIN DE PARTIE</p>
@@ -327,16 +327,11 @@ export default function CricketGame() {
 
       {/* Header */}
       <div className="cg__header">
-        <button className="cg__back" onClick={() => setShowExit(true)}>←</button>
+        <button className="cg__back" onClick={() => setShowExit(true)}>&larr;</button>
         <div className="cg__title-wrap">
           <span className="cg__title">{isSC ? 'SUPER CRICKET' : 'CRICKET'}</span>
           {variant === 'cutthroat' && <span className="cg__title-sub">CUT THROAT</span>}
           <ElapsedTimer startedAt={startedAt.current} />
-        </div>
-        <div className="cg__dart-slots">
-          {[0, 1, 2].map(i => (
-            <span key={i} className={`cg__dart-slot${i < dartsUsed ? ' cg__dart-slot--used' : ''}`} />
-          ))}
         </div>
       </div>
 
@@ -462,7 +457,7 @@ export default function CricketGame() {
         {(isAPK ? phase === 'playing' : phase === 'turn-done') && (
           <div className="cg__confirm">
             <button className="cg__btn cg__btn--primary cg__btn--wide" onClick={confirmTurn}>
-              →
+              SUIVANT &rarr;
             </button>
           </div>
         )}
@@ -477,7 +472,7 @@ export default function CricketGame() {
                   className={`cg__mult${multiplier === m ? ' cg__mult--on' : ''}`}
                   onClick={() => setMultiplier(m)}
                 >
-                  ×{m}
+                  &times;{m}
                 </button>
               ))}
             </div>
@@ -510,7 +505,7 @@ export default function CricketGame() {
             onClick={undo}
             disabled={history.length === 0}
           >
-            ⟲ Annuler
+            &#8635; Annuler
           </button>
         </div>
       </div>

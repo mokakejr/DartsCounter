@@ -110,12 +110,12 @@
 }
 .cg__th--active { color: var(--text); border-bottom-color: var(--primary); }
 
-/* Rows fill the table's available height equally */
-.cg__board tbody tr { height: auto; }
+/* Rows: table distributes height automatically via height:100% on .cg__board — no fixed px heights */
+.cg__row-sc-divider { height: 4px !important; }
 
 .cg__td-lbl {
-  padding: 6px 4px;
-  font-size: 12px;
+  padding: 2% 4px;
+  font-size: clamp(10px, 2.8vmin, 13px);
   letter-spacing: 0.06em;
   color: var(--muted);
   font-weight: 600;
@@ -123,9 +123,9 @@
   white-space: nowrap;
 }
 .cg__td-mark {
-  padding: 6px 8px;
+  padding: 2% 8px;
   text-align: center;
-  font-size: 18px;
+  font-size: clamp(14px, 4vmin, 20px);
   font-weight: 700;
   color: var(--muted);
   border-bottom: 1px solid var(--border);
@@ -173,11 +173,11 @@
 }
 .cg__sound-btn {
   flex: 1;
-  height: 54px;
+  height: clamp(42px, 7vmin, 54px);
   border-radius: 10px;
   border: 1px solid;
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: clamp(11px, 3vmin, 13px);
   font-weight: 700;
   letter-spacing: 0.1em;
   cursor: pointer;
@@ -190,8 +190,8 @@
 .cg__sound-btn--gaufre { background: #1A1200; border-color: #997700; color: #FFCC00; }
 
 /* ── Mark symbol colors (APK-accurate) ─────────────── */
-.cg__mark--closed      { color: #4CAF50; font-size: 24px; }
-.cg__mark--glob-closed { color: #2C2C2C; font-size: 24px; }
+.cg__mark--closed      { color: #4CAF50; }
+.cg__mark--glob-closed { color: #2C2C2C; }
 
 /* ── Super Cricket gold accents ─────────────────────── */
 .cg--sc .cg__player-pts       { color: #FFD700; }
@@ -214,11 +214,11 @@
 
 /* ── Buttons ────────────────────────────────────────── */
 .cg__btn {
-  padding: 14px 28px;
+  padding: clamp(10px, 2vmin, 14px) 28px;
   border-radius: 10px;
   border: none;
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: clamp(15px, 4vmin, 18px);
   letter-spacing: 0.06em;
   cursor: pointer;
   transition: opacity 0.15s;

@@ -110,27 +110,33 @@
 }
 .cg__th--active { color: var(--text); border-bottom-color: var(--primary); }
 
-/* Rows fill the table's available height equally */
+/* Rows: fixed height enforced via line-height on cells (tr height alone is min-height in table layout) */
 .cg__board tbody tr { height: 44px; }
 .cg__row-sc-divider { height: 8px !important; }
 
 .cg__td-lbl {
-  padding: 6px 4px;
+  padding: 0 4px;
+  line-height: 44px;
+  height: 44px;
   font-size: 12px;
   letter-spacing: 0.06em;
   color: var(--muted);
   font-weight: 600;
   vertical-align: middle;
   white-space: nowrap;
+  overflow: hidden;
 }
 .cg__td-mark {
-  padding: 6px 8px;
+  padding: 0 8px;
+  line-height: 44px;
+  height: 44px;
   text-align: center;
   font-size: 18px;
   font-weight: 700;
   color: var(--muted);
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
+  overflow: hidden;
 }
 .cg__td-mark--active { color: var(--text); background: color-mix(in srgb, var(--primary) 6%, transparent); }
 
@@ -191,8 +197,8 @@
 .cg__sound-btn--gaufre { background: #1A1200; border-color: #997700; color: #FFCC00; }
 
 /* ── Mark symbol colors (APK-accurate) ─────────────── */
-.cg__mark--closed      { color: #4CAF50; font-size: 24px; }
-.cg__mark--glob-closed { color: #2C2C2C; font-size: 24px; }
+.cg__mark--closed      { color: #4CAF50; }
+.cg__mark--glob-closed { color: #2C2C2C; }
 
 /* ── Super Cricket gold accents ─────────────────────── */
 .cg--sc .cg__player-pts       { color: #FFD700; }

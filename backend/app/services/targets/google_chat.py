@@ -31,15 +31,72 @@ class GoogleChatTarget:
 
 def _game_finished_body(data: dict) -> dict:
     label = mode_label(data["mode"])
-    lines = "  ·  ".join(f"{p} : {s} pts" for p, s in zip(data["players"], data["scores"]))
-    duration = fmt_duration(data.get("duration", 0))
     winner = data.get("winner")
-    text = (
-        f"🏆 *{winner}* remporte *{label}* !\n{lines}\n⏱ {duration}"
+    duration = fmt_duration(data.get("duration", 0))
+
+    title = (
+        f"🏆 {winner} remporte {label} !"
         if winner
-        else f"🤝 Égalité en *{label}* !\n{lines}\n⏱ {duration}"
+        else f"🤝 Égalité en {label} !"
     )
-    return {"text": text}
+
+    # Scores section — one row per player, ranked by position order
+    players = data.get("players", [])
+    scores = data.get("scores", [])
+    score_lines = "\n".join(
+        f"{rank_emoji(i)} <b>{p}</b> — {s} pts"
+        for i, (p, s) in enumerate(zip(players, scores))
+    )
+    sections: list[dict] = [
+        {
+            "header": "🎯 SCORES",
+            "widgets": [{"textParagraph": {"text": score_lines}}],
+        }
+    ]
+
+    # Trophies section — only when new trophies were unlocked in this game
+    trophies: dict[str, list[dict]] = data.get("trophies") or {}
+    trophy_players = [p for p in players if p in trophies]
+
+    if trophy_players:
+        trophy_widgets: list[dict] = []
+        for player in trophy_players:
+            lines = "<br>".join(
+                f"{t['ico']} <b>{t['name']}</b> — {t['desc']}"
+                for t in trophies[player]
+            )
+            trophy_widgets.append({"textParagraph": {"text": f"🎉 <b>{player}</b><br>{lines}"}})
+
+        trophy_widgets.append({"divider": {}})
+
+        dashboard_url = data.get("dashboard_url", "")
+        if dashboard_url:
+            trophy_widgets.append({
+                "buttonList": {"buttons": [{
+                    "text": "VOIR LES TROPHÉES 🏆",
+                    "onClick": {"openLink": {"url": f"{dashboard_url}/#/trophees"}},
+                }]},
+            })
+
+        sections.append({
+            "header": "🏅 NOUVEAUX TROPHÉES",
+            "widgets": trophy_widgets,
+        })
+
+    return {
+        "cardsV2": [{
+            "cardId": "game_finished",
+            "card": {
+                "header": {
+                    "title": title,
+                    "subtitle": f"⏱ {duration}",
+                    "imageUrl": TROPHY_IMG,
+                    "imageType": "CIRCLE",
+                },
+                "sections": sections,
+            },
+        }],
+    }
 
 
 def _player_ping_body(data: dict) -> dict:

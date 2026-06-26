@@ -48,6 +48,7 @@
 .tcard__name { font-size: 16px; font-weight: 700; }
 .tcard__desc { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
 
+.tcard__value { font-size: 11px; color: var(--primary); letter-spacing: 0.05em; font-weight: 600; }
 .tcard__prog { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
 .tcard__prog-track { flex: 1; height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
 .tcard__prog-track span { display: block; height: 100%; background: var(--muted); }

@@ -3,8 +3,9 @@ import httpx
 from app.services.recap import fmt_duration, mode_label, rank_emoji, summarize_week
 from app.services.targets.base import GameEvent
 
-COLOR_GAME = 0xE53935  # matches the PWAs' red/black palette
+COLOR_GAME = 0xE53935   # matches the PWAs' red/black palette
 COLOR_RECAP = 0xFFC107
+COLOR_TROPHY = 0xFFD700  # gold for trophy announcements
 
 
 class DiscordTarget:
@@ -27,17 +28,45 @@ class DiscordTarget:
 
 def _game_finished_body(data: dict) -> dict:
     label = mode_label(data["mode"])
-    lines = "\n".join(f"**{p}** : {s} pts" for p, s in zip(data["players"], data["scores"]))
     winner = data.get("winner")
     title = f"🏆 {winner} remporte {label} !" if winner else f"🤝 Égalité en {label} !"
-    return {
-        "embeds": [{
-            "title": title,
-            "description": lines,
-            "color": COLOR_GAME,
-            "footer": {"text": f"⏱ {fmt_duration(data.get('duration', 0))}"},
-        }],
+
+    players = data.get("players", [])
+    scores = data.get("scores", [])
+    score_lines = "\n".join(
+        f"{rank_emoji(i)} **{p}** — {s} pts"
+        for i, (p, s) in enumerate(zip(players, scores))
+    )
+
+    main_embed = {
+        "title": title,
+        "color": COLOR_GAME,
+        "fields": [
+            {"name": "🎯 Scores", "value": score_lines or "—", "inline": False},
+            {"name": "⏱ Durée", "value": fmt_duration(data.get("duration", 0)), "inline": True},
+        ],
     }
+
+    # Trophy embed — only when at least one player unlocked something
+    trophies: dict[str, list[dict]] = data.get("trophies") or {}
+    trophy_players = [p for p in players if p in trophies]
+
+    embeds = [main_embed]
+    if trophy_players:
+        trophy_lines = "\n".join(
+            f"🎉 **{player}**\n" + "\n".join(
+                f"{t['ico']} **{t['name']}** — {t['desc']}"
+                for t in trophies[player]
+            )
+            for player in trophy_players
+        )
+        embeds.append({
+            "title": "🏅 Nouveaux Trophées !",
+            "description": trophy_lines,
+            "color": COLOR_TROPHY,
+        })
+
+    return {"embeds": embeds}
 
 
 def _player_ping_body(data: dict) -> dict:

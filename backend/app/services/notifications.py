@@ -7,6 +7,8 @@ from app.core.config import get_settings
 from app.core.db import async_session
 from app.models import WebhookTarget as WebhookTargetModel
 from app.schemas.game import GameRead
+from app.services import achievements as achievements_service
+from app.services import games as games_service
 from app.services.targets.base import GameEvent, NotificationTarget
 from app.services.targets.discord import DiscordTarget
 from app.services.targets.google_chat import GoogleChatTarget
@@ -53,15 +55,23 @@ async def dispatch_game_finished(game: GameRead) -> None:
     """Runs as a FastAPI BackgroundTask, after the response is already sent —
     opens its own session since the request's (Depends(get_db)) is closed by
     then."""
-    event = GameEvent(
-        type="game_finished",
-        data={
-            "mode": game.mode,
-            "players": [p.name for p in game.players],
-            "scores": [p.score for p in game.players],
-            "winner": game.winner,
-            "duration": game.duration,
-        },
-    )
     async with async_session() as session:
+        all_games = await games_service.list_all_games_raw(session)
+        trophies = achievements_service.newly_unlocked_per_player(all_games, str(game.id))
+        settings = get_settings()
+
+        players_sorted = sorted(game.players, key=lambda p: p.position)
+        event = GameEvent(
+            type="game_finished",
+            data={
+                "mode": game.mode,
+                "variant": game.variant,
+                "players": [p.name for p in players_sorted],
+                "scores": [p.score for p in players_sorted],
+                "winner": game.winner,
+                "duration": game.duration,
+                "trophies": trophies,
+                "dashboard_url": settings.dashboard_url,
+            },
+        )
         await notify(session, event)

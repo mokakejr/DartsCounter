@@ -108,6 +108,17 @@
   margin-bottom: 20px;
 }
 
+.play-setup__quick {
+  margin-bottom: 24px;
+}
+.play-setup__quick-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
 .play-setup__no-results {
   font-size: 14px;
   color: var(--muted);
@@ -121,7 +132,7 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--text);
   outline: none;
   transition: border-color 0.15s;

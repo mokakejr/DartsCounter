@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { fetchPlayers } from '../api/players.js';
+import { apiGet } from '../api/client.js';
 import './PlaySetup.css';
 
 // Two separate caches, so a backend rename can't leave a ghost chip behind:
@@ -60,6 +61,7 @@ export default function PlaySetup() {
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState('');
   const [variant, setVariant] = useState(state?.variant === 'cutthroat' ? 'cutthroat' : 'normal');
+  const [topPlayers, setTopPlayers] = useState([]);
 
   const known = mergeNames(localNames, serverNames);
 
@@ -74,6 +76,16 @@ export default function PlaySetup() {
         const names = players.map(p => p.name);
         setServerNames(names);
         saveNames(SERVER_KEY, names);
+      })
+      .catch(() => {});
+
+    apiGet('/stats/leaderboard')
+      .then(stats => {
+        const top = [...stats]
+          .sort((a, b) => b.games - a.games)
+          .slice(0, 4)
+          .map(p => p.name);
+        setTopPlayers(top);
       })
       .catch(() => {});
   }, []);
@@ -145,7 +157,6 @@ export default function PlaySetup() {
           onKeyDown={e => e.key === 'Enter' && addNew()}
           placeholder="Rechercher ou ajouter…"
           maxLength={20}
-          autoFocus
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -154,6 +165,31 @@ export default function PlaySetup() {
           <button className="play-setup__add-btn" onClick={addNew}>+</button>
         )}
       </div>
+
+      {/* Quick-pick — top 4 most-played players */}
+      {topPlayers.length > 0 && !search && (
+        <div className="play-setup__quick">
+          <p className="play-setup__quick-label">FRÉQUENTS</p>
+          <div className="play-setup__chips">
+            {topPlayers.map(name => (
+              <button
+                key={name}
+                className={`play-setup__chip${selected.includes(name) ? ' play-setup__chip--on' : ''}`}
+                onClick={() => toggle(name)}
+              >
+                {profiles[name]?.avatar_url && (
+                  <span
+                    className="play-setup__chip-avatar"
+                    style={{ backgroundImage: `url(${profiles[name].avatar_url})` }}
+                  />
+                )}
+                {selected.includes(name) && <span className="play-setup__check">✓</span>}
+                {label(name)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Player chips — always visible, filtered live by the search box */}
       {filtered.length > 0 && (

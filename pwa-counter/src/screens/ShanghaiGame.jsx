@@ -73,30 +73,6 @@ export default function ShanghaiGame() {
     setHistory(h => h.slice(0, -1));
   }
 
-  // Tap "next" without filling all 3 darts — remaining darts count as miss.
-  function skipToNext() {
-    if (phase !== 'playing' || darts.length >= 3) return;
-    pushHistory();
-    const padded = [...darts, ...Array(3 - darts.length).fill(0)];
-    const pts = padded.reduce((s, z) => s + z * target, 0);
-    const ng = addScore(game, player, round, pts, false);
-    setGame(ng);
-    setDarts([]);
-    setPending(null);
-    if (ng.finished) {
-      const win = leader(ng);
-      postGame({
-        mode: 'Shanghai', variant: 'Normal',
-        players, scores: players.map((_, i) => totalScore(ng, i)),
-        winner: win !== null ? players[win] : '',
-        startedAt: startedAt.current,
-      });
-      setPhase('finished');
-    } else {
-      setPhase('playing');
-    }
-  }
-
   function confirmTurn() {
     if (!pending) return;
     pushHistory();
@@ -241,42 +217,35 @@ export default function ShanghaiGame() {
         }
       </div>
 
-      {/* Zone buttons */}
-      {phase === 'playing' && (
-        <div className="sg__zones">
-          {ZONES.map(({ zone, label }) => {
-            const pts = zone === 0 ? 0 : zone * target;
-            return (
-              <button
-                key={zone}
-                className={`sg__zone sg__zone--${zone}`}
-                onClick={() => tapZone(zone)}
-                disabled={darts.length >= 3}
-              >
-                <span className="sg__zone-label">{label}</span>
-                <span className="sg__zone-pts">{pts > 0 ? `${pts} pts` : '—'}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Zone buttons — always rendered, disabled when turn is over */}
+      <div className="sg__zones">
+        {ZONES.map(({ zone, label }) => {
+          const pts = zone === 0 ? 0 : zone * target;
+          return (
+            <button
+              key={zone}
+              className={`sg__zone sg__zone--${zone}`}
+              onClick={() => tapZone(zone)}
+              disabled={phase !== 'playing' || darts.length >= 3}
+            >
+              <span className="sg__zone-label">{label}</span>
+              <span className="sg__zone-pts">{pts > 0 ? `${pts} pts` : '—'}</span>
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Playing — skip straight to next player, remaining darts count as miss */}
-      {phase === 'playing' && (
-        <button className="sg__skip" onClick={skipToNext}>
-          SUIVANT
-        </button>
-      )}
-
-      {/* Turn done — confirm */}
-      {phase === 'turn-done' && (
-        <div className="sg__confirm">
-          <p className="sg__confirm-pts">+{pending?.pts ?? 0} pts</p>
-          <button className="sg__btn sg__btn--primary sg__btn--wide" onClick={confirmTurn}>
-            SUIVANT
-          </button>
-        </div>
-      )}
+      {/* Action area — fixed height to prevent layout shift */}
+      <div className="sg__action">
+        {phase === 'turn-done' && (
+          <>
+            <p className="sg__confirm-pts">+{pending?.pts ?? 0} pts</p>
+            <button className="sg__btn sg__btn--primary sg__btn--wide" onClick={confirmTurn}>
+              SUIVANT
+            </button>
+          </>
+        )}
+      </div>
 
       {/* Undo — traverses confirmed turns too */}
       {(phase === 'playing' || phase === 'turn-done') ? (

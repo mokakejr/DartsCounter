@@ -100,10 +100,12 @@ export function computePlayerStats(games) {
         if (s.curStreak >= 2) s.xp += 5 * s.curStreak; // streak bonus
         s.maxStreak = Math.max(s.maxStreak, s.curStreak);
         s.winDates.push(date);
-      } else {
+      } else if (g.winner) {
         s.curStreak = 0;
         s.lossStreak++;
         s.maxLossStreak = Math.max(s.maxLossStreak, s.lossStreak);
+      } else {
+        s.curStreak = 0; // égalité : ni victoire ni défaite, casse la série de victoires
       }
       // all-modes one-time bonus (playing the 4 modes, win or not)
       if (!s.allModesBonus && ALL_MODES.every(m => s.modesPlayed.has(m))) {

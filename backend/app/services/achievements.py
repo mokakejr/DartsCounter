@@ -143,10 +143,12 @@ def compute_player_stats(games: list[dict]) -> dict[str, dict]:
                     s["xp"] += 5 * s["cur_streak"]
                 s["max_streak"] = max(s["max_streak"], s["cur_streak"])
                 s["win_dates"].append(date)
-            else:
+            elif g.get("winner"):   # vraie défaite : il y a un gagnant, ce n'est pas lui
                 s["cur_streak"] = 0
                 s["loss_streak"] += 1
                 s["max_loss_streak"] = max(s["max_loss_streak"], s["loss_streak"])
+            else:                   # égalité : ni victoire ni défaite — casse la série de victoires
+                s["cur_streak"] = 0
 
             if not s["all_modes_bonus"] and all(m in s["modes_played"] for m in ALL_MODES):
                 s["xp"] += 50

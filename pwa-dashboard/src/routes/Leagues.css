@@ -37,6 +37,95 @@
   font-size: 14px;
   margin-top: 8px;
 }
+.leagues__empty a { color: var(--primary); }
+
+.leagues__error {
+  color: #e55;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+/* ── Toolbar (create + join) ───────────────────────────── */
+.leagues__toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 36px;
+}
+.leagues__toolbar .leagues__new { margin-bottom: 0; }
+
+.leagues__join {
+  display: flex;
+  gap: 8px;
+}
+.leagues__join-input {
+  width: 170px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-family: var(--font-mono, monospace);
+}
+
+/* ── Members ───────────────────────────────────────────── */
+.leagues__members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.leagues__members--add {
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.leagues__member {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: default;
+}
+.leagues__member-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.leagues__member-you {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--primary);
+}
+.leagues__member-remove {
+  background: none;
+  border: none;
+  color: #e55;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+/* ── Invite code ───────────────────────────────────────── */
+.leagues__code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.leagues__code-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.leagues__code {
+  font-size: 16px;
+  letter-spacing: 0.22em;
+  padding: 5px 12px;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
 
 /* ── Card list ─────────────────────────────────────────── */
 .leagues__list {

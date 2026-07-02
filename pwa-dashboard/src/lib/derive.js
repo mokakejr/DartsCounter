@@ -1,5 +1,5 @@
 // Derived views over the games list for the home scenes & profile.
-import { chronological, ALL_MODES } from './stats.js';
+import { ALL_MODES } from './stats.js';
 
 // Most recent games first (games.json is already newest-first, but be safe).
 export function recentGames(games, n = 8) {
@@ -14,21 +14,6 @@ export function modeDistribution(games) {
   ALL_MODES.forEach(m => (counts[m] = 0));
   games.forEach(g => { counts[g.mode] = (counts[g.mode] || 0) + 1; });
   return ALL_MODES.map(m => ({ mode: m, value: counts[m] })).filter(d => d.value > 0);
-}
-
-// Cumulative wins per player across the season → for the line chart.
-// Returns { data: [{i, label, [player]: cumWins}], players: [names] }.
-export function winsOverTime(games, players) {
-  const cum = {};
-  players.forEach(p => (cum[p] = 0));
-  const data = [];
-  chronological(games).forEach((g, i) => {
-    if (g.winner && cum[g.winner] !== undefined) cum[g.winner] += 1;
-    const row = { i: i + 1 };
-    players.forEach(p => (row[p] = cum[p]));
-    data.push(row);
-  });
-  return { data, players };
 }
 
 // Bob's 27 (solo) — best-ever result for a player: the highest score among

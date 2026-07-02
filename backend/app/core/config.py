@@ -14,8 +14,6 @@ _ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=_ENV_FILE, extra="ignore")
 
-    environment: str = "local"
-
     postgres_user: str = "dartscounter"
     postgres_password: str = "dartscounter"
     postgres_db: str = "dartscounter"

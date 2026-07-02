@@ -16,6 +16,7 @@ class EloSettingsRead(BaseModel):
     bronze_ceiling: float
     rank_tier_value: float
     champion_multiplier: float
+    min_ranked_games: int
     updated_at: datetime
 
 
@@ -29,6 +30,7 @@ class EloSettingsUpdate(BaseModel):
     bronze_ceiling: float | None = None
     rank_tier_value: float | None = Field(default=None, gt=0)
     champion_multiplier: float | None = Field(default=None, gt=0)
+    min_ranked_games: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
     def _check_consistency(self) -> "EloSettingsUpdate":
@@ -68,6 +70,20 @@ class PlayerRatingRead(BaseModel):
     rating: int
     games_played: int
     rank: str
+
+
+class PlayerEloExtremesRead(BaseModel):
+    scope: str
+    best_elo: int | None = None
+    best_elo_date: datetime | None = None
+    worst_elo: int | None = None
+    worst_elo_date: datetime | None = None
+    best_rank: int | None = None
+    best_rank_date: datetime | None = None
+    best_rank_total_players: int | None = None
+    worst_rank: int | None = None
+    worst_rank_date: datetime | None = None
+    worst_rank_total_players: int | None = None
 
 
 class EloHistoryRead(BaseModel):

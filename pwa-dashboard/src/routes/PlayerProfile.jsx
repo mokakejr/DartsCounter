@@ -1,15 +1,21 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { ALL_MODES } from '../lib/stats.js';
 import { MODE_LABEL, fmtDuration } from '../lib/data.js';
 import { rivalries, bestBob27Result, bestRoundTheClockTime } from '../lib/derive.js';
 import { buildTrophies } from '../lib/trophies.js';
 import { displayName } from '../lib/profiles.js';
-import { fetchPlayerRatings, fetchPlayerEloHistory } from '../api/players.js';
+import { fetchPlayerRatings, fetchPlayerEloHistory, fetchPlayerEloExtremes } from '../api/players.js';
+import { SERIES, GRID, TICK, ChartTooltip } from '../components/ChartTheme.jsx';
 import TrophyModal from '../components/TrophyModal.jsx';
 import Dart from '../components/Dart.jsx';
 import RankBadge from '../components/RankBadge.jsx';
 import './PlayerProfile.css';
+
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 // win/loss/draw — a tie has no `winner` at all (Shanghai allows it), and
 // is its own outcome, not just "not a win".
@@ -25,11 +31,19 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
   const [selectedTrophy, setSelectedTrophy] = useState(null);
   const [ratings, setRatings] = useState([]);
   const [eloHistory, setEloHistory] = useState([]);
+  const [eloExtremes, setEloExtremes] = useState(null);
 
   useEffect(() => {
     fetchPlayerRatings(name).then(setRatings).catch(() => setRatings([]));
     fetchPlayerEloHistory(name, 'global').then(setEloHistory).catch(() => setEloHistory([]));
+    fetchPlayerEloExtremes(name, 'global').then(setEloExtremes).catch(() => setEloExtremes(null));
   }, [name]);
+
+  // eloHistory comes back newest-first; the chart reads left-to-right.
+  const eloChartData = useMemo(
+    () => [...eloHistory].reverse().map((h, i) => ({ i: i + 1, elo: h.elo_after, date: h.game_date })),
+    [eloHistory]
+  );
 
   const earned = useMemo(() => {
     if (!s) return [];
@@ -242,19 +256,61 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
             })}
           </ul>
 
-          <h2 className="profile__h2 eyebrow">Historique Elo</h2>
-          <ul className="profile__elohistory">
-            {eloHistory.slice(0, 8).map((h, i) => (
-              <li key={i}>
-                <span className={h.delta > 0 ? 'won' : h.delta < 0 ? 'lost' : 'drawn'}>
-                  {h.delta > 0 ? `+${h.delta}` : h.delta}
+          <h2 className="profile__h2 eyebrow">Évolution Elo</h2>
+          {eloChartData.length > 0 ? (
+            <div className="card">
+              <div className="card__chart">
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={eloChartData} margin={{ top: 8, right: 12, bottom: 0, left: -18 }}>
+                    <CartesianGrid stroke={GRID} vertical={false} />
+                    <XAxis dataKey="i" stroke={TICK} tick={{ fontSize: 11 }} tickLine={false} />
+                    <YAxis stroke={TICK} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} domain={['auto', 'auto']} />
+                    <Tooltip content={<ChartTooltip suffix="Partie" />} />
+                    <Line
+                      type="monotone"
+                      dataKey="elo"
+                      name="Elo"
+                      stroke={SERIES[0]}
+                      strokeWidth={2}
+                      dot={false}
+                      isAnimationActive
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          ) : (
+            <p className="profile__muted">Pas encore d'historique.</p>
+          )}
+
+          {eloExtremes && (eloExtremes.best_elo != null) && (
+            <div className="tiles tiles--elo">
+              <div className="tile">
+                <span className="tile__v" style={{ color: 'var(--win)' }}>{eloExtremes.best_elo}</span>
+                <span className="tile__k">Meilleur Elo</span>
+                <span className="tile__sub">{fmtDate(eloExtremes.best_elo_date)}</span>
+              </div>
+              <div className="tile">
+                <span className="tile__v">{eloExtremes.worst_elo}</span>
+                <span className="tile__k">Pire Elo</span>
+                <span className="tile__sub">{fmtDate(eloExtremes.worst_elo_date)}</span>
+              </div>
+              <div className="tile">
+                <span className="tile__v" style={{ color: 'var(--win)' }}>
+                  #{eloExtremes.best_rank}<em className="tile__of">/{eloExtremes.best_rank_total_players}</em>
                 </span>
-                <span className="profile__gmode">{MODE_LABEL[h.game_mode] || h.game_mode}</span>
-                <span className="profile__gmeta">{h.elo_before} → {h.elo_after}</span>
-              </li>
-            ))}
-            {eloHistory.length === 0 && <p className="profile__muted">Pas encore d'historique.</p>}
-          </ul>
+                <span className="tile__k">Meilleur classement</span>
+                <span className="tile__sub">{fmtDate(eloExtremes.best_rank_date)}</span>
+              </div>
+              <div className="tile">
+                <span className="tile__v">
+                  #{eloExtremes.worst_rank}<em className="tile__of">/{eloExtremes.worst_rank_total_players}</em>
+                </span>
+                <span className="tile__k">Pire classement</span>
+                <span className="tile__sub">{fmtDate(eloExtremes.worst_rank_date)}</span>
+              </div>
+            </div>
+          )}
         </section>
       </div>
 

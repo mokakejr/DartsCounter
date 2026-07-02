@@ -49,6 +49,11 @@ def fmt_duration(seconds: int) -> str:
     return f"{h}h{m:02d}" if h else f"{m}m"
 
 
+def format_elo_delta(after: int, delta: int) -> str:
+    sign = "+" if delta >= 0 else ""
+    return f"{after} ({sign}{delta})"
+
+
 @dataclass
 class PlayerWeekStats:
     name: str

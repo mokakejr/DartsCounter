@@ -28,6 +28,20 @@ async def test_game_finished_notification_dispatched(client, fake_httpx):
     assert "Cricket" in card["header"]["title"]
 
 
+async def test_game_finished_notification_includes_elo_delta(client, fake_httpx):
+    await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
+
+    resp = await client.post("/games", json=GAME)
+    assert resp.status_code == 201
+
+    _, body = fake_httpx.calls[0]
+    card = body["cardsV2"][0]["card"]
+    score_lines = card["sections"][0]["widgets"][0]["textParagraph"]["text"]
+    assert "Alice" in score_lines and "Bob" in score_lines
+    assert "(+" in score_lines
+    assert "(-" in score_lines
+
+
 async def test_idempotent_retry_does_not_renotify(client, fake_httpx):
     await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
     payload = {**GAME, "id": "22222222-2222-2222-2222-222222222222"}

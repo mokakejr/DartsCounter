@@ -43,6 +43,10 @@ class EloSettings(Base):
     rank_tier_value: Mapped[float] = mapped_column(Float, nullable=False, default=1200.0)
     champion_multiplier: Mapped[float] = mapped_column(Float, nullable=False, default=2.5)
 
+    # Below this many games played, a player is "unranked" on the leaderboard —
+    # excluded from Elo-based ranking and sorted by games played instead.
+    min_ranked_games: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

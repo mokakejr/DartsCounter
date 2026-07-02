@@ -25,6 +25,7 @@ jobs:
           script: |
             set -e
             cd /opt/dartscounter-dev
+            sudo chown -R "$(id -un):$(id -gn)" .
             git pull origin dev
             docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml pull
             docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml up -d --build

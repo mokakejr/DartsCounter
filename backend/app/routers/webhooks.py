@@ -10,7 +10,17 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 _TEST_EVENT = GameEvent(
     type="game_finished",
-    data={"mode": "Cricket", "players": ["Alice", "Bob"], "scores": [301, 250], "winner": "Alice", "duration": 125},
+    data={
+        "mode": "Cricket",
+        "players": ["Alice", "Bob"],
+        "scores": [301, 250],
+        "winner": "Alice",
+        "duration": 125,
+        "elo": {
+            "Alice": {"before": 10182, "after": 10200, "delta": 18},
+            "Bob": {"before": 9868, "after": 9850, "delta": -18},
+        },
+    },
 )
 
 

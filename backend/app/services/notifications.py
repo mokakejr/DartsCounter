@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.db import async_session
-from app.models import WebhookTarget as WebhookTargetModel
+from app.models import EloHistory, Player, WebhookTarget as WebhookTargetModel
+from app.models.elo import GLOBAL_SCOPE
 from app.schemas.game import GameRead
 from app.services import achievements as achievements_service
 from app.services import games as games_service
@@ -60,6 +61,18 @@ async def dispatch_game_finished(game: GameRead) -> None:
         trophies = achievements_service.newly_unlocked_per_player(all_games, str(game.id))
         settings = get_settings()
 
+        elo_rows = (
+            await session.execute(
+                select(Player.name, EloHistory.elo_before, EloHistory.elo_after, EloHistory.delta)
+                .join(Player, Player.id == EloHistory.player_id)
+                .where(EloHistory.game_id == game.id, EloHistory.scope == GLOBAL_SCOPE)
+            )
+        ).all()
+        elo_by_player = {
+            name: {"before": before, "after": after, "delta": delta}
+            for name, before, after, delta in elo_rows
+        }
+
         players_sorted = sorted(game.players, key=lambda p: p.position)
         event = GameEvent(
             type="game_finished",
@@ -71,6 +84,7 @@ async def dispatch_game_finished(game: GameRead) -> None:
                 "winner": game.winner,
                 "duration": game.duration,
                 "trophies": trophies,
+                "elo": elo_by_player,
                 "dashboard_url": settings.dashboard_url,
             },
         )

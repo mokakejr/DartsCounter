@@ -5,7 +5,7 @@ instead of a checked-out games.json.
 
 import httpx
 
-from app.services.recap import fmt_duration, mode_label, rank_emoji, summarize_week
+from app.services.recap import format_elo_delta, fmt_duration, mode_label, rank_emoji, summarize_week
 from app.services.targets.base import GameEvent
 
 TROPHY_IMG = "https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/emoji_events/default/48px.svg"
@@ -43,8 +43,10 @@ def _game_finished_body(data: dict) -> dict:
     # Scores section — one row per player, ranked by position order
     players = data.get("players", [])
     scores = data.get("scores", [])
+    elo: dict[str, dict] = data.get("elo") or {}
     score_lines = "\n".join(
         f"{rank_emoji(i)} <b>{p}</b> — {s} pts"
+        + (f" · {format_elo_delta(elo[p]['after'], elo[p]['delta'])}" if p in elo else "")
         for i, (p, s) in enumerate(zip(players, scores))
     )
     sections: list[dict] = [

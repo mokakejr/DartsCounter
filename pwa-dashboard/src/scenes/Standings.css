@@ -86,6 +86,20 @@
 
 .ladder__empty { color: var(--muted); padding: 24px; }
 
+.ladder__row--unranked { opacity: 0.8; }
+
+.ladder__divider {
+  margin-top: 10px;
+  padding: 10px 22px 4px;
+  border-top: 1px dashed var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ladder__divider span { text-transform: none; letter-spacing: normal; font-weight: 400; }
+
 @media (max-width: 720px) {
   .ladder__row { grid-template-columns: 34px 40px 1fr auto auto; gap: 12px; padding: 14px 16px; }
   .ladder__stat--hide { display: none; }

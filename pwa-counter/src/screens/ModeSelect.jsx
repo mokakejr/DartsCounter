@@ -13,6 +13,12 @@ const SOLO_MODES = [
   { id: 'roundTheClock', label: 'Round the Clock', desc: '1 → 20 + bull' },
 ];
 
+// Party modes that are always casual — never shown under "Classé".
+const CASUAL_ONLY_MODES = [
+  { id: 'killer', label: 'Killer', desc: 'Élimination · numéros aléatoires' },
+  { id: 'halveIt', label: 'Halve It', desc: '0 point = total divisé par 2' },
+];
+
 const CATEGORY_TITLE = {
   ranked: 'Partie classée',
   casual: 'Partie amicale',
@@ -25,7 +31,11 @@ export default function ModeSelect() {
   const category = state?.category ?? 'ranked';
   const isSolo = category === 'solo';
   const isCasual = category === 'casual' || isSolo; // solo games are always casual too
-  const modes = isSolo ? SOLO_MODES : MULTIPLAYER_MODES;
+  const modes = isSolo
+    ? SOLO_MODES
+    : category === 'casual'
+      ? [...MULTIPLAYER_MODES, ...CASUAL_ONLY_MODES]
+      : MULTIPLAYER_MODES;
 
   return (
     <div className="play-home">

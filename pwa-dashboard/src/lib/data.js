@@ -26,6 +26,8 @@ export const MODE_LABEL = {
   FiftyOne: '51',
   Bob27: "Bob's 27",
   RoundTheClock: 'Round the Clock',
+  Killer: 'Killer',
+  HalveIt: 'Halve It',
 };
 
 export function relDate(d) {

@@ -40,6 +40,8 @@ const MODE_ROUTE = {
   fiftyOne: '/51',
   bob27: '/bob27',
   roundTheClock: '/round-the-clock',
+  killer: '/killer',
+  halveIt: '/halve-it',
 };
 
 const MODE_LABEL = {
@@ -49,12 +51,17 @@ const MODE_LABEL = {
   fiftyOne: '51',
   bob27: "Bob's 27",
   roundTheClock: 'Round the Clock',
+  killer: 'Killer',
+  halveIt: 'Halve It',
 };
 
 const CRICKET_FAMILY = new Set(['cricket', 'superCricket']);
 // Solo/training modes: 1 player, always casual — no reorder list, no
 // casual/competitive toggle (they never touch Elo regardless).
 const SOLO_MODES = new Set(['bob27', 'roundTheClock']);
+// Party modes: multiplayer, but never Elo-eligible regardless of the
+// category the player came from (only reachable via "Amical" anyway).
+const ALWAYS_CASUAL_MODES = new Set([...SOLO_MODES, 'killer', 'halveIt']);
 
 const SHANGHAI_VARIANTS = [
   { id: 'classic', label: 'CLASSIQUE' },
@@ -64,6 +71,15 @@ const SHANGHAI_VARIANTS = [
 ];
 const SHANGHAI_VARIANT_IDS = new Set(SHANGHAI_VARIANTS.map(v => v.id));
 
+const KILLER_VARIANTS = [
+  { id: 'any', label: 'ANY HIT' },
+  { id: 'double', label: 'DOUBLE ONLY' },
+];
+const HALVEIT_VARIANTS = [
+  { id: 'standard', label: 'STANDARD · 9' },
+  { id: 'short', label: 'COURT · 6' },
+];
+
 export default function PlaySetup() {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -71,9 +87,11 @@ export default function PlaySetup() {
   const isCricketFamily = CRICKET_FAMILY.has(mode);
   const isShanghaiFamily = mode === 'shanghai';
   const isSolo = SOLO_MODES.has(mode);
+  const isKiller = mode === 'killer';
+  const isHalveIt = mode === 'halveIt';
   // Decided upstream on the category screen (ranked/casual/solo) — no
   // toggle here, just carried through to the game screen's postGame() call.
-  const isCasual = isSolo ? true : !!state?.isCasual;
+  const isCasual = ALWAYS_CASUAL_MODES.has(mode) ? true : !!state?.isCasual;
 
   const [localNames, setLocalNames] = useState(() => loadNames(LOCAL_KEY));
   const [serverNames, setServerNames] = useState(() => loadNames(SERVER_KEY));
@@ -82,8 +100,11 @@ export default function PlaySetup() {
   const [search, setSearch] = useState('');
   const [variant, setVariant] = useState(() => {
     if (isShanghaiFamily) return SHANGHAI_VARIANT_IDS.has(state?.variant) ? state.variant : 'classic';
+    if (isKiller) return state?.variant === 'double' ? 'double' : 'any';
+    if (isHalveIt) return state?.variant === 'short' ? 'short' : 'standard';
     return state?.variant === 'cutthroat' ? 'cutthroat' : 'normal';
   });
+  const [lives, setLives] = useState(() => (Number.isInteger(state?.lives) ? state.lives : 3));
   const [topPlayers, setTopPlayers] = useState([]);
 
   const known = mergeNames(localNames, serverNames);
@@ -141,7 +162,7 @@ export default function PlaySetup() {
 
   function start() {
     navigate(MODE_ROUTE[mode] ?? '/shanghai', {
-      state: { players: selected, variant, mode, isCasual },
+      state: { players: selected, variant, mode, isCasual, lives },
     });
   }
 
@@ -188,6 +209,64 @@ export default function PlaySetup() {
           <p className="play-setup__variant-label">VARIANTE</p>
           <div className="play-setup__variant-row play-setup__variant-row--grid4">
             {SHANGHAI_VARIANTS.map(v => (
+              <button
+                key={v.id}
+                className={`play-setup__variant-btn${variant === v.id ? ' play-setup__variant-btn--on' : ''}`}
+                onClick={() => setVariant(v.id)}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Variant — Killer only, plus a lives stepper */}
+      {isKiller && (
+        <>
+          <div className="play-setup__variant">
+            <p className="play-setup__variant-label">VARIANTE</p>
+            <div className="play-setup__variant-row">
+              {KILLER_VARIANTS.map(v => (
+                <button
+                  key={v.id}
+                  className={`play-setup__variant-btn${variant === v.id ? ' play-setup__variant-btn--on' : ''}`}
+                  onClick={() => setVariant(v.id)}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="play-setup__variant">
+            <p className="play-setup__variant-label">VIES</p>
+            <div className="play-setup__stepper">
+              <button
+                className="play-setup__stepper-btn"
+                disabled={lives <= 1}
+                onClick={() => setLives(l => Math.max(1, l - 1))}
+              >
+                −
+              </button>
+              <span className="play-setup__stepper-val">{lives}</span>
+              <button
+                className="play-setup__stepper-btn"
+                disabled={lives >= 9}
+                onClick={() => setLives(l => Math.min(9, l + 1))}
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Variant — Halve It only */}
+      {isHalveIt && (
+        <div className="play-setup__variant">
+          <p className="play-setup__variant-label">VARIANTE</p>
+          <div className="play-setup__variant-row">
+            {HALVEIT_VARIANTS.map(v => (
               <button
                 key={v.id}
                 className={`play-setup__variant-btn${variant === v.id ? ' play-setup__variant-btn--on' : ''}`}

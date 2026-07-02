@@ -18,6 +18,8 @@ MODE_LABELS = {
     "FiftyOne": "51",
     "Bob27": "Bob's 27",
     "RoundTheClock": "Round the Clock",
+    "Killer": "Killer",
+    "HalveIt": "Halve It",
 }
 RANK_EMOJI = ["🥇", "🥈", "🥉", "🏅"]
 FR_WEEKDAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]

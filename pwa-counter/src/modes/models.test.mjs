@@ -5,6 +5,8 @@ import * as sc from './superCricket.js';
 import * as shanghai from './shanghai.js';
 import * as shanghaiVariants from './shanghaiVariants.js';
 import * as f51 from './fiftyOne.js';
+import * as killer from './killer.js';
+import * as halveIt from './halveIt.js';
 
 let passed = 0;
 const test = (name, fn) => { fn(); passed++; console.log('  ✓', name); };
@@ -146,6 +148,98 @@ test('bust si dépasse 51', () => {
   s = f51.scoreTurn(s, 0, 5); // +1 → 51 exact → victoire
   assert.equal(s.fives[0], 51);
   assert.equal(s.winner, 0);
+});
+
+console.log('Killer');
+test('canTarget : soi-même toujours ciblable, adversaire seulement une fois killer', () => {
+  const s = killer.initialKillerState(['A', 'B'], [5, 10], 3);
+  assert.equal(killer.canTarget(s, 0, 0), true);
+  assert.equal(killer.canTarget(s, 0, 1), false);
+});
+test('toucher son propre numéro devient killer (sans perdre de vie)', () => {
+  const s0 = killer.initialKillerState(['A', 'B'], [5, 10], 3);
+  const s1 = killer.playDart(s0, 0);
+  assert.equal(s1.players[0].isKiller, true);
+  assert.equal(s1.players[0].lives, 3);
+  assert.equal(s1.currentPlayer, 0); // même tour, 1er des 3 fléchettes
+  assert.equal(s1.dartsThisTurn, 1);
+});
+test('une fois killer, toucher un adversaire lui retire une vie', () => {
+  let s = killer.initialKillerState(['A', 'B'], [5, 10], 3);
+  s = killer.playDart(s, 0); // A devient killer
+  s = killer.playDart(s, 1); // A touche B
+  assert.equal(s.players[1].lives, 2);
+});
+test('attaquer avant d\'être killer n\'a aucun effet (mais consomme la fléchette)', () => {
+  let s = killer.initialKillerState(['A', 'B'], [5, 10], 3);
+  s = killer.playDart(s, 1); // A pas encore killer, cible B
+  assert.equal(s.players[1].lives, 3); // inchangé
+  assert.equal(s.dartsThisTurn, 1); // la fléchette est quand même comptée
+});
+test('re-toucher son propre numéro une fois killer = self-kill', () => {
+  let s = killer.initialKillerState(['A', 'B'], [5, 10], 1);
+  s = killer.playDart(s, 0); // A devient killer (1 vie, pas éliminé)
+  assert.equal(s.players[0].eliminated, false);
+  s = killer.playDart(s, 0); // self-kill : 1 -> 0 vies
+  assert.equal(s.players[0].eliminated, true);
+  assert.deepEqual(s.eliminationOrder, ['A']);
+  // il ne reste que B -> partie terminée, B gagne
+  assert.equal(s.finished, true);
+  assert.equal(s.winner, 'B');
+});
+test('le tour saute les joueurs éliminés', () => {
+  let s = killer.initialKillerState(['A', 'B', 'C'], [1, 2, 3], 1);
+  s = killer.playDart(s, 0); // A devient killer
+  s = killer.playDart(s, 1); // B éliminé (1 vie)
+  s = killer.playDart(s, null); // 3e fléchette : manqué, fin du tour de A
+  assert.equal(s.dartsThisTurn, 0);
+  assert.equal(s.currentPlayer, 2); // saute B (éliminé), tombe sur C
+});
+test('eliminationScores : gagnant = N, premier éliminé = 1', () => {
+  const s = { players: [{ name: 'A' }, { name: 'B' }, { name: 'C' }], eliminationOrder: ['B', 'C'], winner: 'A' };
+  assert.deepEqual(killer.eliminationScores(s), [3, 1, 2]);
+});
+
+console.log('Halve It');
+test('0 point divise le score courant par 2, arrondi vers le bas', () => {
+  let s = halveIt.initialHalveItState(['A'], [20, 19]);
+  s = halveIt.scoreRound(s, 0, 55);
+  assert.equal(s.scores[0], 55);
+  assert.equal(s.finished, false);
+  s = halveIt.scoreRound(s, 0, 0); // floor(55/2) = 27
+  assert.equal(s.scores[0], 27);
+  assert.equal(s.finished, true);
+});
+test('progression des rounds/joueurs + leader au score le plus haut', () => {
+  let s = halveIt.initialHalveItState(['A', 'B'], [20, 19]);
+  s = halveIt.scoreRound(s, 0, 10);
+  assert.equal(s.currentPlayer, 1);
+  assert.equal(s.currentRound, 0);
+  s = halveIt.scoreRound(s, 1, 20);
+  assert.equal(s.currentPlayer, 0);
+  assert.equal(s.currentRound, 1);
+  s = halveIt.scoreRound(s, 0, 5); // A: 10+5=15
+  s = halveIt.scoreRound(s, 1, 0); // B: floor(20/2)=10
+  assert.equal(s.finished, true);
+  assert.deepEqual(s.scores, [15, 10]);
+  assert.equal(halveIt.leader(s), 0);
+});
+test('égalité -> pas de leader', () => {
+  let s = halveIt.initialHalveItState(['A', 'B'], [20]);
+  s = halveIt.scoreRound(s, 0, 10);
+  s = halveIt.scoreRound(s, 1, 10);
+  assert.equal(s.finished, true);
+  assert.equal(halveIt.leader(s), null);
+});
+test('séquences standard (9) et courte (6)', () => {
+  assert.equal(halveIt.HALVEIT_SEQUENCES.standard.length, 9);
+  assert.equal(halveIt.HALVEIT_SEQUENCES.short.length, 6);
+});
+test('roundLabel', () => {
+  assert.equal(halveIt.roundLabel(20), '20');
+  assert.equal(halveIt.roundLabel('doubles'), 'DOUBLES');
+  assert.equal(halveIt.roundLabel('triples'), 'TRIPLES');
+  assert.equal(halveIt.roundLabel('bull'), 'BULL');
 });
 
 console.log(`\n${passed} tests OK ✅`);

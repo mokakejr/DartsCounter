@@ -68,3 +68,18 @@ async def test_leaderboard_mode_filter_scopes_games_wins_and_elo(client):
     overall = {row["name"]: row for row in (await client.get("/stats/leaderboard")).json()}
     assert overall["Alice"]["games"] == 4
     assert overall["Bob"]["games"] == 4
+
+
+async def test_leaderboard_mode_filter_aggregates_shanghai_family(client):
+    # Filtering by "Shanghai" should count Bull/Random/Crazy games too, since
+    # they share one Elo scope with classic Shanghai.
+    await _play(client, 1, "Alice", "Bob", mode="Shanghai")
+    await _play(client, 2, "Alice", "Bob", mode="ShanghaiBull")
+    await _play(client, 3, "Alice", "Bob", mode="ShanghaiRandom")
+    await _play(client, 4, "Alice", "Bob", mode="ShanghaiCrazy")
+    await _play(client, 5, "Alice", "Bob", mode="Cricket")  # unrelated family, must not be counted
+
+    shanghai = {row["name"]: row for row in (await client.get("/stats/leaderboard", params={"mode": "Shanghai"})).json()}
+    assert shanghai["Alice"]["games"] == 4
+    assert shanghai["Alice"]["wins"] == 4
+    assert shanghai["Bob"]["games"] == 4

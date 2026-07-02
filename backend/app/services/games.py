@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import EloHistory, Game, GamePlayer, Player, PlayerRating
-from app.models.elo import GLOBAL_SCOPE
+from app.models.elo import GLOBAL_SCOPE, elo_scope_for
 from app.schemas.game import GameCreate, GamePlayerRead, GameRead
 from app.services.elo import recompute_elo
 from app.services.elo_config import get_engine_config, get_score_direction_map
@@ -89,7 +89,7 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
         initial_ratings: dict[str, dict[str, float]] = {}
         initial_games_played: dict[str, dict[str, int]] = {}
         for name, player in players_by_name.items():
-            for scope in (GLOBAL_SCOPE, payload.mode):
+            for scope in (GLOBAL_SCOPE, elo_scope_for(payload.mode)):
                 row = ratings_by_player_id.get((player.id, scope))
                 if row is not None:
                     initial_ratings.setdefault(name, {})[scope] = row.rating

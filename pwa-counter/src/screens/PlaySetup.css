@@ -50,6 +50,10 @@
   display: flex;
   gap: 10px;
 }
+.play-setup__variant-row--grid4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
 .play-setup__variant-btn {
   flex: 1;
   padding: 12px;

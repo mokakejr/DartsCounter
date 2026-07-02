@@ -56,11 +56,20 @@ const CRICKET_FAMILY = new Set(['cricket', 'superCricket']);
 // casual/competitive toggle (they never touch Elo regardless).
 const SOLO_MODES = new Set(['bob27', 'roundTheClock']);
 
+const SHANGHAI_VARIANTS = [
+  { id: 'classic', label: 'CLASSIQUE' },
+  { id: 'bull', label: 'BULL' },
+  { id: 'random', label: 'RANDOM' },
+  { id: 'crazy', label: 'CRAZY' },
+];
+const SHANGHAI_VARIANT_IDS = new Set(SHANGHAI_VARIANTS.map(v => v.id));
+
 export default function PlaySetup() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const mode = state?.mode ?? 'shanghai';
   const isCricketFamily = CRICKET_FAMILY.has(mode);
+  const isShanghaiFamily = mode === 'shanghai';
   const isSolo = SOLO_MODES.has(mode);
   // Decided upstream on the category screen (ranked/casual/solo) — no
   // toggle here, just carried through to the game screen's postGame() call.
@@ -71,7 +80,10 @@ export default function PlaySetup() {
   const [profiles, setProfiles] = useState({}); // name -> {display_name, avatar_url} — display only, selection stays keyed by canonical name
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState('');
-  const [variant, setVariant] = useState(state?.variant === 'cutthroat' ? 'cutthroat' : 'normal');
+  const [variant, setVariant] = useState(() => {
+    if (isShanghaiFamily) return SHANGHAI_VARIANT_IDS.has(state?.variant) ? state.variant : 'classic';
+    return state?.variant === 'cutthroat' ? 'cutthroat' : 'normal';
+  });
   const [topPlayers, setTopPlayers] = useState([]);
 
   const known = mergeNames(localNames, serverNames);
@@ -166,6 +178,24 @@ export default function PlaySetup() {
             >
               CUT THROAT
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Variant — Shanghai only */}
+      {isShanghaiFamily && (
+        <div className="play-setup__variant">
+          <p className="play-setup__variant-label">VARIANTE</p>
+          <div className="play-setup__variant-row play-setup__variant-row--grid4">
+            {SHANGHAI_VARIANTS.map(v => (
+              <button
+                key={v.id}
+                className={`play-setup__variant-btn${variant === v.id ? ' play-setup__variant-btn--on' : ''}`}
+                onClick={() => setVariant(v.id)}
+              >
+                {v.label}
+              </button>
+            ))}
           </div>
         </div>
       )}

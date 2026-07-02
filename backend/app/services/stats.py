@@ -2,7 +2,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Game, GamePlayer, Player, PlayerRating
-from app.models.elo import GLOBAL_SCOPE
+from app.models.elo import GLOBAL_SCOPE, modes_in_family
 from app.schemas.stats import PlayerStats
 from app.services.elo import rank_for_rating
 from app.services.elo_config import get_engine_config
@@ -27,8 +27,12 @@ async def get_leaderboard(session: AsyncSession, mode: str | None = None) -> lis
         .where(Game.is_casual.is_(False), GamePlayer.position == 1)
     )
     if mode is not None:
-        games_query = games_query.where(Game.mode == mode)
-        wins_query = wins_query.where(Game.mode == mode)
+        # A mode filter may be a shared Elo scope name (e.g. "Shanghai") that
+        # several literal Game.mode strings feed into — count all of them,
+        # not just the exact string, so this matches the shared rating below.
+        family_modes = modes_in_family(mode)
+        games_query = games_query.where(Game.mode.in_(family_modes))
+        wins_query = wins_query.where(Game.mode.in_(family_modes))
     games_subq = games_query.group_by(GamePlayer.player_id).subquery()
     wins_subq = wins_query.group_by(GamePlayer.player_id).subquery()
 

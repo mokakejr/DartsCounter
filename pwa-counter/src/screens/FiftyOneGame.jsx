@@ -12,6 +12,7 @@ export default function FiftyOneGame() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const players = state?.players ?? ['J1', 'J2'];
+  const isCasual = state?.isCasual ?? false;
 
   const [game, setGame] = useState(() => initialFiftyOneState(players));
   const [input, setInput] = useState('');
@@ -50,6 +51,7 @@ export default function FiftyOneGame() {
         players, scores: players.map((_, i) => scored.fives[i]),
         winner: players[scored.winner],
         startedAt: startedAt.current,
+        isCasual,
       });
       setGame(scored);
       setPhase('finished');

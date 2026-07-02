@@ -3,11 +3,12 @@ import './PlayHome.css';
 
 const DASHBOARD_URL = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:5174';
 
-const MODES = [
-  { id: 'shanghai', label: 'Shanghai', desc: '7 rounds · cible 1 → 7' },
-  { id: 'cricket', label: 'Cricket', desc: '15-20 + bull' },
-  { id: 'superCricket', label: 'Super Cricket', desc: 'Cricket étendu' },
-  { id: 'fiftyOne', label: '51', desc: 'Exactement 51' },
+// The 3 top-level entry points — each routes to /modes with a category that
+// filters which game modes show up next (see ModeSelect.jsx).
+const CATEGORIES = [
+  { id: 'ranked', label: 'Classé', desc: 'Compte pour le classement Elo' },
+  { id: 'casual', label: 'Amical', desc: 'Partie normale, hors classement' },
+  { id: 'solo', label: 'Entraînement solo', desc: "Bob's 27 · Round the Clock" },
 ];
 
 export default function PlayHome() {
@@ -17,16 +18,14 @@ export default function PlayHome() {
     <div className="play-home">
       <h1 className="play-home__title">JOUER</h1>
       <div className="play-home__modes">
-        {MODES.map(m => (
+        {CATEGORIES.map(c => (
           <button
-            key={m.id}
-            className={`play-home__mode${m.disabled ? ' play-home__mode--disabled' : ''}`}
-            disabled={m.disabled}
-            onClick={() => navigate('/setup', { state: { mode: m.id } })}
+            key={c.id}
+            className="play-home__mode"
+            onClick={() => navigate('/modes', { state: { category: c.id } })}
           >
-            <span className="play-home__mode-label">{m.label}</span>
-            <span className="play-home__mode-desc">{m.desc}</span>
-            {m.disabled && <span className="play-home__mode-soon">bientôt</span>}
+            <span className="play-home__mode-label">{c.label}</span>
+            <span className="play-home__mode-desc">{c.desc}</span>
           </button>
         ))}
       </div>

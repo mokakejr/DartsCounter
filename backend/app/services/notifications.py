@@ -55,6 +55,11 @@ async def dispatch_game_finished(game: GameRead) -> None:
     """Runs as a FastAPI BackgroundTask, after the response is already sent —
     opens its own session since the request's (Depends(get_db)) is closed by
     then."""
+    if game.is_casual:
+        # A solo/practice session isn't "who won" bragging-rights content —
+        # skip the recap the same way a casual game skips Elo.
+        return
+
     async with async_session() as session:
         all_games = await games_service.list_all_games_raw(session)
         trophies = achievements_service.newly_unlocked_per_player(all_games, str(game.id))

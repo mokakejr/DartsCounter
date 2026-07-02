@@ -22,7 +22,11 @@ async def recompute_all(session: AsyncSession, dry_run: bool = False) -> int:
     score_direction = await get_score_direction_map(session)
 
     rows = (
-        await session.execute(select(Game.id, Game.mode, Game.variant, Game.raw_data).order_by(Game.date))
+        await session.execute(
+            select(Game.id, Game.mode, Game.variant, Game.raw_data)
+            .where(Game.is_casual.is_(False))
+            .order_by(Game.date)
+        )
     ).all()
     games: list[GameForElo] = [
         {

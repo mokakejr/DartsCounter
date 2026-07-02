@@ -140,6 +140,8 @@
   gap: 8px;
   margin-bottom: 8px;
 }
+/* No triple bull exists — only MISS/BULL/D-BULL on a bull round. */
+.sg__zones--bull { grid-template-columns: repeat(3, 1fr); }
 .sg__zone {
   display: flex;
   flex-direction: column;

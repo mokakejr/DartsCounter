@@ -140,6 +140,55 @@ async def test_recompute_rebuilds_ratings(client):
     assert global_rating["games_played"] == 1
 
 
+async def test_recompute_skips_casual_games(client):
+    token = await _signup(client)
+    await _make_admin("Alice")
+    await _signup(client, "Bob", "hunter22")
+
+    await client.post(
+        "/games",
+        json={
+            "date": "2026-01-01T10:00:00Z",
+            "mode": "Cricket",
+            "players": ["Alice", "Bob"],
+            "scores": [20, 10],
+            "winner": "Alice",
+            "is_casual": True,
+        },
+    )
+
+    resp = await client.post("/elo/recompute", headers=_auth(token))
+    assert resp.status_code == 200
+
+    # The casual game is the only game in the DB, so the rebuild produced no
+    # ratings at all — PlayerRating was wiped and nothing was re-added.
+    assert (await client.get("/players/Alice/ratings")).json() == []
+
+
+async def test_shanghai_variants_share_one_elo_scope(client):
+    await _signup(client, "Alice", "hunter22")
+    await _signup(client, "Bob", "hunter22")
+
+    for day, mode in [(1, "Shanghai"), (2, "ShanghaiBull"), (3, "ShanghaiRandom"), (4, "ShanghaiCrazy")]:
+        await client.post(
+            "/games",
+            json={
+                "date": f"2026-01-{day:02d}T10:00:00Z",
+                "mode": mode,
+                "players": ["Alice", "Bob"],
+                "scores": [20, 10],
+                "winner": "Alice",
+            },
+        )
+
+    ratings = (await client.get("/players/Alice/ratings")).json()
+    shanghai_scopes = [r for r in ratings if r["scope"] == "Shanghai"]
+    assert len(shanghai_scopes) == 1
+    assert shanghai_scopes[0]["games_played"] == 4
+    # No separate scope was created for any of the literal variant mode strings.
+    assert {r["scope"] for r in ratings} == {"global", "Shanghai"}
+
+
 async def test_player_ratings_includes_global_and_mode_scope_with_rank(client):
     await _signup(client, "Alice", "hunter22")
     await _signup(client, "Bob", "hunter22")

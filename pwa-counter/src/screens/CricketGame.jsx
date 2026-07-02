@@ -95,6 +95,7 @@ export default function CricketGame() {
   const players = state?.players ?? ['J1', 'J2'];
   const isSC = state?.mode === 'superCricket';
   const variant = state?.variant === 'cutthroat' ? 'cutthroat' : 'normal';
+  const isCasual = state?.isCasual ?? false;
   const variantLabel = variant === 'cutthroat' ? 'CutThroat' : 'Normal';
 
   const [game, setGame] = useState(() =>
@@ -149,6 +150,7 @@ export default function CricketGame() {
       players, scores: players.map((_, i) => next.points[i]),
       winner: players[next.winner],
       startedAt: startedAt.current,
+      isCasual,
     });
     setPhase('finished');
     return true;

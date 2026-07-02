@@ -27,6 +27,11 @@
   margin: 32px 0 40px;
 }
 
+/* Category/mode titles are longer than "JOUER" — keep them on-screen. */
+.play-home__title--sm {
+  font-size: clamp(32px, 10vw, 56px);
+}
+
 .play-home__modes {
   display: flex;
   flex-direction: column;

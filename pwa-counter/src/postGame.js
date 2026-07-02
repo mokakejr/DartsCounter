@@ -17,8 +17,10 @@ import { registerBackgroundSync } from './sync.js';
  * @param {number[]} opts.scores    – parallel to players
  * @param {string}   opts.winner    – winning player name, or '' for a tie
  * @param {number}   opts.startedAt – Date.now() captured when the game screen mounted
+ * @param {boolean}  [opts.isCasual] – excluded from Elo when true (default false)
+ * @param {object}   [opts.extra]    – generic per-mode metadata (e.g. Bob's 27 bust info)
  */
-export async function postGame({ mode, variant, players, scores, winner, startedAt }) {
+export async function postGame({ mode, variant, players, scores, winner, startedAt, isCasual = false, extra }) {
   const now = Date.now();
   const duration = Math.round((now - startedAt) / 1000);
   const payload = {
@@ -29,6 +31,8 @@ export async function postGame({ mode, variant, players, scores, winner, started
     scores,
     winner: winner || null,
     duration,
+    is_casual: isCasual,
+    ...(extra ? { extra } : {}),
   };
 
   try {

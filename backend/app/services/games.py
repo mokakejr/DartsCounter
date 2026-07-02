@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import EloHistory, Game, GamePlayer, Player, PlayerRating
-from app.models.elo import GLOBAL_SCOPE
+from app.models.elo import GLOBAL_SCOPE, elo_scope_for
 from app.schemas.game import GameCreate, GamePlayerRead, GameRead
 from app.services.elo import recompute_elo
 from app.services.elo_config import get_engine_config, get_score_direction_map
@@ -23,6 +23,8 @@ def _to_game_read(game: Game) -> GameRead:
         variant=game.variant,
         duration=game.duration,
         winner=game.winner.name if game.winner else None,
+        is_casual=game.is_casual,
+        extra=game.raw_data.get("extra"),
         players=[
             GamePlayerRead(name=gp.player.name, score=gp.score, position=gp.position)
             for gp in game.players
@@ -50,6 +52,7 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
         mode=payload.mode,
         variant=payload.variant,
         duration=payload.duration,
+        is_casual=payload.is_casual,
         raw_data=payload.model_dump(mode="json"),
     )
     session.add(game)
@@ -74,30 +77,33 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
             game.winner_id = player.id
         game_players_read.append(GamePlayerRead(name=name, score=score, position=position))
 
-    player_ids = [p.id for p in players_by_name.values()]
-    existing_ratings = (
-        await session.execute(select(PlayerRating).where(PlayerRating.player_id.in_(player_ids)))
-    ).scalars().all()
-    ratings_by_player_id = {(r.player_id, r.scope): r for r in existing_ratings}
+    updates = []
+    ratings_by_player_id: dict[tuple[uuid.UUID, str], PlayerRating] = {}
+    if not payload.is_casual:
+        player_ids = [p.id for p in players_by_name.values()]
+        existing_ratings = (
+            await session.execute(select(PlayerRating).where(PlayerRating.player_id.in_(player_ids)))
+        ).scalars().all()
+        ratings_by_player_id = {(r.player_id, r.scope): r for r in existing_ratings}
 
-    initial_ratings: dict[str, dict[str, float]] = {}
-    initial_games_played: dict[str, dict[str, int]] = {}
-    for name, player in players_by_name.items():
-        for scope in (GLOBAL_SCOPE, payload.mode):
-            row = ratings_by_player_id.get((player.id, scope))
-            if row is not None:
-                initial_ratings.setdefault(name, {})[scope] = row.rating
-                initial_games_played.setdefault(name, {})[scope] = row.games_played
+        initial_ratings: dict[str, dict[str, float]] = {}
+        initial_games_played: dict[str, dict[str, int]] = {}
+        for name, player in players_by_name.items():
+            for scope in (GLOBAL_SCOPE, elo_scope_for(payload.mode)):
+                row = ratings_by_player_id.get((player.id, scope))
+                if row is not None:
+                    initial_ratings.setdefault(name, {})[scope] = row.rating
+                    initial_games_played.setdefault(name, {})[scope] = row.games_played
 
-    config = await get_engine_config(session)
-    score_direction = await get_score_direction_map(session)
-    updates = recompute_elo(
-        [{"id": game_id, "mode": payload.mode, "variant": payload.variant, "players": payload.players, "scores": payload.scores}],
-        config,
-        score_direction,
-        initial_ratings=initial_ratings,
-        initial_games_played=initial_games_played,
-    )
+        config = await get_engine_config(session)
+        score_direction = await get_score_direction_map(session)
+        updates = recompute_elo(
+            [{"id": game_id, "mode": payload.mode, "variant": payload.variant, "players": payload.players, "scores": payload.scores}],
+            config,
+            score_direction,
+            initial_ratings=initial_ratings,
+            initial_games_played=initial_games_played,
+        )
     for u in updates:
         player_id = players_by_name[u.player_name].id
         session.add(
@@ -129,6 +135,8 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
         variant=payload.variant,
         duration=payload.duration,
         winner=payload.winner,
+        is_casual=payload.is_casual,
+        extra=payload.extra,
         players=game_players_read,
     ), True
 

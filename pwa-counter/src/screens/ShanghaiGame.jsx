@@ -4,10 +4,12 @@ import {
   initialShanghaiState,
   addScore,
   totalScore,
-  isShanghai,
+  isInstantWin,
+  isBullTarget,
   leader,
-  SHANGHAI_ROUNDS,
+  BULL,
 } from '../modes/shanghai.js';
+import { classicTargets, bullTargets, randomTargets, crazyTargets } from '../modes/shanghaiVariants.js';
 import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
@@ -19,13 +21,40 @@ const ZONES = [
   { zone: 2, label: '×2' },
   { zone: 3, label: '×3' },
 ];
+const BULL_ZONES = [
+  { zone: 0, label: 'MISS' },
+  { zone: 1, label: 'BULL' },
+  { zone: 2, label: 'D-BULL' },
+];
+
+// variant id (picked on the setup screen, same pattern as Cricket's
+// Normal/Cut Throat) -> target generator
+const TARGET_GENERATOR = {
+  classic: classicTargets,
+  bull: bullTargets,
+  random: randomTargets,
+  crazy: crazyTargets,
+};
+// variant id -> literal Game.mode posted to the backend (grouped under the
+// same Elo scope server-side — see backend/app/models/elo.py MODE_FAMILY)
+const BACKEND_MODE = {
+  classic: 'Shanghai',
+  bull: 'ShanghaiBull',
+  random: 'ShanghaiRandom',
+  crazy: 'ShanghaiCrazy',
+};
 
 export default function ShanghaiGame() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const players = state?.players ?? ['Joueur 1', 'Joueur 2'];
+  const isCasual = state?.isCasual ?? false;
+  const shanghaiVariant = TARGET_GENERATOR[state?.variant] ? state.variant : 'classic';
 
-  const [game, setGame] = useState(() => initialShanghaiState(players));
+  // Generated once per game, shared by every player — never previewed ahead
+  // of the current round.
+  const [targets] = useState(() => TARGET_GENERATOR[shanghaiVariant]());
+  const [game, setGame] = useState(() => initialShanghaiState(players, targets));
   const [darts, setDarts] = useState([]);
   // pending: { pts, isShanghai, nextGame } — set when 3 darts entered, cleared on confirm
   const [pending, setPending] = useState(null);
@@ -35,11 +64,12 @@ export default function ShanghaiGame() {
   // [{game, darts, pending, phase}] — undo traverses confirmed turns too, not just the current one
   const [history, setHistory] = useState([]);
   const startedAt = useRef(Date.now());
-  const isKill = useRef(false);
 
   const round = game.currentRound;
   const player = game.currentPlayer;
-  const target = round + 1;
+  const target = targets[round];
+  const isBullRound = isBullTarget(target);
+  const zones = isBullRound ? BULL_ZONES : ZONES;
   const turnPts = darts.reduce((s, z) => s + z * target, 0);
 
   function pushHistory() {
@@ -56,10 +86,9 @@ export default function ShanghaiGame() {
   useEffect(() => {
     if (darts.length !== 3 || phase !== 'playing') return;
     const pts = darts.reduce((s, z) => s + z * target, 0);
-    const shanghai = isShanghai(darts);
+    const shanghai = isInstantWin(darts, target);
     const nextGame = addScore(game, player, round, pts, shanghai);
     setPending({ pts, isShanghai: shanghai, nextGame });
-    if (shanghai) isKill.current = true;
     setPhase(shanghai ? 'shanghai' : 'turn-done');
   }, [darts]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -73,23 +102,31 @@ export default function ShanghaiGame() {
     setHistory(h => h.slice(0, -1));
   }
 
+  function finish(ng) {
+    const win = leader(ng);
+    postGame({
+      mode: BACKEND_MODE[shanghaiVariant],
+      variant: pending?.isShanghai ? 'Shanghai Kill' : 'Normal',
+      players, scores: players.map((_, i) => totalScore(ng, i)),
+      winner: win !== null ? players[win] : '',
+      startedAt: startedAt.current,
+      isCasual,
+      extra: { targets },
+    });
+    setGame(ng);
+    setPhase('finished');
+  }
+
   function confirmTurn() {
     if (!pending) return;
     pushHistory();
     const ng = pending.nextGame;
-    setGame(ng);
     setDarts([]);
     setPending(null);
     if (ng.finished) {
-      const win = leader(ng);
-      postGame({
-        mode: 'Shanghai', variant: 'Normal',
-        players, scores: players.map((_, i) => totalScore(ng, i)),
-        winner: win !== null ? players[win] : '',
-        startedAt: startedAt.current,
-      });
-      setPhase('finished');
+      finish(ng);
     } else {
+      setGame(ng);
       setPhase('playing');
     }
   }
@@ -98,18 +135,9 @@ export default function ShanghaiGame() {
   useEffect(() => {
     if (phase !== 'shanghai' || !pending) return;
     const t = setTimeout(() => {
-      const ng = pending.nextGame;
-      const win = leader(ng);
-      postGame({
-        mode: 'Shanghai', variant: 'Shanghai Kill',
-        players, scores: players.map((_, i) => totalScore(ng, i)),
-        winner: win !== null ? players[win] : '',
-        startedAt: startedAt.current,
-      });
-      setGame(ng);
+      finish(pending.nextGame);
       setDarts([]);
       setPending(null);
-      setPhase('finished');
     }, 2400);
     return () => clearTimeout(t);
   }, [phase, pending]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -138,7 +166,7 @@ export default function ShanghaiGame() {
         <div className="sg__fin-actions">
           <button
             className="sg__btn sg__btn--secondary"
-            onClick={() => navigate('/setup', { state: { mode: 'shanghai' } })}
+            onClick={() => navigate('/setup', { state: { mode: 'shanghai', isCasual } })}
           >
             REJOUER
           </button>
@@ -173,7 +201,7 @@ export default function ShanghaiGame() {
         <div className="sg__round-badge">
           R<span className="sg__round-num">{round + 1}</span>
           <span className="sg__round-sep">/</span>
-          {SHANGHAI_ROUNDS}
+          {targets.length}
         </div>
         <ElapsedTimer startedAt={startedAt.current} />
       </div>
@@ -181,9 +209,9 @@ export default function ShanghaiGame() {
       {/* Target */}
       <div className="sg__target">
         <div className="sg__target-ring">
-          <span className="sg__target-num">{target}</span>
+          <span className="sg__target-num">{target === BULL ? 'B' : target}</span>
         </div>
-        <p className="sg__target-label">CIBLE</p>
+        <p className="sg__target-label">{target === BULL ? 'BULL' : 'CIBLE'}</p>
       </div>
 
       {/* Current player */}
@@ -218,8 +246,8 @@ export default function ShanghaiGame() {
       </div>
 
       {/* Zone buttons — always rendered, disabled when turn is over */}
-      <div className="sg__zones">
-        {ZONES.map(({ zone, label }) => {
+      <div className={`sg__zones${isBullRound ? ' sg__zones--bull' : ''}`}>
+        {zones.map(({ zone, label }) => {
           const pts = zone === 0 ? 0 : zone * target;
           return (
             <button

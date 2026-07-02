@@ -20,6 +20,7 @@ import RankGuide from './routes/RankGuide.jsx';
 import Leagues from './routes/Leagues.jsx';
 import Login from './routes/Login.jsx';
 import MyProfile from './routes/MyProfile.jsx';
+import Admin from './routes/Admin.jsx';
 import './App.css';
 
 function Home({ games, stats, ranked, profiles = {}, eloBoard }) {
@@ -170,6 +171,9 @@ function AppInner() {
             <NavLink to="/ligues" className={({ isActive }) => isActive ? 'is-active' : undefined}>Ligues</NavLink>
             <NavLink to="/xp" className={({ isActive }) => isActive ? 'is-active' : undefined}>XP</NavLink>
             <NavLink to="/rangs" className={({ isActive }) => isActive ? 'is-active' : undefined}>Rangs</NavLink>
+            {auth.player?.is_admin && (
+              <NavLink to="/admin" className={({ isActive }) => isActive ? 'is-active' : undefined}>Admin</NavLink>
+            )}
             <span className="nav__count">{(allGames ?? games).length} parties</span>
           </div>
         </>
@@ -209,6 +213,7 @@ function AppInner() {
         <Route path="/ligues" element={<Leagues knownPlayers={knownPlayers} />} />
         <Route path="/login" element={<Login />} />
         <Route path="/profile" element={<MyProfile />} />
+        <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<Home games={games} stats={stats} ranked={ranked} profiles={profiles} eloBoard={eloBoard} />} />
       </Routes>
 

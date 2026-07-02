@@ -18,6 +18,7 @@ import TrophiesPage from './routes/TrophiesPage.jsx';
 import XpGuide from './routes/XpGuide.jsx';
 import RankGuide from './routes/RankGuide.jsx';
 import Leagues from './routes/Leagues.jsx';
+import Welcome from './routes/Welcome.jsx';
 import Login from './routes/Login.jsx';
 import MyProfile from './routes/MyProfile.jsx';
 import Admin from './routes/Admin.jsx';
@@ -84,7 +85,7 @@ function AppInner() {
   const auth = useAuth();
   const profiles = usePlayerProfiles();
   const eloBoard = useEloBoard();
-  const { activeLeague, activateLeague } = useLeague();
+  const { leagues, activeLeague, activateLeague, ready: leaguesReady } = useLeague();
   const { games, allGames, stats, ranked, loading, error } = useGames(activeLeague?.players ?? null);
   const [calloutOpen, setCalloutOpen] = useState(false);
   const [calloutRemaining, setCalloutRemaining] = useState(calloutRemainingMs);
@@ -115,7 +116,7 @@ function AppInner() {
     return () => clearInterval(id);
   }, [calloutRemaining > 0]);
 
-  if (loading) {
+  if (loading || !auth.ready || !leaguesReady) {
     return (
       <div className="boot">
         <div className="boot__spinner" />
@@ -136,6 +137,14 @@ function AppInner() {
       </div>
     );
   }
+
+  // Onboarding wall on the home routes only: account + at least one league.
+  // Other routes (/login, /ligues, /profils, …) stay reachable — this is
+  // onboarding, not authorization.
+  const onboardingDone = Boolean(auth.player && leagues.length > 0);
+  const home = onboardingDone
+    ? <Home games={games} stats={stats} ranked={ranked} profiles={profiles} eloBoard={eloBoard} />
+    : <Welcome hasAccount={!!auth.player} />;
 
   const knownPlayers = allGames
     ? [...new Set(allGames.flatMap(g => g.players ?? []))].sort((a, b) => a.localeCompare(b, 'fr'))
@@ -182,7 +191,7 @@ function AppInner() {
       {activeLeague && (
         <div className="league-banner">
           <span className="league-banner__label">Ligue active :</span>
-          <span className="league-banner__name">{activeLeague.name}</span>
+          <Link to="/ligues" className="league-banner__name">{activeLeague.name}</Link>
           <span className="league-banner__players">{activeLeague.players.join(' · ')}</span>
           <button
             className="league-banner__clear"
@@ -204,7 +213,7 @@ function AppInner() {
       />
 
       <Routes>
-        <Route path="/" element={<Home games={games} stats={stats} ranked={ranked} profiles={profiles} eloBoard={eloBoard} />} />
+        <Route path="/" element={home} />
         <Route path="/joueur/:name" element={<PlayerProfile games={games} stats={stats} profiles={profiles} />} />
         <Route path="/profils" element={<PlayersIndex ranked={ranked} profiles={profiles} />} />
         <Route path="/trophees" element={<TrophiesPage stats={stats} profiles={profiles} />} />
@@ -214,7 +223,7 @@ function AppInner() {
         <Route path="/login" element={<Login />} />
         <Route path="/profile" element={<MyProfile />} />
         <Route path="/admin" element={<Admin />} />
-        <Route path="*" element={<Home games={games} stats={stats} ranked={ranked} profiles={profiles} eloBoard={eloBoard} />} />
+        <Route path="*" element={home} />
       </Routes>
 
       <footer className="footer shell">

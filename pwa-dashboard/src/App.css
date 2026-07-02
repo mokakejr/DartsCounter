@@ -128,7 +128,9 @@
 .league-banner__name {
   font-weight: 700;
   color: var(--text);
+  text-decoration: none;
 }
+.league-banner__name:hover { text-decoration: underline; }
 .league-banner__players {
   color: var(--muted);
   flex: 1;

@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../lib/useAuth.jsx';
 import './Login.css';
 
 export default function Login() {
   const navigate = useNavigate();
   const auth = useAuth();
-  const [mode, setMode] = useState('login'); // 'login' | 'signup'
+  const [searchParams] = useSearchParams();
+  const next = searchParams.get('next') || '/profile';
+  const [mode, setMode] = useState(() => searchParams.get('mode') === 'signup' ? 'signup' : 'login');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -19,7 +21,7 @@ export default function Login() {
     try {
       if (mode === 'login') await auth.login(name.trim(), password);
       else await auth.signup(name.trim(), password);
-      navigate('/profile');
+      navigate(next);
     } catch (err) {
       if (err.status === 401) setError('Nom ou mot de passe incorrect.');
       else if (err.status === 409) setError('Ce nom est déjà pris.');

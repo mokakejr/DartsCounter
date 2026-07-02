@@ -1,55 +1,36 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useAuth } from './useAuth.jsx';
+import * as api from '../api/leagues.js';
 
-const LEAGUES_KEY    = 'dartsLeagues';
-const ACTIVE_ID_KEY  = 'dartsActiveLeague';
-
-function load() {
-  try { return JSON.parse(localStorage.getItem(LEAGUES_KEY) || '[]'); }
-  catch { return []; }
-}
-
-function save(leagues) {
-  localStorage.setItem(LEAGUES_KEY, JSON.stringify(leagues));
-}
-
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-}
+// Leagues live on the backend (shared, joinable by invite code); only the
+// "which league filters my dashboard" preference stays in this browser.
+const ACTIVE_ID_KEY = 'dartsActiveLeague';
 
 export const LeagueContext = createContext(null);
 
 export function LeagueProvider({ children }) {
-  const [leagues, setLeagues] = useState(load);
+  const auth = useAuth();
+  const [leagues, setLeagues] = useState([]);
+  const [ready, setReady] = useState(false);
   const [activeId, setActiveId] = useState(() => localStorage.getItem(ACTIVE_ID_KEY));
 
+  const refresh = useCallback(async () => {
+    if (!auth.token) { setLeagues([]); setReady(auth.ready); return; }
+    try {
+      const rows = await api.fetchMyLeagues(auth.token);
+      // `players` (names) is what App.jsx/useGames filter on — keep it derived
+      // so the whole downstream pipeline is unchanged.
+      setLeagues(rows.map(l => ({ ...l, players: l.members.map(m => m.name) })));
+    } catch {
+      setLeagues([]);
+    }
+    setReady(true);
+  }, [auth.token, auth.ready]);
+
+  useEffect(() => { if (auth.ready) refresh(); }, [auth.ready, refresh]);
+
+  // Logged out ⇒ leagues=[] ⇒ activeLeague=null ⇒ no filter applies.
   const activeLeague = leagues.find(l => l.id === activeId) ?? null;
-
-  const createLeague = useCallback((name, players) => {
-    const league = { id: uid(), name: name.trim(), players };
-    setLeagues(prev => {
-      const next = [...prev, league];
-      save(next);
-      return next;
-    });
-    return league;
-  }, []);
-
-  const updateLeague = useCallback((id, name, players) => {
-    setLeagues(prev => {
-      const next = prev.map(l => l.id === id ? { ...l, name: name.trim(), players } : l);
-      save(next);
-      return next;
-    });
-  }, []);
-
-  const deleteLeague = useCallback((id) => {
-    setLeagues(prev => {
-      const next = prev.filter(l => l.id !== id);
-      save(next);
-      return next;
-    });
-    setActiveId(a => { if (a === id) localStorage.removeItem(ACTIVE_ID_KEY); return a === id ? null : a; });
-  }, []);
 
   const activateLeague = useCallback((id) => {
     setActiveId(prev => {
@@ -60,8 +41,47 @@ export function LeagueProvider({ children }) {
     });
   }, []);
 
+  const createLeague = useCallback(async (name) => {
+    const league = await api.createLeague(auth.token, name);
+    await refresh();
+    return league;
+  }, [auth.token, refresh]);
+
+  const joinLeague = useCallback(async (code) => {
+    const league = await api.joinLeague(auth.token, code);
+    await refresh();
+    return league;
+  }, [auth.token, refresh]);
+
+  const renameLeague = useCallback(async (id, name) => {
+    await api.renameLeague(auth.token, id, name);
+    await refresh();
+  }, [auth.token, refresh]);
+
+  const deleteLeague = useCallback(async (id) => {
+    await api.deleteLeague(auth.token, id);
+    setActiveId(a => { if (a === id) localStorage.removeItem(ACTIVE_ID_KEY); return a === id ? null : a; });
+    await refresh();
+  }, [auth.token, refresh]);
+
+  const addMember = useCallback(async (id, name) => {
+    await api.addLeagueMember(auth.token, id, name);
+    await refresh();
+  }, [auth.token, refresh]);
+
+  const removeMember = useCallback(async (id, playerId) => {
+    await api.removeLeagueMember(auth.token, id, playerId);
+    await refresh();
+  }, [auth.token, refresh]);
+
   return (
-    <LeagueContext.Provider value={{ leagues, activeLeague, activateLeague, createLeague, updateLeague, deleteLeague }}>
+    <LeagueContext.Provider
+      value={{
+        leagues, activeLeague, ready, refresh,
+        activateLeague, createLeague, joinLeague, renameLeague, deleteLeague,
+        addMember, removeMember,
+      }}
+    >
       {children}
     </LeagueContext.Provider>
   );

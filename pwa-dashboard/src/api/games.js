@@ -16,6 +16,8 @@ function toLegacyShape(game) {
     variant: game.variant,
     duration: game.duration,
     winner: game.winner,
+    isCasual: game.is_casual,
+    extra: game.extra,
     players: game.players.map(p => p.name),
     scores: game.players.map(p => p.score),
   };

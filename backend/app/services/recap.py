@@ -8,7 +8,14 @@ each target still builds its own message from this.
 from dataclasses import dataclass, field
 from datetime import datetime
 
-MODE_LABELS = {"Cricket": "Cricket", "SuperCricket": "Super Cricket", "Shanghai": "Shanghai", "FiftyOne": "51"}
+MODE_LABELS = {
+    "Cricket": "Cricket",
+    "SuperCricket": "Super Cricket",
+    "Shanghai": "Shanghai",
+    "FiftyOne": "51",
+    "Bob27": "Bob's 27",
+    "RoundTheClock": "Round the Clock",
+}
 RANK_EMOJI = ["🥇", "🥈", "🥉", "🏅"]
 FR_WEEKDAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 FR_MONTHS = [

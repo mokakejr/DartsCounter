@@ -38,6 +38,8 @@ const MODE_ROUTE = {
   cricket: '/cricket',
   superCricket: '/super-cricket',
   fiftyOne: '/51',
+  bob27: '/bob27',
+  roundTheClock: '/round-the-clock',
 };
 
 const MODE_LABEL = {
@@ -45,15 +47,21 @@ const MODE_LABEL = {
   cricket: 'Cricket',
   superCricket: 'Super Cricket',
   fiftyOne: '51',
+  bob27: "Bob's 27",
+  roundTheClock: 'Round the Clock',
 };
 
 const CRICKET_FAMILY = new Set(['cricket', 'superCricket']);
+// Solo/training modes: 1 player, always casual — no reorder list, no
+// casual/competitive toggle (they never touch Elo regardless).
+const SOLO_MODES = new Set(['bob27', 'roundTheClock']);
 
 export default function PlaySetup() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const mode = state?.mode ?? 'shanghai';
   const isCricketFamily = CRICKET_FAMILY.has(mode);
+  const isSolo = SOLO_MODES.has(mode);
 
   const [localNames, setLocalNames] = useState(() => loadNames(LOCAL_KEY));
   const [serverNames, setServerNames] = useState(() => loadNames(SERVER_KEY));
@@ -62,6 +70,7 @@ export default function PlaySetup() {
   const [search, setSearch] = useState('');
   const [variant, setVariant] = useState(state?.variant === 'cutthroat' ? 'cutthroat' : 'normal');
   const [topPlayers, setTopPlayers] = useState([]);
+  const [isCasual, setIsCasual] = useState(false);
 
   const known = mergeNames(localNames, serverNames);
 
@@ -100,9 +109,10 @@ export default function PlaySetup() {
   const canAdd = q.length > 0 && q.length <= 20 && !exactMatch;
 
   function toggle(name) {
-    setSelected(prev =>
-      prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
-    );
+    setSelected(prev => {
+      if (prev.includes(name)) return prev.filter(n => n !== name);
+      return isSolo ? [name] : [...prev, name]; // solo modes: picking replaces, not adds
+    });
     setSearch('');
   }
 
@@ -111,12 +121,14 @@ export default function PlaySetup() {
     const updated = mergeNames(localNames, [q]);
     setLocalNames(updated);
     saveNames(LOCAL_KEY, updated);
-    setSelected(prev => prev.includes(q) ? prev : [...prev, q]);
+    setSelected(prev => (prev.includes(q) ? prev : isSolo ? [q] : [...prev, q]));
     setSearch('');
   }
 
   function start() {
-    navigate(MODE_ROUTE[mode] ?? '/shanghai', { state: { players: selected, variant, mode } });
+    navigate(MODE_ROUTE[mode] ?? '/shanghai', {
+      state: { players: selected, variant, mode, isCasual: isSolo ? true : isCasual },
+    });
   }
 
   return (
@@ -143,6 +155,27 @@ export default function PlaySetup() {
               onClick={() => setVariant('cutthroat')}
             >
               CUT THROAT
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Casual/competitive — hidden for solo modes, which are always casual */}
+      {!isSolo && (
+        <div className="play-setup__variant">
+          <p className="play-setup__variant-label">TYPE DE PARTIE</p>
+          <div className="play-setup__variant-row">
+            <button
+              className={`play-setup__variant-btn${!isCasual ? ' play-setup__variant-btn--on' : ''}`}
+              onClick={() => setIsCasual(false)}
+            >
+              COMPÉTITIF
+            </button>
+            <button
+              className={`play-setup__variant-btn${isCasual ? ' play-setup__variant-btn--on' : ''}`}
+              onClick={() => setIsCasual(true)}
+            >
+              AMICAL
             </button>
           </div>
         </div>
@@ -219,8 +252,8 @@ export default function PlaySetup() {
         </p>
       )}
 
-      {/* Play order */}
-      {selected.length > 0 && (
+      {/* Play order — meaningless for a 1-player solo mode */}
+      {!isSolo && selected.length > 0 && (
         <div className="play-setup__order">
           <div className="play-setup__order-header">
             <p className="play-setup__order-label">Ordre de jeu</p>
@@ -246,7 +279,7 @@ export default function PlaySetup() {
 
       <button
         className="play-setup__start"
-        disabled={selected.length < 2}
+        disabled={selected.length < (isSolo ? 1 : 2)}
         onClick={start}
       >
         JOUER →

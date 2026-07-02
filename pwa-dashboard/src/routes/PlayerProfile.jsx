@@ -2,7 +2,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ALL_MODES } from '../lib/stats.js';
 import { MODE_LABEL, fmtDuration } from '../lib/data.js';
-import { rivalries } from '../lib/derive.js';
+import { rivalries, bestBob27Result, bestRoundTheClockTime } from '../lib/derive.js';
 import { buildTrophies } from '../lib/trophies.js';
 import { displayName } from '../lib/profiles.js';
 import { fetchPlayerRatings, fetchPlayerEloHistory } from '../api/players.js';
@@ -79,6 +79,21 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
     { k: 'Durée moy.', v: fmtDuration(avgDuration) },
     { k: 'Mode favori', v: MODE_LABEL[s.favoriteMode] || '—' },
   ];
+
+  // Solo/training modes — best-ever result, only shown once the player has
+  // actually attempted that mode.
+  const bob27 = bestBob27Result(games, name);
+  if (bob27) {
+    tiles.push(
+      bob27.type === 'score'
+        ? { k: "Meilleur score Bob's 27", v: bob27.value, accent: 'var(--win)' }
+        : { k: "Meilleur round Bob's 27", v: `Round ${bob27.value}` }
+    );
+  }
+  const rtcBest = bestRoundTheClockTime(games, name);
+  if (rtcBest != null) {
+    tiles.push({ k: 'Meilleur temps Round the Clock', v: fmtDuration(rtcBest), accent: 'var(--win)' });
+  }
 
   const accentStyle = profile?.accent_color ? { '--player-accent': profile.accent_color } : undefined;
   const globalRating = ratings.find(r => r.scope === 'global');

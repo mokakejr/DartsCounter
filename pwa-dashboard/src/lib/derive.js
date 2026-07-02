@@ -31,6 +31,31 @@ export function winsOverTime(games, players) {
   return { data, players };
 }
 
+// Bob's 27 (solo) — best-ever result for a player: the highest score among
+// clean finishes (round 20 cleared without busting), or if they've never
+// cleanly finished, the furthest round they've reached.
+// Returns { type: 'score', value } | { type: 'round', value } | null.
+export function bestBob27Result(games, playerName) {
+  const attempts = games.filter(g => g.mode === 'Bob27' && g.players?.[0] === playerName);
+  if (!attempts.length) return null;
+
+  const clean = attempts.filter(g => g.extra && g.extra.busted === false);
+  if (clean.length) {
+    const best = Math.max(...clean.map(g => g.scores[0]));
+    return { type: 'score', value: best };
+  }
+  const bestRound = Math.max(...attempts.map(g => g.extra?.rounds_completed ?? 0));
+  return { type: 'round', value: bestRound };
+}
+
+// Round the Clock (solo) — fastest completion (seconds), or null if the
+// player has never played it.
+export function bestRoundTheClockTime(games, playerName) {
+  const attempts = games.filter(g => g.mode === 'RoundTheClock' && g.players?.[0] === playerName);
+  if (!attempts.length) return null;
+  return Math.min(...attempts.map(g => g.duration));
+}
+
 // Head-to-head: for each unordered pair that shared games, who won more.
 // Returns top rivalries by number of shared games.
 export function rivalries(games, limit = 5) {

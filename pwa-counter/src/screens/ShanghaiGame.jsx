@@ -24,6 +24,7 @@ export default function ShanghaiGame() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const players = state?.players ?? ['Joueur 1', 'Joueur 2'];
+  const isCasual = state?.isCasual ?? false;
 
   const [game, setGame] = useState(() => initialShanghaiState(players));
   const [darts, setDarts] = useState([]);
@@ -87,6 +88,7 @@ export default function ShanghaiGame() {
         players, scores: players.map((_, i) => totalScore(ng, i)),
         winner: win !== null ? players[win] : '',
         startedAt: startedAt.current,
+        isCasual,
       });
       setPhase('finished');
     } else {
@@ -105,6 +107,7 @@ export default function ShanghaiGame() {
         players, scores: players.map((_, i) => totalScore(ng, i)),
         winner: win !== null ? players[win] : '',
         startedAt: startedAt.current,
+        isCasual,
       });
       setGame(ng);
       setDarts([]);

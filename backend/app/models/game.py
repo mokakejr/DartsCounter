@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, DateTime
+from sqlalchemy import Boolean, ForeignKey, Integer, DateTime
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -22,6 +22,10 @@ class Game(Base):
     mode: Mapped[str] = mapped_column(nullable=False)
     variant: Mapped[str | None] = mapped_column(nullable=True)
     duration: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Casual games are excluded from Elo (both the incremental update in
+    # games.py::create_game and the full rebuild in elo_recompute.py) but
+    # still counted for personal history/achievements.
+    is_casual: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     winner_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("players.id"), nullable=True
     )

@@ -21,6 +21,8 @@ export const MODE_LABEL = {
   SuperCricket: 'Super Cricket',
   Shanghai: 'Shanghai',
   FiftyOne: '51',
+  Bob27: "Bob's 27",
+  RoundTheClock: 'Round the Clock',
 };
 
 export function relDate(d) {

@@ -8,6 +8,8 @@ const MODES = [
   { id: 'cricket', label: 'Cricket', desc: '15-20 + bull' },
   { id: 'superCricket', label: 'Super Cricket', desc: 'Cricket étendu' },
   { id: 'fiftyOne', label: '51', desc: 'Exactement 51' },
+  { id: 'bob27', label: "Bob's 27", desc: 'Solo · doubles 1 → 20' },
+  { id: 'roundTheClock', label: 'Round the Clock', desc: 'Solo · 1 → 20 + bull' },
 ];
 
 export default function PlayHome() {

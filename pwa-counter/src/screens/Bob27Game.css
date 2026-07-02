@@ -1,0 +1,117 @@
+.bob27 {
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  padding: 0 20px 24px;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* ── Header ─────────────────────────────────────────── */
+.bob27__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0 8px;
+}
+.bob27__back {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  background: none; border: 1px solid var(--border);
+  border-radius: 8px; font-size: 18px; color: var(--text);
+  cursor: pointer; font-family: inherit;
+}
+.bob27__back:hover { border-color: var(--muted); }
+.bob27__title {
+  font-family: var(--font-display); font-size: 22px;
+}
+
+/* ── Player ─────────────────────────────────────────── */
+.bob27__player {
+  display: flex; flex-direction: column; gap: 2px;
+  margin-bottom: 16px;
+}
+.bob27__player-name { font-size: 26px; font-weight: 700; }
+.bob27__player-sub { font-size: 13px; color: var(--muted); }
+
+/* ── Score ──────────────────────────────────────────── */
+.bob27__score {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 16px; margin-bottom: 12px;
+  background: var(--surface); border: 2px solid var(--border);
+  border-radius: 12px;
+}
+.bob27__score-num { font-family: var(--font-display); font-size: 48px; line-height: 1; }
+.bob27__score-label { font-size: 12px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* ── Target ─────────────────────────────────────────── */
+.bob27__target {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; margin-bottom: 16px;
+  background: var(--surface-2); border-radius: 10px;
+}
+.bob27__target-label { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+.bob27__target-val { font-size: 20px; font-weight: 700; color: var(--primary); }
+
+.bob27__prompt { font-size: 13px; color: var(--muted); margin: 0 0 10px; }
+
+/* ── Hit pad ────────────────────────────────────────── */
+.bob27__pad {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 8px; margin-top: auto;
+}
+.bob27__key {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 16px 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; font-family: inherit;
+  cursor: pointer; touch-action: manipulation;
+  transition: background 0.1s, transform 0.08s;
+}
+.bob27__key:active { transform: scale(0.92); background: var(--surface-2); }
+.bob27__key:hover { background: var(--surface-2); }
+.bob27__key-num { font-size: 22px; font-weight: 700; }
+.bob27__key-delta { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ── Undo ───────────────────────────────────────────── */
+.bob27__undo {
+  width: 100%;
+  height: 48px;
+  margin-top: 10px;
+  background: var(--surface);
+  border: 1px solid #333333;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: #888888;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.bob27__undo:hover:not(:disabled) { color: #B6B6BB; border-color: #555; }
+.bob27__undo:disabled {
+  background: #141414;
+  border-color: #1A1A1A;
+  color: #333333;
+  cursor: not-allowed;
+}
+
+/* ── Finished screen ────────────────────────────────── */
+.bob27--finished {
+  justify-content: center; align-items: center; gap: 32px; padding: 40px 20px;
+}
+.bob27__eyebrow {
+  font-size: 11px; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--muted);
+}
+.bob27__result { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.bob27__result-num { font-family: var(--font-display); font-size: 56px; }
+.bob27__result-label { font-size: 13px; color: var(--muted); }
+.bob27__fin-actions { display: flex; gap: 12px; width: 100%; }
+.bob27__btn {
+  flex: 1; padding: 14px 28px; border-radius: 10px; border: none;
+  font-family: var(--font-display); font-size: 18px; letter-spacing: 0.06em;
+  cursor: pointer; text-align: center; transition: opacity 0.15s;
+}
+.bob27__btn--primary { background: var(--primary); color: #fff; }
+.bob27__btn--secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+.bob27__btn:hover { opacity: 0.85; }

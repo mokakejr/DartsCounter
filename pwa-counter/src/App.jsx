@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import PlayHome from './screens/PlayHome.jsx';
+import ModeSelect from './screens/ModeSelect.jsx';
 import PlaySetup from './screens/PlaySetup.jsx';
 import ShanghaiGame from './screens/ShanghaiGame.jsx';
 import CricketGame from './screens/CricketGame.jsx';
@@ -11,6 +12,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<PlayHome />} />
+      <Route path="/modes" element={<ModeSelect />} />
       <Route path="/setup" element={<PlaySetup />} />
       <Route path="/shanghai" element={<ShanghaiGame />} />
       <Route path="/cricket" element={<CricketGame />} />

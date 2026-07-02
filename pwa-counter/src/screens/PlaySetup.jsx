@@ -62,6 +62,9 @@ export default function PlaySetup() {
   const mode = state?.mode ?? 'shanghai';
   const isCricketFamily = CRICKET_FAMILY.has(mode);
   const isSolo = SOLO_MODES.has(mode);
+  // Decided upstream on the category screen (ranked/casual/solo) — no
+  // toggle here, just carried through to the game screen's postGame() call.
+  const isCasual = isSolo ? true : !!state?.isCasual;
 
   const [localNames, setLocalNames] = useState(() => loadNames(LOCAL_KEY));
   const [serverNames, setServerNames] = useState(() => loadNames(SERVER_KEY));
@@ -70,7 +73,6 @@ export default function PlaySetup() {
   const [search, setSearch] = useState('');
   const [variant, setVariant] = useState(state?.variant === 'cutthroat' ? 'cutthroat' : 'normal');
   const [topPlayers, setTopPlayers] = useState([]);
-  const [isCasual, setIsCasual] = useState(false);
 
   const known = mergeNames(localNames, serverNames);
 
@@ -127,17 +129,25 @@ export default function PlaySetup() {
 
   function start() {
     navigate(MODE_ROUTE[mode] ?? '/shanghai', {
-      state: { players: selected, variant, mode, isCasual: isSolo ? true : isCasual },
+      state: { players: selected, variant, mode, isCasual },
     });
   }
 
   return (
     <div className="play-setup">
-      <button className="play-setup__back" onClick={() => navigate('/')}>
+      <button
+        className="play-setup__back"
+        onClick={() =>
+          navigate('/modes', { state: { category: isSolo ? 'solo' : isCasual ? 'casual' : 'ranked' } })
+        }
+      >
         ← {MODE_LABEL[mode]}
       </button>
 
       <h2 className="play-setup__title">Qui joue ?</h2>
+      {!isSolo && (
+        <p className="play-setup__type">{isCasual ? 'Partie amicale' : 'Partie classée'}</p>
+      )}
 
       {/* Variant — Cricket / Super Cricket only */}
       {isCricketFamily && (
@@ -155,27 +165,6 @@ export default function PlaySetup() {
               onClick={() => setVariant('cutthroat')}
             >
               CUT THROAT
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Casual/competitive — hidden for solo modes, which are always casual */}
-      {!isSolo && (
-        <div className="play-setup__variant">
-          <p className="play-setup__variant-label">TYPE DE PARTIE</p>
-          <div className="play-setup__variant-row">
-            <button
-              className={`play-setup__variant-btn${!isCasual ? ' play-setup__variant-btn--on' : ''}`}
-              onClick={() => setIsCasual(false)}
-            >
-              COMPÉTITIF
-            </button>
-            <button
-              className={`play-setup__variant-btn${isCasual ? ' play-setup__variant-btn--on' : ''}`}
-              onClick={() => setIsCasual(true)}
-            >
-              AMICAL
             </button>
           </div>
         </div>

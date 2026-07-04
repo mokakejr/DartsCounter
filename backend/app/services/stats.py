@@ -8,7 +8,7 @@ from app.models.elo import GLOBAL_SCOPE, modes_in_family
 from app.schemas.stats import PlayerStats
 from app.services.elo import rank_for_rating
 from app.services.elo_config import get_engine_config
-from app.services.players import image_url
+from app.services.players import image_url, live_streak
 
 
 async def get_leaderboard(
@@ -83,6 +83,9 @@ async def get_leaderboard(
             elo=r.elo,
             rank=rank_for_rating(r.elo, config),
             is_active=getattr(r, "is_active", True),
+            ferveur_xp=r.Player.ferveur_xp,
+            ferveur_level=r.Player.ferveur_level,
+            current_streak=live_streak(r.Player),
         )
         for r in rows
     ]

@@ -37,6 +37,11 @@ class PlayerRead(BaseModel):
     # Only populated on /players/me — feeds the onboarding conversion hook
     # ("3 games played" modal) on the dashboard.
     games_played: int | None = None
+    # Ferveur progression + daily play streak (already read-time corrected:
+    # 0 once the chain is broken, weekends never break it).
+    ferveur_xp: int = 0
+    ferveur_level: int = 1
+    current_streak: int = 0
 
 
 class ProfileUpdate(BaseModel):

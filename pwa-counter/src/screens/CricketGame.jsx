@@ -12,6 +12,7 @@ import {
 import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
+import VictoryOverlay from '../components/VictoryOverlay.jsx';
 import './CricketGame.css';
 
 const CRICKET_LABELS = ['20', '19', '18', '17', '16', '15', 'BULL'];
@@ -280,6 +281,7 @@ export default function CricketGame() {
       .sort((a, b) => variant === 'cutthroat' ? a.pts - b.pts : b.pts - a.pts);
     return (
       <div className="cg cg--finished">
+        <VictoryOverlay winner={ranked[0]?.name} losers={ranked.slice(1).map(r => r.name)} />
         <p className="cg__eyebrow">FIN DE PARTIE</p>
         <div className="cg__podium">
           {ranked.map((r, rank) => (

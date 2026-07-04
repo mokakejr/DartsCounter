@@ -8,6 +8,7 @@ import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
 import SvgBoard from '../components/SvgBoard.jsx';
+import VictoryOverlay from '../components/VictoryOverlay.jsx';
 import './FiftyOneGame.css';
 
 // Dart-Wheel par défaut (Epic 4.1) — le numpad reste dispo via le toggle.
@@ -109,6 +110,13 @@ export default function FiftyOneGame() {
       .sort((a, b) => b.fives - a.fives);
     return (
       <div className="f51 f51--finished">
+        {game.winner !== null && (
+          <VictoryOverlay
+            winner={players[game.winner]}
+            losers={players.filter((_, i) => i !== game.winner)}
+            dartsThrown={dartsThrown.current[players[game.winner]] ?? 0}
+          />
+        )}
         <p className="f51__eyebrow">FIN DE PARTIE</p>
         <div className="f51__podium">
           {ranked.map((r, rank) => (

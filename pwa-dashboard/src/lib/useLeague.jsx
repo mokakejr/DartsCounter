@@ -18,9 +18,13 @@ export function LeagueProvider({ children }) {
     if (!auth.token) { setLeagues([]); setReady(auth.ready); return; }
     try {
       const rows = await api.fetchMyLeagues(auth.token);
-      // `players` (names) is what App.jsx/useGames filter on — keep it derived
-      // so the whole downstream pipeline is unchanged.
-      setLeagues(rows.map(l => ({ ...l, players: l.members.map(m => m.name) })));
+      // `players` (names) is what App.jsx/useGames filter on — active members
+      // only: ghosts (is_active=false) stay visible in the league card but
+      // don't drive the dashboard filter.
+      setLeagues(rows.map(l => ({
+        ...l,
+        players: l.members.filter(m => m.is_active !== false).map(m => m.name),
+      })));
     } catch {
       setLeagues([]);
     }
@@ -41,10 +45,23 @@ export function LeagueProvider({ children }) {
     });
   }, []);
 
-  const createLeague = useCallback(async (name) => {
-    const league = await api.createLeague(auth.token, name);
+  const createLeague = useCallback(async (fields) => {
+    // fields: { name, motto, icon, privacy_level } (string legacy-compat).
+    const payload = typeof fields === 'string' ? { name: fields } : fields;
+    const league = await api.createLeague(auth.token, payload);
     await refresh();
     return league;
+  }, [auth.token, refresh]);
+
+  const joinDirect = useCallback(async (leagueId) => {
+    const res = await api.joinLeagueDirect(auth.token, leagueId);
+    await refresh();
+    return res;
+  }, [auth.token, refresh]);
+
+  const setRole = useCallback(async (leagueId, playerId, role) => {
+    await api.setMemberRole(auth.token, leagueId, playerId, role);
+    await refresh();
   }, [auth.token, refresh]);
 
   const joinLeague = useCallback(async (code) => {
@@ -78,8 +95,8 @@ export function LeagueProvider({ children }) {
     <LeagueContext.Provider
       value={{
         leagues, activeLeague, ready, refresh,
-        activateLeague, createLeague, joinLeague, renameLeague, deleteLeague,
-        addMember, removeMember,
+        activateLeague, createLeague, joinLeague, joinDirect, renameLeague, deleteLeague,
+        addMember, removeMember, setRole,
       }}
     >
       {children}

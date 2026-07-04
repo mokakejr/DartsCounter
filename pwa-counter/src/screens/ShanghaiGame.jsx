@@ -15,6 +15,8 @@ import ExitConfirmModal from './ExitConfirmModal.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
 import SvgBoard from '../components/SvgBoard.jsx';
 import VictoryOverlay from '../components/VictoryOverlay.jsx';
+import EmoteSplash from '../components/EmoteSplash.jsx';
+import { useLiveMatch } from '../useLiveMatch.js';
 import { bigHit, smallHit } from '../juice.js';
 import './ShanghaiGame.css';
 
@@ -52,6 +54,7 @@ export default function ShanghaiGame() {
   const navigate = useNavigate();
   const players = state?.players ?? ['Joueur 1', 'Joueur 2'];
   const isCasual = state?.isCasual ?? false;
+  const liveId = state?.liveId ?? null;
   const shanghaiVariant = TARGET_GENERATOR[state?.variant] ? state.variant : 'classic';
 
   // Generated once per game, shared by every player — never previewed ahead
@@ -69,6 +72,15 @@ export default function ShanghaiGame() {
   const startedAt = useRef(Date.now());
   // Fléchettes lancées par joueur — alimente extra.darts (XP Ferveur).
   const dartsThrown = useRef(Object.fromEntries(players.map(p => [p, 0])));
+  // Diffusion live (Epic 11) + Mode Focus (12.2).
+  const { emit, emote } = useLiveMatch(liveId, players[0]);
+  const [focusMode, setFocusMode] = useState(false);
+  function toggleFocus() {
+    setFocusMode(f => {
+      emit({ event: 'DND', enabled: !f });
+      return !f;
+    });
+  }
 
   const round = game.currentRound;
   const player = game.currentPlayer;
@@ -86,6 +98,12 @@ export default function ShanghaiGame() {
     // Juice (Epic 4.4): impact lourd sur triple/double-bull, léger sinon.
     if (zone === 3 || (isBullRound && zone === 2)) bigHit();
     else if (zone > 0) smallHit();
+    emit({
+      event: 'DART_THROWN',
+      player: players[player],
+      dart_index: darts.length,
+      score_hit: { multiplier: zone, zone: target },
+    });
     pushHistory();
     setDarts(prev => [...prev, zone]);
   }
@@ -99,6 +117,12 @@ export default function ShanghaiGame() {
       if (isBullRound) zone = hit.ring === 'DBULL' ? 2 : 1;
       else zone = hit.ring === 'T' ? 3 : hit.ring === 'D' ? 2 : 1;
     }
+    emit({
+      event: 'DART_THROWN',
+      player: players[player],
+      dart_index: darts.length,
+      score_hit: { multiplier: zone, zone: target },
+    });
     pushHistory();
     setDarts(prev => [...prev, zone]);
   }
@@ -126,6 +150,12 @@ export default function ShanghaiGame() {
   function finish(ng) {
     const win = leader(ng);
     dartsThrown.current[players[player]] += 3;
+    emit({
+      event: 'SCORE_UPDATED',
+      scores: Object.fromEntries(players.map((n, i) => [n, totalScore(ng, i)])),
+      round: ng.currentRound + 1,
+    });
+    emit({ event: 'MATCH_FINISHED', winner: win !== null ? players[win] : null });
     postGame({
       mode: BACKEND_MODE[shanghaiVariant],
       variant: pending?.isShanghai ? 'Shanghai Kill' : 'Normal',
@@ -149,6 +179,12 @@ export default function ShanghaiGame() {
     if (ng.finished) {
       finish(ng);
     } else {
+      emit({
+        event: 'SCORE_UPDATED',
+        scores: Object.fromEntries(players.map((n, i) => [n, totalScore(ng, i)])),
+        round: ng.currentRound + 1,
+      });
+      emit({ event: 'TURN_CHANGED', player: players[ng.currentPlayer], round: ng.currentRound + 1 });
       setGame(ng);
       setPhase('playing');
     }
@@ -225,9 +261,20 @@ export default function ShanghaiGame() {
         </div>
       )}
 
+      <EmoteSplash emote={focusMode ? null : emote} />
+
       {/* Header */}
       <div className="sg__header">
         <button className="sg__back" onClick={() => setShowExit(true)}>←</button>
+        {liveId && (
+          <button
+            className="sg__back"
+            title={focusMode ? 'Emotes bloquées (Mode Focus)' : 'Bloquer les emotes des gradins'}
+            onClick={toggleFocus}
+          >
+            {focusMode ? '🔕' : '🔔'}
+          </button>
+        )}
         <div className="sg__round-badge">
           R<span className="sg__round-num">{round + 1}</span>
           <span className="sg__round-sep">/</span>

@@ -1,0 +1,23 @@
+.emote-splash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  overflow: hidden;
+}
+
+.emote-splash__glyph {
+  position: absolute;
+  top: 38%;
+  left: -60px;
+  font-size: 44px;
+  animation: emote-cross 1.4s cubic-bezier(0.3, 0.2, 0.4, 1) forwards;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+
+@keyframes emote-cross {
+  0% { transform: translateX(0) rotate(-20deg); opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateX(calc(100vw + 120px)) rotate(30deg); opacity: 0; }
+}

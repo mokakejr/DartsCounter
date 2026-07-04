@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { fetchPlayers } from '../api/players.js';
 import { apiGet } from '../api/client.js';
+import { createLiveMatch } from '../live.js';
 import './PlaySetup.css';
 
 // Two separate caches, so a backend rename can't leave a ghost chip behind:
@@ -171,9 +172,20 @@ export default function PlaySetup() {
     setSearch('');
   }
 
-  function start() {
+  async function start() {
+    // Match live éphémère (Epic 11) — best-effort : hors-ligne ou backend
+    // sans /live, on joue exactement comme avant.
+    let liveId = null;
+    if (!isSolo && selected.length >= 2) {
+      const live = await createLiveMatch({
+        mode: MODE_LABEL[mode] ?? mode,
+        players: selected,
+        variant,
+      });
+      liveId = live?.id ?? null;
+    }
     navigate(MODE_ROUTE[mode] ?? '/shanghai', {
-      state: { players: selected, variant, mode, isCasual, lives },
+      state: { players: selected, variant, mode, isCasual, lives, liveId },
     });
   }
 

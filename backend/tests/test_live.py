@@ -41,9 +41,14 @@ def test_remote_match_waits_for_ready():
     with TestClient(app) as client:
         match = _create(client, remote=True)
         assert match["started"] is False
-        client.post(f"/live/matches/{match['id']}/ready", json={"name": "Leo"})
-        state = client.post(f"/live/matches/{match['id']}/ready", json={"name": "Theo"}).json()
-        assert state["started"] is True
+        with client.websocket_connect(f"/ws/live/{match['id']}?role=player&name=Theo") as theo:
+            theo.receive_json()  # STATE
+            client.post(f"/live/matches/{match['id']}/ready", json={"name": "Leo"})
+            # L'adversaire voit le "Prêt" arriver en direct dans le sas.
+            assert theo.receive_json() == {"event": "READY", "match_id": match["id"], "player_id": "Leo"}
+            state = client.post(f"/live/matches/{match['id']}/ready", json={"name": "Theo"}).json()
+            assert state["started"] is True
+            assert state["connected"] == ["Theo"]  # identités déjà prises, pour le lobby
 
 
 def test_deltas_reach_spectator_and_update_state():

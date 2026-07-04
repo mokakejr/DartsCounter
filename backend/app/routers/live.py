@@ -56,6 +56,9 @@ async def ready_live_match(match_id: str, payload: ReadyPayload) -> dict:
     if match is None:
         raise HTTPException(404, "Live match not found (expired?)")
     just_started = live.mark_ready(match, payload.name)
+    # The opponent's lobby updates live ("✓ Prêt") — REST and WS READY paths
+    # must both broadcast.
+    await live.broadcast(match, {"event": "READY", "match_id": match.id, "player_id": payload.name})
     if just_started:
         await live.broadcast(match, {"event": "MATCH_STARTED", "match_id": match.id})
     return live.to_dict(match)

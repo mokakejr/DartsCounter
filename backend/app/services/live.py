@@ -112,6 +112,7 @@ def to_dict(match: LiveMatch, include_chat: bool = False) -> dict[str, Any]:
         "turn_player": match.turn_player,
         "dart_index": match.dart_index,
         "ready": sorted(match.ready),
+        "connected": sorted(match.player_sockets),
         "spectators": len(match.spectator_sockets),
         "created_at": match.created_at,
     }

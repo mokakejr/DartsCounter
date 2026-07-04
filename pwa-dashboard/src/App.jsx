@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './lib/useAuth.jsx';
 import { fetchPlayers } from './api/players.js';
 import { fetchLeaderboard } from './api/stats.js';
 import CalloutModal from './components/CalloutModal.jsx';
+import OnboardingModal from './components/OnboardingModal.jsx';
 import Hero from './scenes/Hero.jsx';
 import Standings from './scenes/Standings.jsx';
 import Feed from './scenes/Feed.jsx';
@@ -202,6 +203,8 @@ function AppInner() {
           </button>
         </div>
       )}
+
+      <OnboardingModal />
 
       <CalloutModal
         open={calloutOpen}

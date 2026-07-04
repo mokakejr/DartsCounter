@@ -43,3 +43,9 @@
   font-size: 22px;
   color: var(--border);
 }
+
+.pcard__title {
+  font-size: 0.8rem;
+  color: #a0a0a0;
+  font-style: italic;
+}

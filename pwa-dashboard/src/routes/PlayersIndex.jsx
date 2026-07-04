@@ -16,6 +16,7 @@ export default function PlayersIndex({ ranked, profiles = {} }) {
               {!profiles[s.name]?.avatar_url && s.name.charAt(0)}
             </span>
             <span className="pcard__name">{displayName(profiles, s.name)}</span>
+            {profiles[s.name]?.title && <span className="pcard__title">{profiles[s.name].title}</span>}
             <span className="pcard__lv">niv. {s.level.lv} · {s.level.name}</span>
             <span className="pcard__stats">
               <b>{s.wins}</b> {s.wins === 1 ? 'victoire' : 'victoires'} · {s.games} {s.games === 1 ? 'partie' : 'parties'}

@@ -16,6 +16,13 @@ async def _signup(client, name):
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}
 
 
+async def _mine(client, headers):
+    """/leagues/mine minus the auto-assigned Taverne (every account gets it)."""
+    from app.services.leagues import TAVERNE_NAME
+    rows = (await client.get("/leagues/mine", headers=headers)).json()
+    return [l for l in rows if l["name"] != TAVERNE_NAME]
+
+
 async def _me(client, headers):
     return (await client.get("/players/me", headers=headers)).json()
 
@@ -102,9 +109,9 @@ async def test_leave_makes_ghost_not_delete(client):
     resp = await client.delete(f"/leagues/{league['id']}/members/{bob_id}", headers=bob)
     assert resp.status_code == 204
     # Gone from Bob's leagues...
-    assert (await client.get("/leagues/mine", headers=bob)).json() == []
+    assert await _mine(client, bob) == []
     # ...but still visible to the owner as an inactive ghost, at the end.
-    mine = (await client.get("/leagues/mine", headers=alice)).json()
+    mine = await _mine(client, alice)
     ghost = _member(mine[0], "Bob")
     assert ghost["is_active"] is False
     assert mine[0]["members"][-1]["name"] == "Bob"
@@ -134,8 +141,9 @@ async def test_public_league_direct_join_and_directory(client):
     league = await _create_league(client, alice, privacy_level="PUBLIC")
 
     listing = (await client.get("/leagues/public", headers=bob)).json()
-    assert [l["id"] for l in listing] == [league["id"]]
-    assert "invite_code" not in listing[0]
+    # The Taverne (PUBLIC, auto-created) is listed too — only check ours.
+    ours = next(l for l in listing if l["id"] == league["id"])
+    assert "invite_code" not in ours
 
     resp = await client.post(f"/leagues/{league['id']}/join", headers=bob)
     assert resp.status_code == 200

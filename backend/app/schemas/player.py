@@ -34,6 +34,9 @@ class PlayerRead(BaseModel):
     accent_color: str | None = None
     is_admin: bool = False
     created_at: datetime
+    # Only populated on /players/me — feeds the onboarding conversion hook
+    # ("3 games played" modal) on the dashboard.
+    games_played: int | None = None
 
 
 class ProfileUpdate(BaseModel):

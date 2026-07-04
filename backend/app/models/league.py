@@ -54,8 +54,9 @@ class League(Base):
     privacy_level: Mapped[str] = mapped_column(
         Text, nullable=False, default=PRIVACY_PRIVATE_CODE, server_default=PRIVACY_PRIVATE_CODE
     )
-    owner_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("players.id", ondelete="CASCADE"), nullable=False
+    # Null owner = system league (the Taverne): nobody holds owner rights.
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("players.id", ondelete="CASCADE"), nullable=True
     )
     invite_code: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

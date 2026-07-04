@@ -1,8 +1,10 @@
-from sqlalchemy import select
+import uuid
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.models import Player
+from app.models import Game, GamePlayer, Player
 from app.schemas.player import PlayerRead
 
 
@@ -44,6 +46,16 @@ async def get_or_create_player(
 async def list_players(session: AsyncSession) -> list[PlayerRead]:
     rows = (await session.execute(select(Player).order_by(Player.name))).scalars().all()
     return [player_to_read(p) for p in rows]
+
+
+async def count_games_played(session: AsyncSession, player_id: uuid.UUID) -> int:
+    stmt = (
+        select(func.count())
+        .select_from(GamePlayer)
+        .join(Game, Game.id == GamePlayer.game_id)
+        .where(GamePlayer.player_id == player_id, Game.is_casual.is_(False))
+    )
+    return (await session.execute(stmt)).scalar_one()
 
 
 async def get_by_name(session: AsyncSession, name: str) -> Player | None:

@@ -51,6 +51,9 @@ export default function WatchGame() {
     const conn = connectLive(matchId, {
       role: 'spectator',
       name,
+      onClose(code) {
+        if (code === 4404) setGone(true);
+      },
       onEvent(e) {
         switch (e.event) {
           case 'STATE':
@@ -84,9 +87,7 @@ export default function WatchGame() {
       },
     });
     connRef.current = conn;
-    // Room inexistante/expirée : le WS ferme sans STATE — petit timeout UX.
-    const t = setTimeout(() => setGone(g => g || !connRef.current), 100);
-    return () => { clearTimeout(t); conn.close(); connRef.current = null; };
+    return () => { conn.close(); connRef.current = null; };
   }, [matchId, name]);
 
   function sendEmote(emote) {

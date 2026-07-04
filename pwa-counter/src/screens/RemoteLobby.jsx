@@ -34,6 +34,9 @@ export default function RemoteLobby() {
     const conn = connectLive(matchId, {
       role: 'player',
       name: me,
+      onClose(code) {
+        if (code === 4404) setError('Match introuvable ou expiré.');
+      },
       onEvent(e) {
         if (e.event === 'READY') {
           setMatch(m => m && { ...m, ready: [...new Set([...(m.ready ?? []), e.player_id])] });
@@ -100,11 +103,19 @@ export default function RemoteLobby() {
         <>
           <p className="lobby__question">Qui es-tu ?</p>
           <div className="lobby__players">
-            {match.players.map(p => (
-              <button key={p} className="lobby__btn lobby__btn--pick" onClick={() => setMe(p)}>
-                {p}, c'est moi
-              </button>
-            ))}
+            {match.players.map(p => {
+              const taken = (match.connected ?? []).includes(p);
+              return (
+                <button
+                  key={p}
+                  className="lobby__btn lobby__btn--pick"
+                  disabled={taken}
+                  onClick={() => setMe(p)}
+                >
+                  {p}, c'est moi{taken ? ' (déjà connecté)' : ''}
+                </button>
+              );
+            })}
           </div>
         </>
       ) : (

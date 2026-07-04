@@ -19,7 +19,7 @@ export async function createLiveMatch({ mode, players, variant = null, remote = 
  * Room WebSocket avec reconnexion simple et file d'émission.
  * onEvent(payload) reçoit tous les événements entrants.
  */
-export function connectLive(matchId, { role, name, onEvent }) {
+export function connectLive(matchId, { role, name, onEvent, onClose }) {
   let socket = null;
   let closed = false;
   let retries = 0;
@@ -41,11 +41,19 @@ export function connectLive(matchId, { role, name, onEvent }) {
     socket.onmessage = (e) => {
       try { onEvent?.(JSON.parse(e.data)); } catch { /* frame illisible */ }
     };
-    socket.onclose = () => {
+    socket.onclose = (e) => {
       socket = null;
+      // 4404 = room inexistante/expirée : inutile d'insister.
+      if (e?.code === 4404) {
+        closed = true;
+        onClose?.(4404);
+        return;
+      }
       if (!closed && retries < 5) {
         retries += 1;
         setTimeout(open, Math.min(1000 * retries, 5000));
+      } else if (!closed) {
+        onClose?.(e?.code ?? 0);
       }
     };
     socket.onerror = () => {};

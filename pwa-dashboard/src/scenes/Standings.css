@@ -29,7 +29,7 @@
 
 .ladder__row {
   display: grid;
-  grid-template-columns: 44px 46px 1fr auto auto auto;
+  grid-template-columns: 44px 1fr auto auto auto;
   align-items: center;
   gap: 18px;
   padding: 16px 22px;
@@ -101,12 +101,12 @@
 .ladder__divider span { text-transform: none; letter-spacing: normal; font-weight: 400; }
 
 @media (max-width: 720px) {
-  .ladder__row { grid-template-columns: 34px 40px 1fr auto auto; gap: 12px; padding: 14px 16px; }
+  .ladder__row { grid-template-columns: 34px 1fr auto auto; gap: 12px; padding: 14px 16px; }
   .ladder__stat--hide { display: none; }
 }
 
 @media (max-width: 480px) {
-  .ladder__row { grid-template-columns: 28px 36px 1fr auto; gap: 10px; padding: 12px 14px; }
+  .ladder__row { grid-template-columns: 28px 1fr auto; gap: 10px; padding: 12px 14px; }
   .ladder__stat--rate { display: none; }
   .ladder__lv { display: none; }
   .ladder__avatar { width: 36px; height: 36px; font-size: 16px; }
@@ -114,4 +114,36 @@
   .ladder__name { font-size: 16px; }
   .ladder__stat { min-width: 52px; }
   .ladder__stat b { font-size: 18px; }
+}
+
+/* ── PlayerCard rows + winrate gauge (Epic 2.2) ────────── */
+.ladder__player { min-width: 0; }
+.ladder__player .player-card__name { font-size: 16px; }
+
+.ladder__stat--bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 90px;
+}
+.winrate-bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.winrate-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+.ladder__stat--bar em {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: normal;
+}
+@media (max-width: 720px) {
+  .ladder__stat--bar { display: none; }
 }

@@ -366,3 +366,10 @@
   gap: 12px;
 }
 .sg__fin-actions .sg__btn { flex: 1; text-align: center; }
+
+/* ── Cible SVG (Epic 4.3) ──────────────────────────────── */
+.sg__board {
+  margin: 4px auto 8px;
+  text-align: center;
+}
+.sg__board .svgboard { width: min(72vw, 300px); }

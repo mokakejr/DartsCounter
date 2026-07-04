@@ -13,6 +13,8 @@ import { classicTargets, bullTargets, randomTargets, crazyTargets } from '../mod
 import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
+import SvgBoard from '../components/SvgBoard.jsx';
+import { bigHit, smallHit } from '../juice.js';
 import './ShanghaiGame.css';
 
 const ZONES = [
@@ -64,6 +66,8 @@ export default function ShanghaiGame() {
   // [{game, darts, pending, phase}] — undo traverses confirmed turns too, not just the current one
   const [history, setHistory] = useState([]);
   const startedAt = useRef(Date.now());
+  // Fléchettes lancées par joueur — alimente extra.darts (XP Ferveur).
+  const dartsThrown = useRef(Object.fromEntries(players.map(p => [p, 0])));
 
   const round = game.currentRound;
   const player = game.currentPlayer;
@@ -78,6 +82,22 @@ export default function ShanghaiGame() {
 
   function tapZone(zone) {
     if (phase !== 'playing' || darts.length >= 3) return;
+    // Juice (Epic 4.4): impact lourd sur triple/double-bull, léger sinon.
+    if (zone === 3 || (isBullRound && zone === 2)) bigHit();
+    else if (zone > 0) smallHit();
+    pushHistory();
+    setDarts(prev => [...prev, zone]);
+  }
+
+  // Tap direct sur la cible SVG: la zone à viser est en surbrillance, tout
+  // le reste compte MISS (Epic 4.3). Le juice est géré par SvgBoard.
+  function onBoardHit(hit) {
+    if (phase !== 'playing' || darts.length >= 3) return;
+    let zone = 0;
+    if (hit.value === target) {
+      if (isBullRound) zone = hit.ring === 'DBULL' ? 2 : 1;
+      else zone = hit.ring === 'T' ? 3 : hit.ring === 'D' ? 2 : 1;
+    }
     pushHistory();
     setDarts(prev => [...prev, zone]);
   }
@@ -104,6 +124,7 @@ export default function ShanghaiGame() {
 
   function finish(ng) {
     const win = leader(ng);
+    dartsThrown.current[players[player]] += 3;
     postGame({
       mode: BACKEND_MODE[shanghaiVariant],
       variant: pending?.isShanghai ? 'Shanghai Kill' : 'Normal',
@@ -111,7 +132,7 @@ export default function ShanghaiGame() {
       winner: win !== null ? players[win] : '',
       startedAt: startedAt.current,
       isCasual,
-      extra: { targets },
+      extra: { targets, darts: dartsThrown.current },
     });
     setGame(ng);
     setPhase('finished');
@@ -120,6 +141,7 @@ export default function ShanghaiGame() {
   function confirmTurn() {
     if (!pending) return;
     pushHistory();
+    dartsThrown.current[players[player]] += 3;
     const ng = pending.nextGame;
     setDarts([]);
     setPending(null);
@@ -206,12 +228,21 @@ export default function ShanghaiGame() {
         <ElapsedTimer startedAt={startedAt.current} />
       </div>
 
-      {/* Target */}
-      <div className="sg__target">
-        <div className="sg__target-ring">
-          <span className="sg__target-num">{target === BULL ? 'B' : target}</span>
-        </div>
-        <p className="sg__target-label">{target === BULL ? 'BULL' : 'CIBLE'}</p>
+      {/* Cible SVG : la zone du round en rouge fluo, le reste assombri
+          (Epic 4.3). Tap direct possible — hors cible = MISS. */}
+      <div className="sg__board">
+        <SvgBoard
+          highlightTarget={target}
+          onHit={onBoardHit}
+          interactive={phase === 'playing' && darts.length < 3}
+          darts={darts.filter(z => z > 0).map(z => ({
+            value: target,
+            ring: isBullRound ? (z === 2 ? 'DBULL' : 'BULL') : (z === 3 ? 'T' : z === 2 ? 'D' : 'S'),
+          }))}
+        />
+        <p className="sg__target-label">
+          {target === BULL ? 'BULL' : `CIBLE : ${target}`}
+        </p>
       </div>
 
       {/* Current player */}

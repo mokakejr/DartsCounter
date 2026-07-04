@@ -59,10 +59,25 @@ async def send_weekly_recap() -> None:
     logger.info("Weekly recap sent (%d games between %s and %s)", len(games), start, end)
 
 
+async def run_ownership_inheritance() -> None:
+    from app.services.leagues import run_ownership_inheritance as _run
+
+    async with async_session() as session:
+        transferred = await _run(session)
+    if transferred:
+        logger.info("Ownership inheritance: %d league(s) transferred", transferred)
+
+
 def setup_jobs() -> None:
     scheduler.add_job(
         send_weekly_recap,
         CronTrigger(day_of_week="fri", hour=17, minute=0, timezone=PARIS),
         id="weekly_recap",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        run_ownership_inheritance,
+        CronTrigger(hour=4, minute=30, timezone=PARIS),
+        id="ownership_inheritance",
         replace_existing=True,
     )

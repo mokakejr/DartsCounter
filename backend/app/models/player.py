@@ -25,6 +25,9 @@ class Player(Base):
     # Signing up either claims an existing unclaimed row or creates a new one.
     password_hash: Mapped[str | None] = mapped_column(nullable=True)
     is_admin: Mapped[bool] = mapped_column(nullable=False, default=False, server_default="false")
+    # Activity signal (login + throttled touch on authenticated requests) —
+    # drives league ownership inheritance for absentee owners.
+    last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     display_name: Mapped[str | None] = mapped_column(nullable=True)
     avatar_path: Mapped[str | None] = mapped_column(nullable=True)
     flight_image_path: Mapped[str | None] = mapped_column(nullable=True)

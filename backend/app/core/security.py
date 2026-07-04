@@ -53,6 +53,12 @@ async def get_current_player(
     player = await session.get(Player, player_id)
     if player is None:
         raise unauthorized
+    # Tokens live 30 days, so /auth/login alone is a poor activity signal —
+    # touch last_login on authenticated traffic, throttled to once an hour.
+    now = datetime.now(timezone.utc)
+    if player.last_login is None or (now - player.last_login) > timedelta(hours=1):
+        player.last_login = now
+        await session.commit()
     return player
 
 

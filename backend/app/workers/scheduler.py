@@ -68,6 +68,17 @@ async def run_ownership_inheritance() -> None:
         logger.info("Ownership inheritance: %d league(s) transferred", transferred)
 
 
+async def run_league_maintenance() -> None:
+    """Nightly: purge 30-day-old feed events (Pantheon records are exempt —
+    separate table) and refresh the Pantheon pillars."""
+    from app.services.league_events import evaluate_pantheon, purge_expired_events
+
+    async with async_session() as session:
+        purged = await purge_expired_events(session)
+        await evaluate_pantheon(session)
+    logger.info("League maintenance: %d expired feed event(s) purged", purged)
+
+
 def setup_jobs() -> None:
     scheduler.add_job(
         send_weekly_recap,
@@ -79,5 +90,11 @@ def setup_jobs() -> None:
         run_ownership_inheritance,
         CronTrigger(hour=4, minute=30, timezone=PARIS),
         id="ownership_inheritance",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        run_league_maintenance,
+        CronTrigger(hour=4, minute=0, timezone=PARIS),
+        id="league_maintenance",
         replace_existing=True,
     )

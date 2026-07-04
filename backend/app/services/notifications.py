@@ -78,6 +78,18 @@ async def dispatch_game_finished(game: GameRead) -> None:
             for name, before, after, delta in elo_rows
         }
 
+        # League feed events (Epic 9) — written here, asynchronously, never
+        # in the request path; a feed failure must not block the webhooks.
+        try:
+            from app.services.league_events import generate_events_for_game
+
+            names = [p.name for p in game.players]
+            rows = (await session.execute(select(Player).where(Player.name.in_(names)))).scalars().all()
+            players_by_name = {p.name: p for p in rows}
+            await generate_events_for_game(session, game, all_games, elo_by_player, players_by_name)
+        except Exception:
+            logger.exception("League feed event generation failed for game %s", game.id)
+
         players_sorted = sorted(game.players, key=lambda p: p.position)
         event = GameEvent(
             type="game_finished",

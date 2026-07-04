@@ -136,6 +136,128 @@ async def decide_request(
     return leagues_service.league_to_read(await _get_league_or_404(session, league_id))
 
 
+def _require_member(league: League, player: Player) -> None:
+    if _role_of(league, player) is None:
+        raise HTTPException(403, "League members only")
+
+
+def _player_ref(p: Player | None) -> dict | None:
+    from app.services.players import image_url
+
+    if p is None:
+        return None
+    return {
+        "id": p.id,
+        "name": p.name,
+        "display_name": p.display_name,
+        "avatar_url": image_url(p.avatar_path),
+    }
+
+
+@router.get("/{league_id}/events")
+async def league_feed(
+    league_id: uuid.UUID,
+    limit: int = 50,
+    offset: int = 0,
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    league = await _get_league_or_404(session, league_id)
+    _require_member(league, player)
+    from app.services import league_events as events_service
+
+    rows = await events_service.list_events(session, league_id, min(limit, 100), offset)
+    return [
+        {
+            "id": e.id,
+            "event_type": e.event_type,
+            "actor": _player_ref(e.actor),
+            "target": _player_ref(e.target),
+            "story_text": e.story_text,
+            "respect_count": e.respect_count,
+            "created_at": e.created_at,
+        }
+        for e in rows
+    ]
+
+
+async def _get_event_or_404(session: AsyncSession, league_id: uuid.UUID, event_id: uuid.UUID):
+    from app.models import LeagueEvent
+
+    event = await session.get(LeagueEvent, event_id)
+    if event is None or event.league_id != league_id:
+        raise HTTPException(404, "Event not found")
+    return event
+
+
+@router.post("/{league_id}/events/{event_id}/respect")
+async def respect_event(
+    league_id: uuid.UUID,
+    event_id: uuid.UUID,
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    league = await _get_league_or_404(session, league_id)
+    _require_member(league, player)
+    from app.services import league_events as events_service
+
+    event = await _get_event_or_404(session, league_id, event_id)
+    await events_service.add_respect(session, event)
+    return {"respect_count": event.respect_count}
+
+
+@router.post("/{league_id}/events/{event_id}/provoke", status_code=202)
+async def provoke_from_event(
+    league_id: uuid.UUID,
+    event_id: uuid.UUID,
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """« Provoquer » — v1 goes through the configured webhooks (no native
+    push infra); the target is named in the message."""
+    league = await _get_league_or_404(session, league_id)
+    _require_member(league, player)
+    from app.services.notifications import notify
+    from app.services.targets.base import GameEvent
+
+    event = await _get_event_or_404(session, league_id, event_id)
+    target = await session.get(Player, event.target_id) if event.target_id else None
+    await notify(
+        session,
+        GameEvent(
+            type="provocation",
+            data={
+                "by": player.display_name or player.name,
+                "target": (target.display_name or target.name) if target else None,
+                "story": event.story_text,
+            },
+        ),
+    )
+    return {"status": "sent"}
+
+
+@router.get("/{league_id}/pantheon")
+async def league_pantheon(
+    league_id: uuid.UUID,
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    league = await _get_league_or_404(session, league_id)
+    _require_member(league, player)
+    from app.services import league_events as events_service
+
+    rows = await events_service.get_pantheon(session, league_id)
+    return [
+        {
+            "pillar": r.pillar,
+            "holder": _player_ref(r.holder),
+            "value": r.value,
+            "achieved_at": r.achieved_at,
+        }
+        for r in rows
+    ]
+
+
 @router.get("/{league_id}/disputes")
 async def league_disputes(
     league_id: uuid.UUID,

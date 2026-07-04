@@ -104,7 +104,9 @@ async def live_room(
                 accepted = live.apply_player_event(match, name, data)
                 if not accepted and etype == "DART_THROWN":
                     continue  # remote match: not this player's turn
-                payload = {**data, "match_id": match.id, "player_id": name}
+                # Local matches share one socket: the event may name the
+                # actual thrower; fall back to the connection's identity.
+                payload = {**data, "match_id": match.id, "player_id": data.get("player") or name}
                 if etype == "READY" and accepted:
                     await live.broadcast(match, {"event": "MATCH_STARTED", "match_id": match.id})
                 elif etype == "DND":

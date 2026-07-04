@@ -153,7 +153,9 @@ def apply_player_event(match: LiveMatch, sender: str, event: dict) -> bool:
         # Light guard: in remote matches only the turn player throws.
         if match.remote and match.started and sender != match.turn_player:
             return False
-        match.turn_player = sender
+        # Local matches: one shared phone, one socket — the event names the
+        # actual thrower; remote: the sender IS the thrower.
+        match.turn_player = event.get("player") or sender
         match.dart_index = int(event.get("dart_index", match.dart_index))
     elif etype == "TURN_CHANGED":
         match.turn_player = event.get("player") or match.turn_player

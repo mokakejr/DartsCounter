@@ -25,12 +25,12 @@ async def get_leaderboard(
     games_query = (
         select(GamePlayer.player_id, func.count().label("games"))
         .join(Game, Game.id == GamePlayer.game_id)
-        .where(Game.is_casual.is_(False))
+        .where(Game.is_casual.is_(False), Game.status == "COMPLETED")
     )
     wins_query = (
         select(GamePlayer.player_id, func.count().label("wins"))
         .join(Game, Game.id == GamePlayer.game_id)
-        .where(Game.is_casual.is_(False), GamePlayer.position == 1)
+        .where(Game.is_casual.is_(False), Game.status == "COMPLETED", GamePlayer.position == 1)
     )
     if mode is not None:
         # A mode filter may be a shared Elo scope name (e.g. "Shanghai") that

@@ -46,5 +46,8 @@ class GameRead(BaseModel):
     duration: int
     winner: str | None
     is_casual: bool
+    # COMPLETED | PENDING_REVIEW | VOIDED — PENDING_REVIEW means the outlier
+    # detector froze it: no Elo yet, the client shows the homologation modal.
+    status: str = "COMPLETED"
     extra: dict[str, Any] | None = None
     players: list[GamePlayerRead]

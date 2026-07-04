@@ -13,6 +13,13 @@ if TYPE_CHECKING:
     from app.models.player import Player
     from app.models.season import Season
 
+# Game homologation states (Epic 6): only COMPLETED games feed Elo and
+# ranked stats. PENDING_REVIEW = outlier-flagged or player-reported, waiting
+# for the league tribunal; VOIDED = cancelled by the tribunal.
+STATUS_COMPLETED = "COMPLETED"
+STATUS_PENDING_REVIEW = "PENDING_REVIEW"
+STATUS_VOIDED = "VOIDED"
+
 
 class Game(Base):
     __tablename__ = "games"
@@ -26,6 +33,9 @@ class Game(Base):
     # games.py::create_game and the full rebuild in elo_recompute.py) but
     # still counted for personal history/achievements.
     is_casual: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    status: Mapped[str] = mapped_column(
+        nullable=False, default=STATUS_COMPLETED, server_default=STATUS_COMPLETED
+    )
     winner_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("players.id"), nullable=True
     )

@@ -136,6 +136,22 @@ async def decide_request(
     return leagues_service.league_to_read(await _get_league_or_404(session, league_id))
 
 
+@router.get("/{league_id}/disputes")
+async def league_disputes(
+    league_id: uuid.UUID,
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+):
+    """Tribunal inbox: PENDING_REVIEW games involving this league's members."""
+    league = await _get_league_or_404(session, league_id)
+    _require_role(league, player, "admin")
+    from app.services import tribunal as tribunal_service
+    from app.services.games import _to_game_read
+
+    games = await tribunal_service.list_disputes(session, league)
+    return [_to_game_read(g) for g in games]
+
+
 @router.patch("/{league_id}", response_model=LeagueRead)
 async def update_league(
     league_id: uuid.UUID,

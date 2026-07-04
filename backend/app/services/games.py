@@ -28,6 +28,7 @@ def _to_game_read(game: Game) -> GameRead:
         winner=game.winner.name if game.winner else None,
         is_casual=game.is_casual,
         status=game.status,
+        flag_reason=game.flag_reason,
         extra=game.raw_data.get("extra"),
         players=[
             GamePlayerRead(name=gp.player.name, score=gp.score, position=gp.position)
@@ -98,6 +99,7 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
         # Statistically aberrant performance: freeze the game before it
         # touches Elo — the league tribunal will homologate or void it.
         game.status = STATUS_PENDING_REVIEW
+        game.flag_reason = "outlier"
     elif not payload.is_casual:
         for player in players_by_name.values():
             bump_trust(player, TRUST_GAME_COMPLETED)

@@ -79,7 +79,21 @@ async def run_league_maintenance() -> None:
     logger.info("League maintenance: %d expired feed event(s) purged", purged)
 
 
+def purge_live_matches() -> None:
+    from app.services.live import purge_expired
+
+    purged = purge_expired()
+    if purged:
+        logger.info("Live matches: %d expired room(s) purged", purged)
+
+
 def setup_jobs() -> None:
+    scheduler.add_job(
+        purge_live_matches,
+        CronTrigger(minute="*/30", timezone=PARIS),
+        id="live_matches_purge",
+        replace_existing=True,
+    )
     scheduler.add_job(
         send_weekly_recap,
         CronTrigger(day_of_week="fri", hour=17, minute=0, timezone=PARIS),

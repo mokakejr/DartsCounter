@@ -14,6 +14,7 @@ from app.services.elo import recompute_elo
 from app.services.elo_config import get_engine_config, get_score_direction_map
 from app.services.players import get_or_create_player
 from app.services.progression import apply_game_to_player
+from app.services.titles import evaluate_titles
 
 _EAGER = (selectinload(Game.players).selectinload(GamePlayer.player), selectinload(Game.winner))
 
@@ -151,6 +152,10 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
         else:
             row.rating = u.elo_after
             row.games_played += 1
+
+    # Title conditions read the ratings/streaks updated above (same session,
+    # pre-commit state is visible to its own queries).
+    await evaluate_titles(session, list(players_by_name.values()))
 
     await session.commit()
 

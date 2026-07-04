@@ -10,6 +10,7 @@ import RoundTheClockGame from './screens/RoundTheClockGame.jsx';
 import KillerGame from './screens/KillerGame.jsx';
 import HalveItGame from './screens/HalveItGame.jsx';
 import WatchGame from './screens/WatchGame.jsx';
+import RemoteLobby from './screens/RemoteLobby.jsx';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
       <Route path="/killer" element={<KillerGame />} />
       <Route path="/halve-it" element={<HalveItGame />} />
       <Route path="/watch/:matchId" element={<WatchGame />} />
+      <Route path="/lobby/:matchId" element={<RemoteLobby />} />
       <Route path="*" element={<PlayHome />} />
     </Routes>
   );

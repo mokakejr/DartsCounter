@@ -304,3 +304,9 @@
 }
 .play-setup__rivalry-score { font-weight: 700; font-size: 14px; }
 .play-setup__rivalry-proba { color: #9a9aa3; font-size: 12px; }
+
+.play-setup__remote-hint {
+  color: #9a9aa3;
+  font-size: 12px;
+  margin: 8px 0 0;
+}

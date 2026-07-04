@@ -104,3 +104,67 @@
   color: var(--text);
 }
 
+
+/* ── Revanche instantanée (Epics 5.1/7.4) ──────────────── */
+.play-home__instant {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(120deg, #e61e2a, #8e1220);
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 8px 22px rgba(230, 30, 42, 0.35);
+}
+.play-home__instant-tag {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  font-weight: 800;
+  opacity: 0.85;
+}
+.play-home__instant-label {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+/* ── Grille de cartes de modes (Epic 5.1) ──────────────── */
+.play-home__modes--grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.play-home__mode--card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 118px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.play-home__mode--red { background: linear-gradient(150deg, rgba(230,30,42,.28), rgba(0,0,0,.4)); }
+.play-home__mode--green { background: linear-gradient(150deg, rgba(31,122,77,.32), rgba(0,0,0,.4)); }
+.play-home__mode--blue { background: linear-gradient(150deg, rgba(47,116,210,.30), rgba(0,0,0,.4)); }
+.play-home__mode--purple { background: linear-gradient(150deg, rgba(140,70,210,.30), rgba(0,0,0,.4)); }
+.play-home__mode--orange { background: linear-gradient(150deg, rgba(226,140,30,.30), rgba(0,0,0,.4)); }
+.play-home__mode-icon { font-size: 26px; }
+.play-home__mode-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.play-home__mode-tags em {
+  font-style: normal;
+  font-size: 10px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}

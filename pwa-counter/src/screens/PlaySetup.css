@@ -280,3 +280,27 @@
 }
 .play-setup__start:hover:not(:disabled) { opacity: 0.85; }
 .play-setup__start:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── Rivalité (Epic 5.2) ───────────────────────────────── */
+.play-setup__rivalry {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(230, 30, 42, 0.35);
+  border-radius: 12px;
+  background: rgba(230, 30, 42, 0.06);
+}
+.play-setup__rivalry-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #e61e2a;
+  margin: 0 0 8px;
+  font-weight: 800;
+}
+.play-setup__rivalry-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+}
+.play-setup__rivalry-score { font-weight: 700; font-size: 14px; }
+.play-setup__rivalry-proba { color: #9a9aa3; font-size: 12px; }

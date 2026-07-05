@@ -11,6 +11,7 @@ from app.core.db import Base
 if TYPE_CHECKING:
     from app.models.elo import EloHistory
     from app.models.game import GamePlayer
+    from app.models.title import PlayerTitle
 
 
 class Player(Base):
@@ -56,3 +57,6 @@ class Player(Base):
 
     game_links: Mapped[list["GamePlayer"]] = relationship(back_populates="player")
     elo_history: Mapped[list["EloHistory"]] = relationship(back_populates="player")
+    # selectin: cheap (few rows) and lets player_to_read expose the equipped
+    # title without every call site growing a join.
+    titles: Mapped[list["PlayerTitle"]] = relationship(lazy="selectin")

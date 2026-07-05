@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.models import Game, GamePlayer, Player
+from app.models.title import TITLES
 from app.schemas.player import PlayerRead
 from app.services.progression import effective_streak, paris_date
 
@@ -16,6 +17,14 @@ def image_url(path: str | None) -> str | None:
 def live_streak(player: Player) -> int:
     last = paris_date(player.last_streak_update) if player.last_streak_update else None
     return effective_streak(last, player.current_streak, paris_date())
+
+
+def equipped_title(player: Player) -> str | None:
+    """Label of the equipped title (Player.titles is selectin-loaded)."""
+    for t in player.titles:
+        if t.is_equipped and t.title_id in TITLES:
+            return TITLES[t.title_id].label
+    return None
 
 
 def player_to_read(player: Player) -> PlayerRead:
@@ -34,6 +43,7 @@ def player_to_read(player: Player) -> PlayerRead:
         ferveur_xp=player.ferveur_xp,
         ferveur_level=player.ferveur_level,
         current_streak=live_streak(player),
+        title=equipped_title(player),
     )
 
 

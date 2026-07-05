@@ -21,3 +21,4 @@ class PlayerStats(BaseModel):
     ferveur_xp: int = 0
     ferveur_level: int = 1
     current_streak: int = 0
+    title: str | None = None

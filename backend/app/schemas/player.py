@@ -42,6 +42,8 @@ class PlayerRead(BaseModel):
     ferveur_xp: int = 0
     ferveur_level: int = 1
     current_streak: int = 0
+    # Equipped contextual title label (Epic 8.1), shown under the username.
+    title: str | None = None
 
 
 class ProfileUpdate(BaseModel):

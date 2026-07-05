@@ -15,3 +15,6 @@ class PlayerStats(BaseModel):
     win_rate: float
     elo: int
     rank: str
+    # Only meaningful when the leaderboard is scoped to a league: ghosts
+    # (players who left) come back False and are listed unranked at the end.
+    is_active: bool = True

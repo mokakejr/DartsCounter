@@ -5,6 +5,7 @@ name); leagues are an office trust circle. Spectator/player segregation is
 role-based per connection (Epic 11.1 / 14.1).
 """
 
+import asyncio
 import logging
 import time
 
@@ -127,11 +128,12 @@ async def live_room(
                         continue
                     entry = {"sender_id": name, "message": message, "timestamp": int(time.time())}
                     match.chat.append(entry)
-                    # 14.1: players do NOT receive the chat stream mid-game.
+                    # Décision produit (recette Théo) : le chat s'affiche aussi
+                    # chez les joueurs — en overlay fugace — sauf Mode Focus.
                     await live.broadcast(
                         match,
                         {"event": "CHAT_MESSAGE", "match_id": match.id, **entry},
-                        to_players=False,
+                        respect_dnd=True,
                     )
                 elif etype == "EMOTE":
                     emote = str(data.get("emote", ""))[:8]
@@ -149,5 +151,18 @@ async def live_room(
             match.player_sockets.pop(name, None)
             if match.remote and not match.finished:
                 await live.broadcast(match, {"event": "PLAYER_LEFT", "match_id": match.id, "player_id": name})
+            # Partie quittée sans fin de match : plus aucun joueur connecté
+            # pendant 60 s (grâce pour les coupures réseau) -> on clôt, le
+            # LiveCarousel ne doit pas afficher un match fantôme 2 h.
+            if not match.finished and not match.player_sockets:
+                asyncio.create_task(_finish_if_abandoned(match))
         else:
             match.spectator_sockets.discard(websocket)
+
+
+async def _finish_if_abandoned(match, grace_seconds: int = 60) -> None:
+    await asyncio.sleep(grace_seconds)
+    if not match.finished and not match.player_sockets:
+        match.finished = True
+        match.touch()
+        await live.broadcast(match, {"event": "MATCH_FINISHED", "match_id": match.id, "aborted": True})

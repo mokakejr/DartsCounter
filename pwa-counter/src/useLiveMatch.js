@@ -11,6 +11,7 @@ export function useLiveMatch(liveId, name, { onEvent } = {}) {
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
   const [emote, setEmote] = useState(null); // {emote, sender_id, key}
+  const [chatMessage, setChatMessage] = useState(null); // {sender_id, message, key}
 
   useEffect(() => {
     if (!liveId) return undefined;
@@ -20,6 +21,9 @@ export function useLiveMatch(liveId, name, { onEvent } = {}) {
       onEvent: (payload) => {
         if (payload.event === 'EMOTE') {
           setEmote({ ...payload, key: Date.now() + Math.random() });
+        }
+        if (payload.event === 'CHAT_MESSAGE') {
+          setChatMessage({ ...payload, key: Date.now() + Math.random() });
         }
         onEventRef.current?.(payload);
       },
@@ -31,5 +35,5 @@ export function useLiveMatch(liveId, name, { onEvent } = {}) {
 
   const emit = useCallback((event) => connRef.current?.send(event), []);
 
-  return { emit, emote };
+  return { emit, emote, chatMessage };
 }

@@ -74,7 +74,7 @@ def test_deltas_reach_spectator_and_update_state():
         assert state["round"] == 4
 
 
-def test_chat_goes_to_spectators_only_and_is_rate_limited():
+def test_chat_reaches_everyone_but_dnd_and_is_rate_limited():
     with TestClient(app) as client:
         match = _create(client)
         with client.websocket_connect(f"/ws/live/{match['id']}?role=player&name=Leo") as leo, \
@@ -89,19 +89,25 @@ def test_chat_goes_to_spectators_only_and_is_rate_limited():
             assert msg["event"] == "CHAT_MESSAGE"
             assert len(msg["message"]) <= 60  # length cap (14.4)
             assert bob.receive_json()["event"] == "CHAT_MESSAGE"  # own echo
+            # Players see the chat too (product decision) — unless Focus mode.
+            assert leo.receive_json()["event"] == "CHAT_MESSAGE"
 
             # Second message within 3s: rejected.
             bob.send_json({"event": "CHAT_MESSAGE", "message": "spam"})
             assert bob.receive_json()["event"] == "CHAT_REJECTED"
 
-            # A player never receives the chat stream (14.1): Leo's next
-            # frame is his own delta echo, not the chat.
+            # Cooldown passed + Leo in Focus mode: everyone but him gets it.
+            leo.send_json({"event": "DND", "enabled": True})
+            time.sleep(3.1)
+            bob.send_json({"event": "CHAT_MESSAGE", "message": "silence radio ?"})
+            assert carl.receive_json()["event"] == "CHAT_MESSAGE"
+            # Leo (DND) skipped: his next frame is his own delta echo.
             leo.send_json({"event": "DART_THROWN", "dart_index": 0, "score_hit": {"multiplier": 1, "zone": 5}})
             assert leo.receive_json()["event"] == "DART_THROWN"
 
         # Vestiaire (14.3): transcript readable after the fact.
         chat = client.get(f"/live/matches/{match['id']}?include=chat").json()["chat"]
-        assert len(chat) == 1
+        assert len(chat) == 2
 
 
 def test_spectator_cannot_emit_game_events():

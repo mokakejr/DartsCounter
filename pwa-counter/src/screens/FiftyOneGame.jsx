@@ -10,6 +10,7 @@ import ElapsedTimer from '../components/ElapsedTimer.jsx';
 import SvgBoard from '../components/SvgBoard.jsx';
 import VictoryOverlay from '../components/VictoryOverlay.jsx';
 import EmoteSplash from '../components/EmoteSplash.jsx';
+import ChatOverlay from '../components/ChatOverlay.jsx';
 import Tribunes from '../components/Tribunes.jsx';
 import { useLiveMatch } from '../useLiveMatch.js';
 import './FiftyOneGame.css';
@@ -48,7 +49,7 @@ export default function FiftyOneGame() {
   const [oppLeft, setOppLeft] = useState(false);
 
   // Diffusion live (Epic 11) + Mode Focus (12.2): bloque les emotes entrantes.
-  const { emit, emote } = useLiveMatch(liveId, remote ? me : players[0], {
+  const { emit, emote, chatMessage } = useLiveMatch(liveId, remote ? me : players[0], {
     onEvent(e) {
       if (!remote) return;
       // Deltas adverses -> état local (les échos de mes propres événements
@@ -223,7 +224,11 @@ export default function FiftyOneGame() {
     <div className="f51">
       <ExitConfirmModal
         open={showExit}
-        onConfirm={() => navigate('/')}
+        onConfirm={() => {
+          // Quitter = clore le match live, sinon il reste 🔴 LIVE au dashboard.
+          emit({ event: 'MATCH_FINISHED', aborted: true });
+          navigate('/');
+        }}
         onCancel={() => setShowExit(false)}
       />
       <div className="f51__header">
@@ -242,6 +247,7 @@ export default function FiftyOneGame() {
       </div>
 
       <EmoteSplash emote={focusMode ? null : emote} />
+      <ChatOverlay message={focusMode ? null : chatMessage} />
 
       {remote && !myTurn && (
         <div className="f51__remote-overlay">

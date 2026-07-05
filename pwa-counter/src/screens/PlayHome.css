@@ -147,12 +147,17 @@
   min-height: 118px;
   border-radius: 14px;
   overflow: hidden;
+  /* Les <button> héritent du noir UA si on ne fixe rien — sur fond sombre
+     dégradé, tout le texte de la carte doit être clair explicitement. */
+  color: var(--text);
 }
-.play-home__mode--red { background: linear-gradient(150deg, rgba(230,30,42,.28), rgba(0,0,0,.4)); }
-.play-home__mode--green { background: linear-gradient(150deg, rgba(31,122,77,.32), rgba(0,0,0,.4)); }
-.play-home__mode--blue { background: linear-gradient(150deg, rgba(47,116,210,.30), rgba(0,0,0,.4)); }
-.play-home__mode--purple { background: linear-gradient(150deg, rgba(140,70,210,.30), rgba(0,0,0,.4)); }
-.play-home__mode--orange { background: linear-gradient(150deg, rgba(226,140,30,.30), rgba(0,0,0,.4)); }
+.play-home__mode--card .play-home__mode-label { color: #fff; }
+.play-home__mode--card .play-home__mode-desc { color: rgba(255, 255, 255, 0.72); }
+.play-home__mode--red { background: linear-gradient(150deg, rgba(230,30,42,.30), rgba(0,0,0,.62)); }
+.play-home__mode--green { background: linear-gradient(150deg, rgba(31,122,77,.34), rgba(0,0,0,.62)); }
+.play-home__mode--blue { background: linear-gradient(150deg, rgba(47,116,210,.32), rgba(0,0,0,.62)); }
+.play-home__mode--purple { background: linear-gradient(150deg, rgba(140,70,210,.32), rgba(0,0,0,.62)); }
+.play-home__mode--orange { background: linear-gradient(150deg, rgba(226,140,30,.32), rgba(0,0,0,.62)); }
 .play-home__mode-icon { font-size: 26px; }
 .play-home__mode-tags {
   display: flex;
@@ -165,6 +170,7 @@
   font-size: 10px;
   padding: 3px 7px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }

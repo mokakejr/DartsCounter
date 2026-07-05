@@ -1,0 +1,26 @@
+.chat-overlay {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+  z-index: 45;
+}
+
+.chat-overlay__msg {
+  margin: 0;
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 12px rgba(0, 0, 0, 0.7);
+  animation: chat-overlay-fade 5s ease forwards;
+}
+.chat-overlay__msg b { color: #ffd23c; margin-right: 4px; }
+
+@keyframes chat-overlay-fade {
+  0% { opacity: 0; transform: translateY(6px); }
+  6%, 80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; }
+}

@@ -16,6 +16,7 @@ import ElapsedTimer from '../components/ElapsedTimer.jsx';
 import SvgBoard from '../components/SvgBoard.jsx';
 import VictoryOverlay from '../components/VictoryOverlay.jsx';
 import EmoteSplash from '../components/EmoteSplash.jsx';
+import ChatOverlay from '../components/ChatOverlay.jsx';
 import Tribunes from '../components/Tribunes.jsx';
 import { useLiveMatch } from '../useLiveMatch.js';
 import { bigHit, smallHit } from '../juice.js';
@@ -74,7 +75,7 @@ export default function ShanghaiGame() {
   // Fléchettes lancées par joueur — alimente extra.darts (XP Ferveur).
   const dartsThrown = useRef(Object.fromEntries(players.map(p => [p, 0])));
   // Diffusion live (Epic 11) + Mode Focus (12.2).
-  const { emit, emote } = useLiveMatch(liveId, players[0]);
+  const { emit, emote, chatMessage } = useLiveMatch(liveId, players[0]);
   const [focusMode, setFocusMode] = useState(false);
   function toggleFocus() {
     setFocusMode(f => {
@@ -250,7 +251,11 @@ export default function ShanghaiGame() {
     <div className="sg">
       <ExitConfirmModal
         open={showExit}
-        onConfirm={() => navigate('/')}
+        onConfirm={() => {
+          // Quitter = clore le match live, sinon il reste 🔴 LIVE au dashboard.
+          emit({ event: 'MATCH_FINISHED', aborted: true });
+          navigate('/');
+        }}
         onCancel={() => setShowExit(false)}
       />
 
@@ -264,6 +269,7 @@ export default function ShanghaiGame() {
       )}
 
       <EmoteSplash emote={focusMode ? null : emote} />
+      <ChatOverlay message={focusMode ? null : chatMessage} />
 
       {/* Header */}
       <div className="sg__header">

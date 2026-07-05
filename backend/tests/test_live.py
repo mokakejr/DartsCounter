@@ -160,6 +160,27 @@ def test_remote_turn_guard():
             assert bob.receive_json()["event"] == "DART_THROWN"
 
 
+def test_stale_match_auto_closes_then_revives_on_play():
+    import asyncio
+
+    match = live.create_match("FiftyOne", ["Leo", "Theo"])
+    match.last_activity = time.time() - 16 * 60
+    assert asyncio.run(live.close_stale_matches()) == 1
+    assert match.finished is True and match.aborted is True
+    # Sortie du carousel, mais toujours consultable.
+    assert live.list_matches() == []
+
+    # Pause café terminée : une reprise du jeu ressuscite le match.
+    live.apply_player_event(match, "Leo", {"event": "SCORE_UPDATED", "scores": {"Leo": 4}})
+    assert match.finished is False and match.aborted is False
+    assert [m.id for m in live.list_matches()] == [match.id]
+
+    # Une VRAIE fin de partie reste définitive, même si un delta traîne.
+    live.apply_player_event(match, "Leo", {"event": "MATCH_FINISHED", "winner": "Leo"})
+    live.apply_player_event(match, "Leo", {"event": "SCORE_UPDATED", "scores": {"Leo": 9}})
+    assert match.finished is True
+
+
 def test_purge_expired():
     match = live.create_match("FiftyOne", ["Leo", "Theo"])
     match.last_activity = time.time() - 3 * 3600

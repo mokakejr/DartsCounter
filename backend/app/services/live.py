@@ -24,7 +24,8 @@ SPECTATOR_EVENTS = {"CHAT_MESSAGE", "EMOTE"}
 
 CHAT_MAX_LEN = 60
 CHAT_COOLDOWN_SECONDS = 3.0
-MATCH_TTL_SECONDS = 2 * 3600  # idle matches
+MATCH_TTL_SECONDS = 2 * 3600  # idle matches (suppression définitive)
+STALE_AFTER_SECONDS = 15 * 60  # sans activité de JEU -> clôturé (réversible)
 FINISHED_TTL_SECONDS = 3600  # keep the chat readable for the Vestiaire (14.3)
 
 
@@ -39,6 +40,9 @@ class LiveMatch:
     last_activity: float = field(default_factory=time.time)
     started: bool = False
     finished: bool = False
+    # Clôture automatique (inactivité/abandon) — réversible : une reprise du
+    # jeu ressuscite le match, contrairement à une vraie fin de partie.
+    aborted: bool = False
     # Display state, fed by SCORE_UPDATED deltas — the server doesn't replay
     # game rules, clients are the source of truth (office trust model).
     scores: dict[str, int] = field(default_factory=dict)
@@ -86,6 +90,25 @@ def get_match(match_id: str) -> LiveMatch | None:
 
 def list_matches() -> list[LiveMatch]:
     return [m for m in MATCHES.values() if not m.finished]
+
+
+async def close_stale_matches() -> int:
+    """Une partie qui ne bouge plus depuis 15 min est clôturée (elle sort
+    du LiveCarousel, rien n'est enregistré — seul POST /games compte une
+    partie). Le chat/emotes des spectateurs ne maintiennent PAS en vie :
+    seule l'activité de jeu touche last_activity."""
+    closed = 0
+    now = time.time()
+    for match in list(MATCHES.values()):
+        if not match.finished and now - match.last_activity > STALE_AFTER_SECONDS:
+            match.finished = True
+            match.aborted = True
+            await broadcast(
+                match,
+                {"event": "MATCH_FINISHED", "match_id": match.id, "aborted": True, "reason": "inactivity"},
+            )
+            closed += 1
+    return closed
 
 
 def purge_expired() -> int:
@@ -154,6 +177,11 @@ def apply_player_event(match: LiveMatch, sender: str, event: dict) -> bool:
     event should be dropped (e.g. remote match, not this player's turn)."""
     etype = event.get("event")
     match.touch()
+    # Pause café > 15 min : le match auto-clôturé revit dès qu'on rejoue.
+    # (Une VRAIE fin de partie — aborted=False — reste définitive.)
+    if match.finished and match.aborted and etype in ("DART_THROWN", "SCORE_UPDATED", "TURN_CHANGED"):
+        match.finished = False
+        match.aborted = False
     if etype == "DART_THROWN":
         # Light guard: in remote matches only the turn player throws.
         if match.remote and match.started and sender != match.turn_player:
@@ -175,6 +203,7 @@ def apply_player_event(match: LiveMatch, sender: str, event: dict) -> bool:
             match.detail = event["detail"]
     elif etype == "MATCH_FINISHED":
         match.finished = True
+        match.aborted = bool(event.get("aborted"))
         match.turn_player = None
     elif etype == "DND":
         if event.get("enabled"):

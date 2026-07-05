@@ -87,11 +87,25 @@ def purge_live_matches() -> None:
         logger.info("Live matches: %d expired room(s) purged", purged)
 
 
+async def close_stale_live_matches() -> None:
+    from app.services.live import close_stale_matches
+
+    closed = await close_stale_matches()
+    if closed:
+        logger.info("Live matches: %d stale match(es) auto-closed (15 min idle)", closed)
+
+
 def setup_jobs() -> None:
     scheduler.add_job(
         purge_live_matches,
         CronTrigger(minute="*/30", timezone=PARIS),
         id="live_matches_purge",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        close_stale_live_matches,
+        CronTrigger(minute="*/2", timezone=PARIS),
+        id="live_matches_stale",
         replace_existing=True,
     )
     scheduler.add_job(

@@ -11,13 +11,10 @@ const CHAT_COOLDOWN_MS = 3000; // double du backend (14.4)
 const CHAT_MAX_LEN = 60;
 const CHAT_FADE_MS = 5000;
 
-function spectatorName() {
-  let name = localStorage.getItem('dartsSpectatorName');
-  if (!name) {
-    name = `Spectateur-${Math.floor(100 + Math.random() * 900)}`;
-    localStorage.setItem('dartsSpectatorName', name);
-  }
-  return name;
+const SPECTATOR_NAME_KEY = 'dartsSpectatorName';
+
+function anonymousName() {
+  return `Spectateur-${Math.floor(100 + Math.random() * 900)}`;
 }
 
 // Notation cricket classique : 0 = rien, 1 = /, 2 = ✕, 3+ = fermé.
@@ -78,9 +75,19 @@ export default function WatchGame() {
   const connRef = useRef(null);
   const lastEmote = useRef(0);
   const lastChat = useRef(0);
-  const name = useRef(spectatorName()).current;
+  // Identité connue -> direct aux gradins ; sinon on la demande d'abord
+  // (avec bypass anonyme) — le chat signera de ce nom.
+  const [name, setName] = useState(() => localStorage.getItem(SPECTATOR_NAME_KEY));
+  const [nameDraft, setNameDraft] = useState('');
+
+  function chooseName(value) {
+    const chosen = value.trim().slice(0, 20) || anonymousName();
+    localStorage.setItem(SPECTATOR_NAME_KEY, chosen);
+    setName(chosen);
+  }
 
   useEffect(() => {
+    if (!name) return undefined;
     const conn = connectLive(matchId, {
       role: 'spectator',
       name,
@@ -126,7 +133,7 @@ export default function WatchGame() {
     });
     connRef.current = conn;
     return () => { conn.close(); connRef.current = null; };
-  }, [matchId, name]);
+  }, [matchId, name]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function sendEmote(emote) {
     const now = Date.now();
@@ -144,6 +151,34 @@ export default function WatchGame() {
     connRef.current?.send({ event: 'CHAT_MESSAGE', message });
     setDraft('');
     setChatOpen(false); // referme le clavier, la vue revient au match (14.2)
+  }
+
+  if (!name) {
+    return (
+      <div className="watch watch--empty">
+        <form
+          className="watch__identity"
+          onSubmit={e => { e.preventDefault(); chooseName(nameDraft); }}
+        >
+          <p className="watch__identity-title">Qui est dans les gradins ?</p>
+          <p className="watch__identity-sub">Ton nom signera tes messages dans le chat.</p>
+          <input
+            autoFocus
+            className="watch__input"
+            value={nameDraft}
+            maxLength={20}
+            placeholder="Ton pseudo"
+            onChange={e => setNameDraft(e.target.value)}
+          />
+          <button type="submit" className="watch__identity-go" disabled={!nameDraft.trim()}>
+            Rejoindre les gradins
+          </button>
+          <button type="button" className="watch__identity-anon" onClick={() => chooseName('')}>
+            Continuer en anonyme ({anonymousName().slice(0, 11)}…)
+          </button>
+        </form>
+      </div>
+    );
   }
 
   if (!match) {

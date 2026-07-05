@@ -161,3 +161,38 @@
 .watch__cricket td { font-size: 17px; font-weight: 800; color: #ffd23c; }
 .watch__cricket td.watch__cricket-closed { color: #4caf50; }
 .watch__cricket th.watch__cricket-active { color: #e61e2a; }
+
+/* ── Identité avant d'entrer aux gradins ───────────────── */
+.watch__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(88vw, 340px);
+}
+.watch__identity-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  margin: 0;
+}
+.watch__identity-sub { color: #9a9aa3; font-size: 13px; margin: 0; }
+.watch__identity .watch__input { position: static; }
+.watch__identity-go {
+  min-height: 48px;
+  border: none;
+  border-radius: 12px;
+  background: #e61e2a;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.watch__identity-go:disabled { opacity: 0.5; }
+.watch__identity-anon {
+  background: none;
+  border: none;
+  color: #9a9aa3;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}

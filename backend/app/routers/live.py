@@ -164,5 +164,6 @@ async def _finish_if_abandoned(match, grace_seconds: int = 60) -> None:
     await asyncio.sleep(grace_seconds)
     if not match.finished and not match.player_sockets:
         match.finished = True
+        match.aborted = True
         match.touch()
         await live.broadcast(match, {"event": "MATCH_FINISHED", "match_id": match.id, "aborted": True})

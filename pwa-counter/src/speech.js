@@ -10,6 +10,23 @@
 const inFlight = new Set();
 const MAX_QUEUE = 3;
 
+// iOS/WebKit ne joue la synthèse que si un speak() a déjà eu lieu dans un
+// geste utilisateur : on "déverrouille" avec une utterance vide au premier
+// tap n'importe où dans l'app.
+let primed = false;
+function primeSpeech() {
+  if (primed) return;
+  primed = true;
+  try {
+    const unlock = new SpeechSynthesisUtterance('');
+    unlock.volume = 0;
+    window.speechSynthesis?.speak(unlock);
+  } catch { /* no-op */ }
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('pointerdown', primeSpeech, { once: true, capture: true });
+}
+
 export function speak(text) {
   try {
     const synth = window.speechSynthesis;

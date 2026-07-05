@@ -18,6 +18,7 @@ export default function LiveCarousel() {
   useEffect(() => {
     let cancelled = false;
     async function poll() {
+      if (document.hidden) return; // onglet caché : on économise API et batterie
       try {
         const rows = await apiGet('/live/matches');
         if (!cancelled) setMatches(rows);

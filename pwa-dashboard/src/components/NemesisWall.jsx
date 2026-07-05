@@ -13,15 +13,22 @@ export default function NemesisWall({ ranked, profiles = {} }) {
   const [pairs, setPairs] = useState(null);
   const myName = auth.player?.name;
 
+  // Clé stable : la liste de noms, pas l'identité du tableau `ranked`
+  // (recalculé en amont) — évite de re-fetcher à chaque render.
+  const opponentsKey = ranked
+    .filter(r => r.name !== myName)
+    .slice(0, 5)
+    .map(r => r.name)
+    .join(',');
+
   useEffect(() => {
-    if (!myName) return;
-    // Mes 5 adversaires les plus fréquents (hors moi).
-    const opponents = ranked.filter(r => r.name !== myName).slice(0, 5).map(r => r.name);
-    if (opponents.length === 0) { setPairs([]); return; }
-    apiGet('/stats/head-to-head', { players: [myName, ...opponents].join(',') })
-      .then(rows => setPairs(rows.filter(r => r.a === myName || r.b === myName)))
-      .catch(() => setPairs([]));
-  }, [myName, ranked]);
+    if (!myName || !opponentsKey) { setPairs([]); return; }
+    let cancelled = false;
+    apiGet('/stats/head-to-head', { players: `${myName},${opponentsKey}` })
+      .then(rows => { if (!cancelled) setPairs(rows.filter(r => r.a === myName || r.b === myName)); })
+      .catch(() => { if (!cancelled) setPairs([]); });
+    return () => { cancelled = true; };
+  }, [myName, opponentsKey]);
 
   if (!myName || !pairs) return null;
   const duels = pairs

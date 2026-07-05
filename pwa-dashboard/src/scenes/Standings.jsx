@@ -94,20 +94,25 @@ export default function Standings({ ranked, profiles = {} }) {
 
       {rankedRows.length >= 3 && rankedRows.length > 3 && (
         <div className="pit">
-          {rankedRows.slice(3).map((s, i) => (
-            <PlayerCard
-              key={s.name}
-              className="pit__card"
-              name={s.name}
-              label={`#${i + 4} ${displayName(profiles, s.name)}`}
-              avatarUrl={profiles[s.name]?.avatar_url}
-              rank={elo[s.name]?.rank}
-              title={profiles[s.name]?.title}
-              streak={profiles[s.name]?.current_streak ?? 0}
-              size={36}
-              to={`/joueur/${encodeURIComponent(s.name)}`}
-            />
-          ))}
+          {rankedRows.slice(3).map((s, i) => {
+            const wins = filter === 'Global' ? s.wins : s._wins;
+            const games = filter === 'Global' ? s.games : s._games;
+            const rate = games ? Math.round((wins / games) * 100) : 0;
+            return (
+              <PlayerCard
+                key={s.name}
+                className="pit__card"
+                name={s.name}
+                label={`#${i + 4} ${displayName(profiles, s.name)}`}
+                avatarUrl={profiles[s.name]?.avatar_url}
+                rank={elo[s.name]?.rank}
+                title={`${elo[s.name] ? `${elo[s.name].elo} elo · ` : ''}${rate}% V`}
+                streak={profiles[s.name]?.current_streak ?? 0}
+                size={36}
+                to={`/joueur/${encodeURIComponent(s.name)}`}
+              />
+            );
+          })}
         </div>
       )}
 

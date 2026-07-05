@@ -1,0 +1,114 @@
+.victory {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.victory__flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  animation: victory-flash 0.2s ease-out forwards;
+}
+@keyframes victory-flash {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.victory__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+/* Hit-stop: fond figé assombri pendant le zoom (niveau 2+). */
+.victory__stage--hitstop {
+  position: absolute;
+  inset: 0;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.victory__winner {
+  font-size: clamp(34px, 9vw, 64px);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  color: #fff;
+  text-shadow: 0 0 24px rgba(230, 30, 42, 0.8);
+}
+.victory__winner--zoom {
+  animation: victory-zoom 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+}
+@keyframes victory-zoom {
+  from { transform: scale(0.8); }
+  to { transform: scale(1.1); }
+}
+
+/* Bris de verre du détrôné (niveau 3) — version CSS sobre. */
+.victory__shatter {
+  font-size: 20px;
+  color: #9a9aa3;
+  text-decoration: line-through;
+  animation: victory-shatter 0.9s ease-in forwards;
+}
+@keyframes victory-shatter {
+  60% { transform: rotate(-3deg) translateY(4px); opacity: 0.8; filter: blur(0); }
+  100% { transform: rotate(8deg) translateY(26px); opacity: 0; filter: blur(3px); }
+}
+
+.victory__taunt {
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  font-weight: 800;
+  color: #e61e2a;
+}
+
+/* ── Barre de Ferveur (Epic 7.3) — toujours positive ───── */
+.victory__ferveur {
+  position: absolute;
+  left: 50%;
+  bottom: 12vh;
+  transform: translateX(-50%);
+  width: min(78vw, 340px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  background: rgba(10, 10, 14, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 14px 18px;
+}
+.victory__ferveur-label {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: #8a7bff;
+  font-weight: 800;
+}
+.victory__ferveur-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.victory__ferveur-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #6c5ce7, #8a7bff);
+  animation: victory-ferveur-fill 1.2s ease-out forwards;
+}
+@keyframes victory-ferveur-fill {
+  to { width: 82%; }
+}
+.victory__ferveur-xp {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+}

@@ -14,6 +14,7 @@ import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
 import SvgBoard from '../components/SvgBoard.jsx';
+import VictoryOverlay from '../components/VictoryOverlay.jsx';
 import { bigHit, smallHit } from '../juice.js';
 import './ShanghaiGame.css';
 
@@ -174,6 +175,13 @@ export default function ShanghaiGame() {
     const win = leader(game);
     return (
       <div className="sg sg--finished">
+        {win !== null && (
+          <VictoryOverlay
+            winner={players[win]}
+            losers={players.filter((_, i) => i !== win)}
+            dartsThrown={dartsThrown.current[players[win]] ?? 0}
+          />
+        )}
         <p className="sg__fin-eyebrow">FIN DE PARTIE</p>
         <div className="sg__podium">
           {rankings.map((r, rank) => (

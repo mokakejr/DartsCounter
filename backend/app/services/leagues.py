@@ -26,6 +26,11 @@ _CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 
 OWNER_INACTIVITY = timedelta(days=30)
 
+# The Taverne: system-owned PUBLIC league every accountless-league player is
+# auto-assigned to, so there's never a "no league = no game" wall (Epic 1.1).
+TAVERNE_LEAGUE_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
+TAVERNE_NAME = "La Taverne"
+
 _MEMBERS_LOADED = selectinload(League.memberships).selectinload(LeagueMember.player)
 
 
@@ -193,6 +198,33 @@ async def transfer_ownership(session: AsyncSession, league: League, new_owner_id
     league.owner_id = new_owner_id
     await session.commit()
     return league
+
+
+async def _get_or_create_taverne(session: AsyncSession) -> League:
+    league = await get_league(session, TAVERNE_LEAGUE_ID)
+    if league is None:
+        league = League(
+            id=TAVERNE_LEAGUE_ID,
+            name=TAVERNE_NAME,
+            motto="L'échauffement commence ici",
+            icon="tavern",
+            privacy_level="PUBLIC",
+            owner_id=None,
+            invite_code="TAVERNE",
+        )
+        session.add(league)
+        await session.commit()
+        league = await get_league(session, TAVERNE_LEAGUE_ID)
+    return league
+
+
+async def ensure_default_league(session: AsyncSession, player: Player) -> None:
+    """Post-login/signup hook: a player with no active league lands in the
+    Taverne immediately."""
+    if await list_mine(session, player.id):
+        return
+    taverne = await _get_or_create_taverne(session)
+    await join(session, taverne, player)
 
 
 # --- Join requests (APPLICATION privacy level) ---

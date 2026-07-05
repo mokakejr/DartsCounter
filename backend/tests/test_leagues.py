@@ -4,6 +4,13 @@ async def _signup(client, name):
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}
 
 
+async def _mine(client, headers):
+    """/leagues/mine minus the auto-assigned Taverne (every account gets it)."""
+    from app.services.leagues import TAVERNE_NAME
+    rows = (await client.get("/leagues/mine", headers=headers)).json()
+    return [l for l in rows if l["name"] != TAVERNE_NAME]
+
+
 async def _create_league(client, headers, name="Ligue du Bureau"):
     resp = await client.post("/leagues", json={"name": name}, headers=headers)
     assert resp.status_code == 201
@@ -16,7 +23,7 @@ async def test_create_league_creator_is_owner_and_member(client):
     assert league["invite_code"]
     assert [m["name"] for m in league["members"]] == ["Alice"]
 
-    mine = (await client.get("/leagues/mine", headers=alice)).json()
+    mine = await _mine(client, alice)
     assert len(mine) == 1
     assert mine[0]["name"] == "Ligue du Bureau"
 
@@ -75,7 +82,7 @@ async def test_delete_by_owner_cascades_membership(client):
 
     resp = await client.delete(f"/leagues/{league['id']}", headers=alice)
     assert resp.status_code == 204
-    assert (await client.get("/leagues/mine", headers=bob)).json() == []
+    assert await _mine(client, bob) == []
 
 
 async def test_member_can_leave_owner_cannot(client):
@@ -94,7 +101,7 @@ async def test_member_can_leave_owner_cannot(client):
     # Bob leaves.
     resp = await client.delete(f"/leagues/{league['id']}/members/{bob_id}", headers=bob)
     assert resp.status_code == 204
-    assert (await client.get("/leagues/mine", headers=bob)).json() == []
+    assert await _mine(client, bob) == []
 
     # Owner can't leave their own league.
     resp = await client.delete(f"/leagues/{league['id']}/members/{alice_id}", headers=alice)
@@ -133,7 +140,7 @@ async def test_owner_can_kick_member(client):
 
     resp = await client.delete(f"/leagues/{league['id']}/members/{bob_id}", headers=alice)
     assert resp.status_code == 204
-    assert (await client.get("/leagues/mine", headers=bob)).json() == []
+    assert await _mine(client, bob) == []
 
 
 async def test_all_endpoints_require_auth(client):

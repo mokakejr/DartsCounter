@@ -23,8 +23,13 @@ async def get_players(session: AsyncSession = Depends(get_db)) -> list[PlayerRea
 
 
 @router.get("/players/me", response_model=PlayerRead)
-async def get_me(player: Player = Depends(get_current_player)) -> PlayerRead:
-    return players_service.player_to_read(player)
+async def get_me(
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> PlayerRead:
+    data = players_service.player_to_read(player)
+    data.games_played = await players_service.count_games_played(session, player.id)
+    return data
 
 
 @router.patch("/players/me", response_model=PlayerRead)

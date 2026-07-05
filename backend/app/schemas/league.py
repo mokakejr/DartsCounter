@@ -23,7 +23,7 @@ class LeagueRead(BaseModel):
     motto: str | None = None
     icon: str | None = None
     privacy_level: str = "PRIVATE_CODE"
-    owner_id: uuid.UUID
+    owner_id: uuid.UUID | None = None
     invite_code: str
     created_at: datetime
     members: list[LeagueMemberRead]

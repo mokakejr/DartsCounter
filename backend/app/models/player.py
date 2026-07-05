@@ -41,6 +41,11 @@ class Player(Base):
     flight_crop_b: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     flight_mode: Mapped[str] = mapped_column(nullable=False, server_default="symmetric")
 
+    # Shadow karma (Epic 6.1) — NEVER exposed through public schemas.
+    # 0-100, starts at 50; moves on completed games / reports / tribunal
+    # verdicts. Kept server-side to weight moderation decisions.
+    trust_factor: Mapped[int] = mapped_column(nullable=False, default=50, server_default="50")
+
     # Ferveur (parallel, never-negative progression) + daily play streak.
     # The streak break is derived at read time (services/progression.py) —
     # last_streak_update is the timestamp of the last counted game.

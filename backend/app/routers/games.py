@@ -16,9 +16,10 @@ async def create_game(
     session: AsyncSession = Depends(get_db),
 ) -> GameRead:
     game, created = await games_service.create_game(session, payload)
-    if created:
+    if created and game.status == "COMPLETED":
         # Own DB session, not the request's — by the time background tasks
         # run the request's session (Depends(get_db)) has already closed.
+        # PENDING_REVIEW games are not announced: they wait for the tribunal.
         background_tasks.add_task(dispatch_game_finished, game)
     return game
 

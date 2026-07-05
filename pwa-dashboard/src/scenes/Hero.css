@@ -171,3 +171,30 @@
   color: #a0a0a0;
   font-style: italic;
 }
+
+/* ── La Trinité de l'accueil (v3 minimaliste) ──────────── */
+.hero__action {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.hero__mirror {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.hero__mirror b { color: var(--text); }
+
+/* CTA universel massif — zone du pouce sur mobile. */
+.hero__cta--play {
+  display: block;
+  width: min(100%, 380px);
+  padding: 20px 24px;
+  text-align: center;
+  font-size: clamp(20px, 5vw, 26px);
+  letter-spacing: 0.08em;
+  border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(230, 30, 42, 0.4);
+}

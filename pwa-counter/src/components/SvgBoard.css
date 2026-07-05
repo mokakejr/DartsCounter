@@ -49,6 +49,10 @@
 .svgboard__picker {
   position: absolute;
   transform: translate(-50%, -110%);
+  max-width: 96vw;
+}
+.svgboard__picker--below {
+  transform: translate(-50%, 24%);
   display: flex;
   gap: 6px;
   background: rgba(10, 10, 14, 0.92);

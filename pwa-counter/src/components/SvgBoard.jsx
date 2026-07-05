@@ -35,10 +35,11 @@ export default function SvgBoard({ onHit, highlightTarget = null, interactive = 
 
   function tapPoint(e) {
     const rect = wrapRef.current.getBoundingClientRect();
-    return {
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top) / rect.height) * 100,
-    };
+    // Clamp horizontal + bascule sous le doigt en haut de cible, sinon le
+    // menu contextuel déborde de l'écran sur les segments du bord (19/20/1).
+    const x = Math.min(80, Math.max(20, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    return { x, y, below: y < 25 };
   }
 
   function tapSector(e, value) {
@@ -124,7 +125,7 @@ export default function SvgBoard({ onHit, highlightTarget = null, interactive = 
 
       {picking && (
         <div
-          className="svgboard__picker"
+          className={`svgboard__picker${picking.below ? ' svgboard__picker--below' : ''}`}
           style={{ left: `${picking.x}%`, top: `${picking.y}%` }}
         >
           {picking.sector === BULL ? (

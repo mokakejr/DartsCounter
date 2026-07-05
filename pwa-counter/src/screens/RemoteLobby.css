@@ -1,0 +1,71 @@
+.lobby {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px 20px;
+  background: #0d0d10;
+  color: #fff;
+}
+.lobby--center {
+  align-items: center;
+  justify-content: center;
+  color: #9a9aa3;
+}
+
+.lobby__title {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+.lobby__sub { color: #9a9aa3; font-size: 14px; margin: 0; }
+.lobby__question { font-size: 16px; font-weight: 700; margin: 8px 0 0; }
+
+.lobby__players {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lobby__player {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 15px;
+}
+.lobby__player--ready {
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.lobby__btn {
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lobby__btn--primary {
+  background: #e61e2a;
+  border: none;
+}
+.lobby__btn--pick { text-align: left; }
+
+.lobby__share {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lobby__share-label { color: #9a9aa3; font-size: 13px; margin: 0; }
+.lobby__url {
+  font-size: 11px;
+  color: #9a9aa3;
+  word-break: break-all;
+}

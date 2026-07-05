@@ -107,6 +107,10 @@ export default function PlaySetup() {
   });
   const [lives, setLives] = useState(() => (Number.isInteger(state?.lives) ? state.lives : 3));
   const [topPlayers, setTopPlayers] = useState([]);
+  // Match à distance (Epic 13) — v1: mode 51 uniquement, 2 joueurs.
+  const [remote, setRemote] = useState(false);
+  const remoteEligible = mode === 'fiftyOne' && !isSolo;
+
   // Moteur de Rivalité (Epic 5.2): head-to-head + proba ELO dès 2 joueurs.
   const [rivalry, setRivalry] = useState(null);
 
@@ -173,6 +177,19 @@ export default function PlaySetup() {
   }
 
   async function start() {
+    // À distance (Epic 13): la room attend les deux « Prêt » dans le sas.
+    if (remoteEligible && remote && selected.length === 2) {
+      const live = await createLiveMatch({
+        mode: MODE_LABEL[mode] ?? mode,
+        players: selected,
+        variant,
+        remote: true,
+        timeoutMs: 8000, // ici le match live est indispensable, on patiente
+      });
+      if (!live) return; // pas de réseau, pas de match à distance
+      navigate(`/lobby/${live.id}`, { state: { me: selected[0] } });
+      return;
+    }
     // Match live éphémère (Epic 11) — best-effort : hors-ligne ou backend
     // sans /live, on joue exactement comme avant.
     let liveId = null;
@@ -395,6 +412,32 @@ export default function PlaySetup() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {remoteEligible && (
+        <div className="play-setup__variant">
+          <p className="play-setup__variant-label">OÙ ÊTES-VOUS ?</p>
+          <div className="play-setup__variant-row">
+            <button
+              className={`play-setup__variant-btn${!remote ? ' play-setup__variant-btn--on' : ''}`}
+              onClick={() => setRemote(false)}
+            >
+              LOCAL (MÊME ÉCRAN)
+            </button>
+            <button
+              className={`play-setup__variant-btn${remote ? ' play-setup__variant-btn--on' : ''}`}
+              onClick={() => setRemote(true)}
+            >
+              À DISTANCE (2 ÉCRANS)
+            </button>
+          </div>
+          {remote && (
+            <p className="play-setup__remote-hint">
+              Choisis 2 joueurs — tu es le premier de l'ordre de jeu. Un lien à
+              partager sera généré dans le sas d'attente.
+            </p>
+          )}
         </div>
       )}
 

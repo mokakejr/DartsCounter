@@ -16,6 +16,7 @@ import ElapsedTimer from '../components/ElapsedTimer.jsx';
 import SvgBoard from '../components/SvgBoard.jsx';
 import VictoryOverlay from '../components/VictoryOverlay.jsx';
 import EmoteSplash from '../components/EmoteSplash.jsx';
+import Tribunes from '../components/Tribunes.jsx';
 import { useLiveMatch } from '../useLiveMatch.js';
 import { bigHit, smallHit } from '../juice.js';
 import './ShanghaiGame.css';
@@ -229,6 +230,7 @@ export default function ShanghaiGame() {
           ))}
           {win === null && <p className="sg__podium-tie">Égalité !</p>}
         </div>
+        <Tribunes liveId={liveId} />
         <div className="sg__fin-actions">
           <button
             className="sg__btn sg__btn--secondary"

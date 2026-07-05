@@ -184,6 +184,7 @@ export default function PlaySetup() {
         players: selected,
         variant,
         remote: true,
+        timeoutMs: 8000, // ici le match live est indispensable, on patiente
       });
       if (!live) return; // pas de réseau, pas de match à distance
       navigate(`/lobby/${live.id}`, { state: { me: selected[0] } });

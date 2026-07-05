@@ -3,6 +3,7 @@ from app.models.elo import EloHistory, PlayerRating
 from app.models.elo_config import EloSettings, ScoreDirection
 from app.models.game import Game, GamePlayer
 from app.models.league import League, LeagueJoinRequest, LeagueMember
+from app.models.league_event import LeagueEvent, LeaguePantheon
 from app.models.player import Player
 from app.models.season import Season
 from app.models.title import PlayerTitle
@@ -15,8 +16,10 @@ __all__ = [
     "Game",
     "GamePlayer",
     "League",
+    "LeagueEvent",
     "LeagueJoinRequest",
     "LeagueMember",
+    "LeaguePantheon",
     "Player",
     "PlayerRating",
     "PlayerTitle",

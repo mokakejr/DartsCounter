@@ -22,6 +22,8 @@ class GoogleChatTarget:
             body = _weekly_recap_body(event.data)
         elif event.type == "player_ping":
             body = _player_ping_body(event.data)
+        elif event.type == "provocation":
+            body = _provocation_body(event.data)
         else:
             return
         async with httpx.AsyncClient(timeout=10) as client:
@@ -103,6 +105,11 @@ def _game_finished_body(data: dict) -> dict:
 
 def _player_ping_body(data: dict) -> dict:
     return {"text": f"🎯 *{data['by']}* propose une partie de fléchettes ! Qui est chaud ?"}
+
+
+def _provocation_body(data: dict) -> dict:
+    target = f" *{data['target']}*" if data.get("target") else ""
+    return {"text": f"⚔️ *{data['by']}* provoque{target} : « {data['story']} »"}
 
 
 def _weekly_recap_body(data: dict) -> dict:

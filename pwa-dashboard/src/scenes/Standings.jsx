@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ALL_MODES } from '../lib/stats.js';
 import { MODE_LABEL } from '../lib/data.js';
-import { displayName, avatarStyle } from '../lib/profiles.js';
+import { displayName } from '../lib/profiles.js';
+import PlayerCard from '../components/PlayerCard.jsx';
 import { fetchLeaderboard } from '../api/stats.js';
 import { fetchEloSettings } from '../api/elo.js';
 import './Standings.css';
@@ -123,10 +124,15 @@ export default function Standings({ ranked, profiles = {} }) {
   );
 }
 
+// Médailles top 3 (Epic 2.2): icône + bordure or/argent/bronze.
+const MEDALS = ['🥇', '🥈', '🥉'];
+
 function LadderRow({ s, i, filter, profiles, playerElo, isRanked }) {
   const wins = filter === 'Global' ? s.wins : s._wins;
   const games = filter === 'Global' ? s.games : s._games;
   const rank = isRanked ? rankClass(i) : 'rn';
+  const winRate = games ? wins / games : 0;
+  const profile = profiles[s.name];
   return (
     <motion.li
       className={`ladder__row ${rank} ${isRanked ? '' : 'ladder__row--unranked'}`}
@@ -135,16 +141,32 @@ function LadderRow({ s, i, filter, profiles, playerElo, isRanked }) {
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.45, delay: Math.min(i * 0.04, 0.3) }}
     >
-      <span className={`ladder__rank ${rank}`}>{isRanked ? i + 1 : '–'}</span>
-      <Link to={`/joueur/${encodeURIComponent(s.name)}`} className="ladder__avatar" style={avatarStyle(profiles, s.name)}>
-        {!profiles[s.name]?.avatar_url && s.name.charAt(0)}
-      </Link>
-      <Link to={`/joueur/${encodeURIComponent(s.name)}`} className="ladder__name">
-        {displayName(profiles, s.name)}
-        <span className="ladder__lv">niv. {s.level.lv} · {s.level.name}</span>
-      </Link>
-      <span className="ladder__stat">
-        <b>{wins}</b><em>{wins === 1 ? 'victoire' : 'victoires'}</em>
+      <span className={`ladder__rank ${rank}`}>
+        {isRanked && i < 3 ? MEDALS[i] : isRanked ? i + 1 : '–'}
+      </span>
+      <PlayerCard
+        className="ladder__player"
+        name={s.name}
+        label={displayName(profiles, s.name)}
+        avatarUrl={profile?.avatar_url}
+        rank={playerElo?.rank}
+        title={profile?.title ?? `niv. ${s.level.lv} · ${s.level.name}`}
+        streak={profile?.current_streak ?? 0}
+        size={40}
+        to={`/joueur/${encodeURIComponent(s.name)}`}
+      />
+      {/* Winrate en jauge (Epic 2.2) — vert > 50 %, rouge en dessous. */}
+      <span className="ladder__stat ladder__stat--bar">
+        <span className="winrate-bar" title={`${wins} victoires / ${games} parties`}>
+          <span
+            className="winrate-bar__fill"
+            style={{
+              width: `${Math.round(winRate * 100)}%`,
+              background: winRate >= 0.5 ? '#4CAF50' : '#F44336',
+            }}
+          />
+        </span>
+        <em>{Math.round(winRate * 100)}% · {wins} V</em>
       </span>
       <span className="ladder__stat ladder__stat--rate">
         {isRanked ? (

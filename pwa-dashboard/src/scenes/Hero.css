@@ -143,3 +143,31 @@
   .hero__dart { left: 0; opacity: 0.5; }
   .ticket { justify-self: start; }
 }
+
+/* ── Avatar central du champion + .on-fire (Epic 2.1) ──── */
+.hero__avatar {
+  display: block;
+  margin-bottom: 14px;
+  width: fit-content;
+  border-radius: 50%;
+}
+.hero__avatar .player-card__meta { display: none; }
+
+.hero__avatar.on-fire .player-card__frame {
+  animation: hero-fire 1.4s ease-in-out infinite;
+  border-color: #ff7a18;
+}
+@keyframes hero-fire {
+  0%, 100% { box-shadow: 0 0 14px 2px rgba(255, 122, 24, 0.55); }
+  50% { box-shadow: 0 0 30px 8px rgba(255, 60, 0, 0.75); }
+}
+[data-reduce-animations] .hero__avatar.on-fire .player-card__frame {
+  animation: none;
+  box-shadow: none;
+}
+
+.hero__champ-title {
+  font-size: 0.85rem;
+  color: #a0a0a0;
+  font-style: italic;
+}

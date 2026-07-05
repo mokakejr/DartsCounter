@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import Dart from '../components/Dart.jsx';
+import PlayerCard from '../components/PlayerCard.jsx';
 import RankBadge from '../components/RankBadge.jsx';
 import { MODE_LABEL, fmtDuration, relDate } from '../lib/data.js';
 import { displayName } from '../lib/profiles.js';
@@ -69,10 +70,26 @@ export default function Hero({ ranked, games, profiles = {}, eloBoard = [] }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.25 }}
             >
+              {/* Le Héros (Epic 2.1): avatar central 120px, .on-fire dès 3
+                  victoires de suite — le juice remplace le clipart. */}
+              <span className={`hero__avatar${(champStats?.curStreak ?? 0) >= 3 ? ' on-fire' : ''}`}>
+                <PlayerCard
+                  name={champName}
+                  label=""
+                  avatarUrl={champProfile?.avatar_url}
+                  rank={champEntry.rank}
+                  size={120}
+                  to={`/joueur/${encodeURIComponent(champName)}`}
+                />
+              </span>
               <RankBadge rank={champEntry.rank} elo={champEntry.elo} size="lg" />
+              {champProfile?.title && <span className="hero__champ-title">{champProfile.title}</span>}
               {champStats && (
                 <span className="hero__champ-meta">
                   {champStats.wins} victoires · niv. {champStats.level.lv} · {champStats.level.name}
+                  {(champProfile?.current_streak ?? 0) >= 2 && (
+                    <> · <span className="streak-flame">🔥 {champProfile.current_streak}</span></>
+                  )}
                 </span>
               )}
               {/* Pourquoi il règne : le détail derrière la 1re place. */}
@@ -89,7 +106,9 @@ export default function Hero({ ranked, games, profiles = {}, eloBoard = [] }) {
             transition={{ duration: 0.6, delay: 0.4 }}
           >
             <a href={COUNTER_URL} className="hero__cta">
-              🎯 Jouer maintenant
+              {champEntry
+                ? <>⚔️ Défier {displayName(profiles, champName)}</>
+                : <>🎯 Jouer maintenant</>}
             </a>
           </motion.div>
         </div>

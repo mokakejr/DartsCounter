@@ -65,3 +65,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.player-card__flame--warn {
+  animation: pc-flame-blink 0.9s steps(2, start) infinite;
+}
+@keyframes pc-flame-blink {
+  to { opacity: 0.25; }
+}
+[data-reduce-animations] .player-card__flame--warn { animation: none; }

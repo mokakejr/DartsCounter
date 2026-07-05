@@ -232,3 +232,12 @@
   margin: 0;
 }
 .f51__remote-sub { color: #9a9aa3; margin: 0; }
+
+.f51__attempt {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffd23c;
+  margin: 10px 0 0;
+}
+.f51__attempt--err { color: #f44336; }

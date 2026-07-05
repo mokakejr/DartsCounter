@@ -25,6 +25,8 @@ import MyProfile from './routes/MyProfile.jsx';
 import Admin from './routes/Admin.jsx';
 import LiveCarousel from './components/LiveCarousel.jsx';
 import NemesisWall from './components/NemesisWall.jsx';
+import Tournois from './routes/Tournois.jsx';
+import { fetchTournaments } from './api/tournaments.js';
 import './App.css';
 
 function Home({ games, stats, ranked, profiles = {}, eloBoard }) {
@@ -151,6 +153,16 @@ function AppInner() {
     ? <Home games={games} stats={stats} ranked={ranked} profiles={profiles} eloBoard={eloBoard} />
     : <Welcome hasAccount={!!auth.player} />;
 
+  // Badge rouge de l'onglet Tournois : inscriptions ouvertes ou LIVE.
+  const [openTournaments, setOpenTournaments] = useState(0);
+  useEffect(() => {
+    const league = activeLeague ?? leagues[0];
+    if (!league) { setOpenTournaments(0); return; }
+    fetchTournaments(league.id)
+      .then(rows => setOpenTournaments(rows.filter(t => t.phase !== 'past').length))
+      .catch(() => setOpenTournaments(0));
+  }, [activeLeague?.id, leagues.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const knownPlayers = allGames
     ? [...new Set(allGames.flatMap(g => g.players ?? []))].sort((a, b) => a.localeCompare(b, 'fr'))
     : [];
@@ -183,6 +195,9 @@ function AppInner() {
             <NavLink to="/profils" className={({ isActive }) => isActive ? 'is-active' : undefined}>Joueurs</NavLink>
             <NavLink to="/trophees" className={({ isActive }) => isActive ? 'is-active' : undefined}>Trophées</NavLink>
             <NavLink to="/ligues" className={({ isActive }) => isActive ? 'is-active' : undefined}>Ligues</NavLink>
+            <NavLink to="/tournois" className={({ isActive }) => isActive ? 'is-active' : undefined}>
+              Tournois{openTournaments > 0 && <span className="nav__badge">{openTournaments}</span>}
+            </NavLink>
             <NavLink to="/xp" className={({ isActive }) => isActive ? 'is-active' : undefined}>XP</NavLink>
             <NavLink to="/rangs" className={({ isActive }) => isActive ? 'is-active' : undefined}>Rangs</NavLink>
             {auth.player?.is_admin && (
@@ -226,6 +241,7 @@ function AppInner() {
         <Route path="/trophees" element={<TrophiesPage stats={stats} profiles={profiles} />} />
         <Route path="/xp" element={<XpGuide />} />
         <Route path="/rangs" element={<RankGuide />} />
+        <Route path="/tournois" element={<Tournois profiles={profiles} />} />
         <Route path="/ligues" element={<Leagues knownPlayers={knownPlayers} />} />
         <Route path="/login" element={<Login />} />
         <Route path="/profile" element={<MyProfile />} />

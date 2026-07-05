@@ -11,6 +11,7 @@ import { SERIES, GRID, TICK, ChartTooltip } from '../components/ChartTheme.jsx';
 import TrophyModal from '../components/TrophyModal.jsx';
 import Dart from '../components/Dart.jsx';
 import RankBadge from '../components/RankBadge.jsx';
+import VersusBlock from '../components/VersusBlock.jsx';
 import './PlayerProfile.css';
 
 function fmtDate(d) {
@@ -115,6 +116,7 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
 
   return (
     <div className="profile shell" style={accentStyle}>
+      <VersusBlock name={name} stats={stats} profiles={profiles} />
       <Link to="/" className="back">← La Ligue</Link>
 
       <header className="profile__head">

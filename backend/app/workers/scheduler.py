@@ -95,7 +95,33 @@ async def close_stale_live_matches() -> None:
         logger.info("Live matches: %d stale match(es) auto-closed (15 min idle)", closed)
 
 
+async def run_season_rollover() -> None:
+    from app.services.seasons import rollover_if_needed
+
+    async with async_session() as session:
+        await rollover_if_needed(session)
+
+
+async def run_tournament_maintenance() -> None:
+    from app.services.tournaments import run_tournament_jobs
+
+    async with async_session() as session:
+        await run_tournament_jobs(session)
+
+
 def setup_jobs() -> None:
+    scheduler.add_job(
+        run_season_rollover,
+        CronTrigger(hour=5, minute=0, timezone=PARIS),
+        id="season_rollover",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        run_tournament_maintenance,
+        CronTrigger(minute="*/30", timezone=PARIS),
+        id="tournament_maintenance",
+        replace_existing=True,
+    )
     scheduler.add_job(
         purge_live_matches,
         CronTrigger(minute="*/30", timezone=PARIS),

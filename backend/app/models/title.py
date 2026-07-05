@@ -26,6 +26,7 @@ TITLES: dict[str, TitleDef] = {
         TitleDef("grind_20", "Pilier de Comptoir", "20 jours de streak d'affilée"),
         TitleDef("social_owner", "Tyran de la Ligue", "Posséder une ligue"),
         TitleDef("fail_26", "Abonné au 26", "Finir 3 parties à exactement 26 points"),
+        TitleDef("season_champion", "Champion de Saison", "Finir une saison à la 1re place"),
     )
 }
 

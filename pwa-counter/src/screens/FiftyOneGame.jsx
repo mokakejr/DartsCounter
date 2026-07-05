@@ -4,6 +4,7 @@ import {
   initialFiftyOneState, scoreTurn, nextPlayer, FIFTY_ONE_TARGET,
 } from '../modes/fiftyOne.js';
 import { hitPoints, hitLabel } from '../modes/board.js';
+import { apiPost } from '../api/client.js';
 import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
@@ -29,6 +30,9 @@ export default function FiftyOneGame() {
   // adverse arrive par les deltas WS.
   const remote = state?.remote ?? false;
   const me = state?.me ?? null;
+  // Essai de tournoi (score-attack solo) : le score = nb de flechettes.
+  const tournament = state?.tournament ?? null;
+  const [attemptResult, setAttemptResult] = useState(null);
 
   // Reprise apres reload accidentel (hors remote : l'etat y est resynchro
   // par le serveur via STATE, et le tour adverse ne doit pas etre ecrase).
@@ -155,6 +159,15 @@ export default function FiftyOneGame() {
       scores: Object.fromEntries(players.map((n, i) => [n, scored.fives[i]])),
     });
     if (scored.winner !== null) {
+      if (tournament) {
+        const value = dartsThrown.current[tournament.player] ?? 0;
+        apiPost(`/tournaments/${tournament.id}/attempts/submit`, {
+          name: tournament.player,
+          value,
+        })
+          .then(() => setAttemptResult({ ok: true, value }))
+          .catch(() => setAttemptResult({ ok: false, value }));
+      }
       emit({ event: 'MATCH_FINISHED', winner: players[scored.winner] });
       postGame({
         mode: 'FiftyOne', variant: 'Normal',
@@ -216,6 +229,15 @@ export default function FiftyOneGame() {
             </div>
           ))}
         </div>
+        {tournament && (
+          <p className={attemptResult?.ok === false ? 'f51__attempt f51__attempt--err' : 'f51__attempt'}>
+            {attemptResult == null
+              ? 'Soumission de l\u2019essai\u2026'
+              : attemptResult.ok
+                ? `\u{1F3C6} Essai soumis : ${attemptResult.value} fl\u00e9chettes (${tournament.title})`
+                : `Essai non soumis (r\u00e9seau ?) \u2014 ${attemptResult.value} fl\u00e9chettes`}
+          </p>
+        )}
         <Tribunes liveId={liveId} />
         <div className="f51__fin-actions">
           <button className="f51__btn f51__btn--secondary"

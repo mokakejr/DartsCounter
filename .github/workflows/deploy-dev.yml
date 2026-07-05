@@ -25,6 +25,13 @@ jobs:
           script: |
             set -e
             cd /opt/dartscounter-dev
-            git pull origin dev
+            # Self-heal: containers/root peuvent laisser des fichiers root-owned
+            # ou des modifications locales dans le repo — le checkout de deploy
+            # est un artefact immuable, on l'aligne de force sur origin.
+            sudo chown -R "$(id -un):$(id -gn)" .
+            git fetch origin dev
+            git reset --hard origin/dev
             docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml pull
             docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+            # Migrations DB — le backend doit être debout avant l'upgrade.
+            docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml exec -T backend alembic upgrade head

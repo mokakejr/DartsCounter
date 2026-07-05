@@ -36,6 +36,12 @@ class Game(Base):
     status: Mapped[str] = mapped_column(
         nullable=False, default=STATUS_COMPLETED, server_default=STATUS_COMPLETED
     )
+    # Why the game sits in PENDING_REVIEW: "outlier" (auto-flag) or a report
+    # reason from REPORT_REASONS; reported_by = the accusing player, if any.
+    flag_reason: Mapped[str | None] = mapped_column(nullable=True)
+    reported_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("players.id"), nullable=True
+    )
     winner_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("players.id"), nullable=True
     )

@@ -49,5 +49,14 @@ class GameRead(BaseModel):
     # COMPLETED | PENDING_REVIEW | VOIDED — PENDING_REVIEW means the outlier
     # detector froze it: no Elo yet, the client shows the homologation modal.
     status: str = "COMPLETED"
+    flag_reason: str | None = None
     extra: dict[str, Any] | None = None
     players: list[GamePlayerRead]
+
+
+class GameReport(BaseModel):
+    reason: str  # one of services.tribunal.REPORT_REASONS
+
+
+class GameAdjudication(BaseModel):
+    action: str  # "validate" | "void"

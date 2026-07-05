@@ -20,6 +20,39 @@ function spectatorName() {
   return name;
 }
 
+// Notation cricket classique : 0 = rien, 1 = /, 2 = ✕, 3+ = fermé.
+const MARKS = ['', '/', '✕', '⊗'];
+
+function CricketTable({ detail, players, turnPlayer }) {
+  return (
+    <table className="watch__cricket">
+      <thead>
+        <tr>
+          <th />
+          {players.map(p => (
+            <th key={p} className={p === turnPlayer ? 'watch__cricket-active' : ''}>{p}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {detail.labels.map((label, t) => (
+          <tr key={label}>
+            <th>{label}</th>
+            {players.map((p, i) => {
+              const n = detail.marks?.[i]?.[t] ?? 0;
+              return (
+                <td key={p} className={n >= 3 ? 'watch__cricket-closed' : ''}>
+                  {MARKS[Math.min(n, 3)]}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 // score_hit {multiplier, zone} -> marqueur SvgBoard {value, ring}
 function hitFromDelta(scoreHit) {
   const { multiplier = 0, zone = 0 } = scoreHit ?? {};
@@ -68,7 +101,12 @@ export default function WatchGame() {
             setTurnDarts([]);
             break;
           case 'SCORE_UPDATED':
-            setMatch(m => m && { ...m, scores: { ...m.scores, ...e.scores }, round: e.round ?? m.round });
+            setMatch(m => m && {
+              ...m,
+              scores: { ...m.scores, ...e.scores },
+              round: e.round ?? m.round,
+              detail: e.detail ?? m.detail,
+            });
             break;
           case 'MATCH_STARTED':
             setMatch(m => m && { ...m, started: true });
@@ -137,6 +175,11 @@ export default function WatchGame() {
       </div>
 
       <SvgBoard interactive={false} darts={turnDarts} />
+
+      {/* Cricket : l'avancée cible par cible, pas juste les points. */}
+      {match.detail?.kind === 'cricket' && (
+        <CricketTable detail={match.detail} players={match.players} turnPlayer={match.turn_player} />
+      )}
 
       <div className="watch__scores">
         {scores.map(({ name: p, score }) => (

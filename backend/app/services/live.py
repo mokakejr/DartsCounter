@@ -42,6 +42,9 @@ class LiveMatch:
     # Display state, fed by SCORE_UPDATED deltas — the server doesn't replay
     # game rules, clients are the source of truth (office trust model).
     scores: dict[str, int] = field(default_factory=dict)
+    # Blob opaque par mode (ex: tableau des marques Cricket) — relayé tel
+    # quel aux spectateurs, inclus dans le snapshot STATE des retardataires.
+    detail: dict | None = None
     round: int = 1
     turn_player: str | None = None
     dart_index: int = 0
@@ -111,6 +114,7 @@ def to_dict(match: LiveMatch, include_chat: bool = False) -> dict[str, Any]:
         "round": match.round,
         "turn_player": match.turn_player,
         "dart_index": match.dart_index,
+        "detail": match.detail,
         "ready": sorted(match.ready),
         "connected": sorted(match.player_sockets),
         "spectators": len(match.spectator_sockets),
@@ -167,6 +171,8 @@ def apply_player_event(match: LiveMatch, sender: str, event: dict) -> bool:
         match.scores.update({str(k): int(v) for k, v in scores.items()})
         if "round" in event:
             match.round = int(event["round"])
+        if "detail" in event:
+            match.detail = event["detail"]
     elif etype == "MATCH_FINISHED":
         match.finished = True
         match.turn_player = None

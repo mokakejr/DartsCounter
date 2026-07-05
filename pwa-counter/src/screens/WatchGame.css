@@ -141,3 +141,23 @@
   font-size: 17px;
   cursor: pointer;
 }
+
+/* ── Tableau Cricket (avancée cible par cible) ────────── */
+.watch__cricket {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.watch__cricket th,
+.watch__cricket td {
+  padding: 6px 8px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.watch__cricket thead th { color: #9a9aa3; font-size: 12px; }
+.watch__cricket tbody th { color: #fff; font-weight: 800; text-align: left; }
+.watch__cricket td { font-size: 17px; font-weight: 800; color: #ffd23c; }
+.watch__cricket td.watch__cricket-closed { color: #4caf50; }
+.watch__cricket th.watch__cricket-active { color: #e61e2a; }

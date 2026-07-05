@@ -1,4 +1,4 @@
-import { useState, useRef, Fragment } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   initialCricketState, addHit, nextPlayer,
@@ -12,6 +12,10 @@ import {
 import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
+import EmoteSplash from '../components/EmoteSplash.jsx';
+import ChatOverlay from '../components/ChatOverlay.jsx';
+import Tribunes from '../components/Tribunes.jsx';
+import { useLiveMatch } from '../useLiveMatch.js';
 import VictoryOverlay from '../components/VictoryOverlay.jsx';
 import './CricketGame.css';
 
@@ -115,10 +119,36 @@ export default function CricketGame() {
   // null | {type:'double'|'triple'|'bedNumber'} | {type:'bedMultiplier', number}
   const [scoringDialog, setScoringDialog] = useState(null);
   const startedAt = useRef(Date.now());
+  const liveId = state?.liveId ?? null;
+
+  // Diffusion live (Epic 11) + Mode Focus (12.2) — comme 51/Shanghai.
+  const { emit, emote, chatMessage } = useLiveMatch(liveId, players[0]);
+  const [focusMode, setFocusMode] = useState(false);
+  function toggleFocus() {
+    setFocusMode(f => {
+      emit({ event: 'DND', enabled: !f });
+      return !f;
+    });
+  }
 
   const player = game.currentPlayer;
   const labels = isSC ? SC_LABELS : CRICKET_LABELS;
   const isAPK = view === 'apk';
+
+  // Une synchro complète par évolution d'état : points + tableau des marques
+  // (le spectateur suit l'avancée du Cricket cible par cible) — couvre tous
+  // les chemins de saisie ET les undo sans instrumenter chaque handler.
+  useEffect(() => {
+    emit({
+      event: 'SCORE_UPDATED',
+      scores: Object.fromEntries(players.map((n, i) => [n, game.points[i]])),
+      detail: { kind: 'cricket', labels, marks: game.marks },
+    });
+  }, [game]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    emit({ event: 'TURN_CHANGED', player: players[game.currentPlayer] });
+  }, [game.currentPlayer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function switchView(v) {
     setView(v);
@@ -146,6 +176,7 @@ export default function CricketGame() {
 
   function finishIfWon(next, mode) {
     if (next.winner === null) return false;
+    emit({ event: 'MATCH_FINISHED', winner: players[next.winner] });
     postGame({
       mode, variant: variantLabel,
       players, scores: players.map((_, i) => next.points[i]),
@@ -292,6 +323,7 @@ export default function CricketGame() {
             </div>
           ))}
         </div>
+        <Tribunes liveId={liveId} />
         <div className="cg__fin-actions">
           <button className="cg__btn cg__btn--secondary"
             onClick={() => navigate('/setup', { state: { mode: isSC ? 'superCricket' : 'cricket', variant } })}>
@@ -307,7 +339,10 @@ export default function CricketGame() {
     <div className={`cg${isSC ? ' cg--sc' : ''}`}>
       <ExitConfirmModal
         open={showExit}
-        onConfirm={() => navigate('/')}
+        onConfirm={() => {
+          emit({ event: 'MATCH_FINISHED', aborted: true });
+          navigate('/');
+        }}
         onCancel={() => setShowExit(false)}
       />
 
@@ -329,9 +364,21 @@ export default function CricketGame() {
         />
       )}
 
+      <EmoteSplash emote={focusMode ? null : emote} />
+      <ChatOverlay message={focusMode ? null : chatMessage} />
+
       {/* Header */}
       <div className="cg__header">
         <button className="cg__back" onClick={() => setShowExit(true)}>&larr;</button>
+        {liveId && (
+          <button
+            className="cg__back"
+            title={focusMode ? 'Emotes bloquées (Mode Focus)' : 'Bloquer les emotes des gradins'}
+            onClick={toggleFocus}
+          >
+            {focusMode ? '🔕' : '🔔'}
+          </button>
+        )}
         <div className="cg__title-wrap">
           <span className="cg__title">{isSC ? 'SUPER CRICKET' : 'CRICKET'}</span>
           {variant === 'cutthroat' && <span className="cg__title-sub">CUT THROAT</span>}

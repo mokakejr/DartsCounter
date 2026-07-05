@@ -90,3 +90,80 @@ async def get_leaderboard(
         )
         for r in rows
     ]
+
+
+async def get_head_to_head(session: AsyncSession, names: list[str]) -> list[dict]:
+    """Pairwise duel history + Elo-based win probability for the "Rivalité"
+    block on the pre-game screen (Epic 5.2)."""
+    from itertools import combinations
+
+    from app.services.games import list_all_games_raw
+
+    config = await get_engine_config(session)
+    games = await list_all_games_raw(session)
+
+    ratings = dict(
+        (
+            await session.execute(
+                select(Player.name, PlayerRating.rating)
+                .join(PlayerRating, PlayerRating.player_id == Player.id)
+                .where(Player.name.in_(names), PlayerRating.scope == GLOBAL_SCOPE)
+            )
+        ).all()
+    )
+
+    pairs = []
+    for a, b in combinations(names, 2):
+        a_wins = b_wins = 0
+        for g in games:
+            players = g["players"]
+            if a in players and b in players:
+                if g["winner"] == a:
+                    a_wins += 1
+                elif g["winner"] == b:
+                    b_wins += 1
+        ra = ratings.get(a, config.starting_rating)
+        rb = ratings.get(b, config.starting_rating)
+        prob = 1 / (1 + 10 ** ((rb - ra) / config.convergence))
+        pairs.append({"a": a, "b": b, "a_wins": a_wins, "b_wins": b_wins, "a_win_probability": round(prob, 3)})
+    return pairs
+
+
+async def get_modes_meta(session: AsyncSession) -> list[dict]:
+    """Per-mode-family activity stats feeding the mode-card tags (Epic 5.1):
+    the front derives 🔥 Tendance (most played over 30 days) and ⏱️ Rapide
+    (short average duration) from these numbers."""
+    from datetime import datetime, timedelta, timezone
+
+    from app.models.elo import elo_scope_for
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+    rows = (
+        await session.execute(
+            select(
+                Game.mode,
+                func.count().label("games"),
+                func.count().filter(Game.date >= cutoff).label("games_30d"),
+                func.avg(Game.duration).filter(Game.duration > 0).label("avg_duration"),
+            ).group_by(Game.mode)
+        )
+    ).all()
+
+    families: dict[str, dict] = {}
+    for mode, games, games_30d, avg_duration in rows:
+        fam = families.setdefault(
+            elo_scope_for(mode), {"games": 0, "games_30d": 0, "_durs": []}
+        )
+        fam["games"] += games
+        fam["games_30d"] += games_30d
+        if avg_duration:
+            fam["_durs"].append(float(avg_duration))
+    return [
+        {
+            "mode": name,
+            "games": f["games"],
+            "games_30d": f["games_30d"],
+            "avg_duration": round(sum(f["_durs"]) / len(f["_durs"])) if f["_durs"] else None,
+        }
+        for name, f in families.items()
+    ]

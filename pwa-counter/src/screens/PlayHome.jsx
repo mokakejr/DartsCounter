@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { lastGame, replayTarget } from '../replay.js';
 import './PlayHome.css';
 
 const DASHBOARD_URL = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:5174';
@@ -13,10 +14,26 @@ const CATEGORIES = [
 
 export default function PlayHome() {
   const navigate = useNavigate();
+  // Revanche instantanée (7.4): 1 clic = même mode, mêmes joueurs, direct
+  // sur l'écran de score — si une partie a eu lieu dans les dernières 24 h.
+  const replay = replayTarget(lastGame());
 
   return (
     <div className="play-home">
       <h1 className="play-home__title">JOUER</h1>
+
+      {replay && (
+        <button
+          className="play-home__instant"
+          onClick={() => navigate(replay.route, { state: replay.state })}
+        >
+          <span className="play-home__instant-tag">⚡ REVANCHE</span>
+          <span className="play-home__instant-label">
+            {replay.label} — {replay.state.players.join(' vs ')}
+          </span>
+        </button>
+      )}
+
       <div className="play-home__modes">
         {CATEGORIES.map(c => (
           <button

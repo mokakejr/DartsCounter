@@ -20,8 +20,17 @@ import { registerBackgroundSync } from './sync.js';
  * @param {boolean}  [opts.isCasual] – excluded from Elo when true (default false)
  * @param {object}   [opts.extra]    – generic per-mode metadata (e.g. Bob's 27 bust info)
  */
+// Dernier match joué sur cet appareil — nourrit la "Revanche Rapide" 1-clic
+// du PlayHome (Epics 5.1 / 7.4).
+export const LAST_GAME_KEY = 'dartsLastGame';
+
 export async function postGame({ mode, variant, players, scores, winner, startedAt, isCasual = false, extra }) {
   const now = Date.now();
+  try {
+    localStorage.setItem(LAST_GAME_KEY, JSON.stringify({
+      mode, variant, players, isCasual, playedAt: now,
+    }));
+  } catch { /* stockage plein/désactivé : la revanche est un bonus */ }
   const duration = Math.round((now - startedAt) / 1000);
   const payload = {
     date: new Date(startedAt).toISOString(),

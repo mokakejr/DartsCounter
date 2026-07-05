@@ -147,3 +147,63 @@
 @media (max-width: 720px) {
   .ladder__stat--bar { display: none; }
 }
+
+/* ── Podium dynamique + le Pit (Epic 10.1) ─────────────── */
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.podium__slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.podium__slot .player-card { flex-direction: column; gap: 4px; }
+.podium__slot .player-card__meta { align-items: center; }
+
+.podium__medal { font-size: 22px; }
+.podium__stats { color: var(--muted); font-size: 12px; }
+
+.podium__target {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 9px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.podium__target:hover { opacity: 0.85; }
+.podium__target:disabled { opacity: 0.6; cursor: default; }
+
+.podium__step {
+  width: 100%;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border);
+  border-bottom: none;
+}
+.podium__step--p1 { height: 64px; border-color: color-mix(in srgb, var(--rank-1) 55%, var(--border)); }
+.podium__step--p2 { height: 42px; border-color: color-mix(in srgb, var(--rank-2) 45%, var(--border)); }
+.podium__step--p3 { height: 28px; border-color: color-mix(in srgb, var(--rank-3) 45%, var(--border)); }
+
+/* La Fosse: places 4+ en cartes compactes. */
+.pit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.pit__card {
+  padding: 8px 14px 8px 8px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}

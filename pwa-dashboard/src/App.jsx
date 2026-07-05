@@ -23,13 +23,17 @@ import Welcome from './routes/Welcome.jsx';
 import Login from './routes/Login.jsx';
 import MyProfile from './routes/MyProfile.jsx';
 import Admin from './routes/Admin.jsx';
+import LiveCarousel from './components/LiveCarousel.jsx';
+import NemesisWall from './components/NemesisWall.jsx';
 import './App.css';
 
 function Home({ games, stats, ranked, profiles = {}, eloBoard }) {
   return (
     <main>
+      <LiveCarousel />
       <Hero ranked={ranked} games={games} profiles={profiles} eloBoard={eloBoard} />
       <Standings ranked={ranked} profiles={profiles} />
+      <NemesisWall ranked={ranked} profiles={profiles} />
       <Feed games={games} profiles={profiles} />
       <Trends games={games} ranked={ranked} />
       <Trophies stats={stats} profiles={profiles} />

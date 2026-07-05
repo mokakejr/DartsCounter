@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { speak } from '../speech.js';
 import './ChatOverlay.css';
 
@@ -14,9 +14,15 @@ const MAX_SHOWN = 4;
 
 export default function ChatOverlay({ message }) {
   const [messages, setMessages] = useState([]);
+  const lastKey = useRef(null);
 
   useEffect(() => {
     if (!message) return;
+    // Réactivation de la cloche : la prop repasse de null au DERNIER message
+    // encore en mémoire — on ne rejoue jamais un message déjà traité, seuls
+    // les nouveaux entrants comptent.
+    if (message.key === lastKey.current) return;
+    lastKey.current = message.key;
     // Lecture vocale façon Twitch — les mains du joueur sont occupées.
     speak(`${message.sender_id} dit : ${message.message}`);
     const id = message.key;

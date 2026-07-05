@@ -1,14 +1,16 @@
 .f51 {
-  /* min-height + scroll : avec le Dart-Wheel (et 3+ joueurs) le contenu
-     dépasse un écran de téléphone — overflow:hidden rognait le bouton
-     ANNULER sous le pli. */
-  min-height: 100svh;
+  /* Hauteur FIXE + overflow-y : c'est ce conteneur qui scrolle (le body est
+     verrouillé par global.css) — min-height poussait le body et Chrome ne
+     scrollait plus du tout. overscroll-behavior garde le pull-to-refresh
+     désactivé pendant une partie. */
+  height: 100svh;
   display: flex;
   flex-direction: column;
   background: var(--bg);
   padding: 0 20px 32px;
   overflow-y: auto;
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Cible bornée par la hauteur d'écran pour que saisie + validation + annuler

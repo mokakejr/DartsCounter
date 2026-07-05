@@ -37,6 +37,25 @@ export function thud(intensity = 1) {
   } catch { /* no-op */ }
 }
 
+// « Plopp » aigu et court — l'impact d'une emote des gradins (Epic 12.2).
+export function plop() {
+  if (reduced()) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = audioCtx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(520, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.09);
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.11);
+  } catch { /* no-op */ }
+}
+
 // Screen-shake: pose une classe 150ms sur <html>, le CSS fait le reste.
 export function shake() {
   if (reduced()) return;

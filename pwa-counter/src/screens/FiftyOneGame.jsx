@@ -9,6 +9,8 @@ import ExitConfirmModal from './ExitConfirmModal.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
 import SvgBoard from '../components/SvgBoard.jsx';
 import VictoryOverlay from '../components/VictoryOverlay.jsx';
+import EmoteSplash from '../components/EmoteSplash.jsx';
+import { useLiveMatch } from '../useLiveMatch.js';
 import './FiftyOneGame.css';
 
 // Dart-Wheel par défaut (Epic 4.1) — le numpad reste dispo via le toggle.
@@ -19,6 +21,7 @@ export default function FiftyOneGame() {
   const navigate = useNavigate();
   const players = state?.players ?? ['J1', 'J2'];
   const isCasual = state?.isCasual ?? false;
+  const liveId = state?.liveId ?? null;
 
   const [game, setGame] = useState(() => initialFiftyOneState(players));
   const [input, setInput] = useState('');
@@ -31,6 +34,15 @@ export default function FiftyOneGame() {
   const startedAt = useRef(Date.now());
   // Fléchettes réellement lancées par joueur — alimente extra.darts (XP Ferveur).
   const dartsThrown = useRef(Object.fromEntries(players.map(p => [p, 0])));
+  // Diffusion live (Epic 11) + Mode Focus (12.2): bloque les emotes entrantes.
+  const { emit, emote } = useLiveMatch(liveId, players[0]);
+  const [focusMode, setFocusMode] = useState(false);
+  function toggleFocus() {
+    setFocusMode(f => {
+      emit({ event: 'DND', enabled: !f });
+      return !f;
+    });
+  }
 
   const player = game.currentPlayer;
   const boardTotal = boardDarts.reduce((s, d) => s + hitPoints(d), 0);
@@ -52,8 +64,16 @@ export default function FiftyOneGame() {
     setInput(prev => prev.slice(0, -1));
   }
 
+  const RING_MULT = { S: 1, D: 2, T: 3, BULL: 1, DBULL: 2, MISS: 0 };
+
   function onBoardHit(hit) {
     if (phase !== 'playing' || boardDarts.length >= 3) return;
+    emit({
+      event: 'DART_THROWN',
+      player: players[player],
+      dart_index: boardDarts.length,
+      score_hit: { multiplier: RING_MULT[hit.ring] ?? 0, zone: hit.value },
+    });
     setBoardDarts(prev => [...prev, hit]);
   }
 
@@ -71,7 +91,12 @@ export default function FiftyOneGame() {
     dartsThrown.current[players[player]] += inputMode === 'board' ? boardDarts.length : 3;
     // Invalid score (not multiple of 5, or bust) → pass turn with 0
     const scored = scoreTurn(game, player, validScore ? turnTotal : 0);
+    emit({
+      event: 'SCORE_UPDATED',
+      scores: Object.fromEntries(players.map((n, i) => [n, scored.fives[i]])),
+    });
     if (scored.winner !== null) {
+      emit({ event: 'MATCH_FINISHED', winner: players[scored.winner] });
       postGame({
         mode: 'FiftyOne', variant: 'Normal',
         players, scores: players.map((_, i) => scored.fives[i]),
@@ -83,7 +108,9 @@ export default function FiftyOneGame() {
       setGame(scored);
       setPhase('finished');
     } else {
-      setGame(nextPlayer(scored));
+      const nxt = nextPlayer(scored);
+      emit({ event: 'TURN_CHANGED', player: players[nxt.currentPlayer] });
+      setGame(nxt);
     }
     setInput('');
     setBoardDarts([]);
@@ -150,8 +177,19 @@ export default function FiftyOneGame() {
       <div className="f51__header">
         <button className="f51__back" onClick={() => setShowExit(true)}>←</button>
         <span className="f51__title">51</span>
+        {liveId && (
+          <button
+            className="f51__back"
+            title={focusMode ? 'Emotes bloquées (Mode Focus)' : 'Bloquer les emotes des gradins'}
+            onClick={toggleFocus}
+          >
+            {focusMode ? '🔕' : '🔔'}
+          </button>
+        )}
         <ElapsedTimer startedAt={startedAt.current} />
       </div>
+
+      <EmoteSplash emote={focusMode ? null : emote} />
 
       {/* Current player */}
       <div className="f51__player">

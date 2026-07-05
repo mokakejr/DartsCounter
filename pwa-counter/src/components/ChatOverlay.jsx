@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { speak } from '../speech.js';
 import './ChatOverlay.css';
 
 /**
@@ -16,6 +17,8 @@ export default function ChatOverlay({ message }) {
 
   useEffect(() => {
     if (!message) return;
+    // Lecture vocale façon Twitch — les mains du joueur sont occupées.
+    speak(`${message.sender_id} dit : ${message.message}`);
     const id = message.key;
     setMessages(prev => [...prev.slice(-(MAX_SHOWN - 1)), message]);
     const t = setTimeout(() => {

@@ -39,9 +39,14 @@
 }
 
 .svgboard__num {
-  fill: #9a9aa3;
-  font-size: 9px;
-  font-weight: 700;
+  fill: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  /* Liseré sombre sous le chiffre : lisible sur la couronne quel que soit
+     le fond (segments clairs, surbrillance Shanghai, petits écrans). */
+  paint-order: stroke fill;
+  stroke: #0d0d10;
+  stroke-width: 2.6px;
   pointer-events: none;
 }
 

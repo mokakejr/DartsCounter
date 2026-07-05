@@ -23,7 +23,47 @@ async def get_players(session: AsyncSession = Depends(get_db)) -> list[PlayerRea
 
 
 @router.get("/players/me", response_model=PlayerRead)
-async def get_me(player: Player = Depends(get_current_player)) -> PlayerRead:
+async def get_me(
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> PlayerRead:
+    data = players_service.player_to_read(player)
+    data.games_played = await players_service.count_games_played(session, player.id)
+    return data
+
+
+@router.get("/players/me/titles")
+async def my_titles(
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    from app.models.title import TITLES
+    from app.services import titles as titles_service
+
+    rows = await titles_service.list_titles(session, player.id)
+    return [
+        {
+            "id": r.title_id,
+            "label": TITLES[r.title_id].label if r.title_id in TITLES else r.title_id,
+            "description": TITLES[r.title_id].description if r.title_id in TITLES else "",
+            "unlocked_at": r.unlocked_at,
+            "is_equipped": r.is_equipped,
+        }
+        for r in rows
+    ]
+
+
+@router.post("/players/me/titles/{title_id}/equip", response_model=PlayerRead)
+async def equip_title(
+    title_id: str,
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> PlayerRead:
+    from app.services import titles as titles_service
+
+    if not await titles_service.equip(session, player.id, title_id):
+        raise HTTPException(404, "Title not unlocked")
+    await session.refresh(player)
     return players_service.player_to_read(player)
 
 

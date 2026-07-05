@@ -1,12 +1,62 @@
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { recentGames, rivalries } from '../lib/derive.js';
 import { MODE_LABEL, fmtDuration, relDate } from '../lib/data.js';
 import { displayName } from '../lib/profiles.js';
+import { useAuth } from '../lib/useAuth.jsx';
+import { useLeague } from '../lib/useLeague.jsx';
+import LeagueFeed, { Pantheon } from '../components/LeagueFeed.jsx';
+import { reportGame } from '../api/leagues.js';
 import './Feed.css';
 
+const REPORT_REASONS = [
+  ['impossible_score', 'Score impossible'],
+  ['rage_quit', "Rage-quit de l'adversaire"],
+  ['other', 'Autre doute'],
+];
+
+// « Un doute sur ce match ? » (Epic 6.3) — BottomSheet de signalement.
+function ReportSheet({ game, token, onClose }) {
+  const [done, setDone] = useState(null);
+
+  async function report(reason) {
+    try {
+      await reportGame(token, game.id, reason);
+      setDone('Match signalé — en attente du verdict de la ligue.');
+    } catch (err) {
+      setDone(err.status === 409 ? 'Ce match est déjà en cours d’examen.' : 'Signalement impossible.');
+    }
+  }
+
+  return (
+    <div className="feed__sheet-backdrop" onClick={onClose}>
+      <div className="feed__sheet" onClick={e => e.stopPropagation()}>
+        {done ? (
+          <>
+            <p>{done}</p>
+            <button className="feed__sheet-btn" onClick={onClose}>Fermer</button>
+          </>
+        ) : (
+          <>
+            <p className="feed__sheet-title">Un doute sur ce match ?</p>
+            {REPORT_REASONS.map(([reason, label]) => (
+              <button key={reason} className="feed__sheet-btn" onClick={() => report(reason)}>
+                {label}
+              </button>
+            ))}
+            <button className="feed__sheet-btn feed__sheet-btn--ghost" onClick={onClose}>Annuler</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Feed({ games, profiles = {} }) {
+  const auth = useAuth();
+  const { activeLeague } = useLeague();
+  const [reporting, setReporting] = useState(null);
   const recent = recentGames(games, 8);
   const rivals = rivalries(games, 5);
 
@@ -16,6 +66,8 @@ export default function Feed({ games, profiles = {} }) {
         <p className="eyebrow">02 — Le feu de l'action</p>
         <h2 className="display sec-title">Dernières parties</h2>
       </div>
+
+      <LeagueFeed league={activeLeague} />
 
       <div className="feed__grid">
         <ol className="feed__list">
@@ -44,6 +96,11 @@ export default function Feed({ games, profiles = {} }) {
               </span>
               <span className="feed__meta">
                 {fmtDuration(g.duration)} · {relDate(g.date)}
+                {auth.player && g.id && (
+                  <button type="button" className="feed__doubt" onClick={() => setReporting(g)}>
+                    Un doute sur ce match ?
+                  </button>
+                )}
               </span>
             </motion.li>
           ))}
@@ -71,6 +128,12 @@ export default function Feed({ games, profiles = {} }) {
           {rivals.length === 0 && <p className="rivals__empty">Pas encore de rivalité établie.</p>}
         </aside>
       </div>
+
+      <Pantheon league={activeLeague} />
+
+      {reporting && (
+        <ReportSheet game={reporting} token={auth.token} onClose={() => setReporting(null)} />
+      )}
     </section>
   );
 }

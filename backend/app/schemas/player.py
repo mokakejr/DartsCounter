@@ -34,6 +34,16 @@ class PlayerRead(BaseModel):
     accent_color: str | None = None
     is_admin: bool = False
     created_at: datetime
+    # Only populated on /players/me — feeds the onboarding conversion hook
+    # ("3 games played" modal) on the dashboard.
+    games_played: int | None = None
+    # Ferveur progression + daily play streak (already read-time corrected:
+    # 0 once the chain is broken, weekends never break it).
+    ferveur_xp: int = 0
+    ferveur_level: int = 1
+    current_streak: int = 0
+    # Equipped contextual title label (Epic 8.1), shown under the username.
+    title: str | None = None
 
 
 class ProfileUpdate(BaseModel):

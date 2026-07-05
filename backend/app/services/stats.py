@@ -1,30 +1,36 @@
+import uuid
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Game, GamePlayer, Player, PlayerRating
+from app.models import Game, GamePlayer, LeagueMember, Player, PlayerRating
 from app.models.elo import GLOBAL_SCOPE, modes_in_family
 from app.schemas.stats import PlayerStats
 from app.services.elo import rank_for_rating
 from app.services.elo_config import get_engine_config
-from app.services.players import image_url
+from app.services.players import equipped_title, image_url, live_streak
 
 
-async def get_leaderboard(session: AsyncSession, mode: str | None = None) -> list[PlayerStats]:
+async def get_leaderboard(
+    session: AsyncSession, mode: str | None = None, league_id: uuid.UUID | None = None
+) -> list[PlayerStats]:
     """`mode=None` is the global leaderboard (games/wins across every mode,
     elo = the "global" scope rating). Passing a mode name scopes all three
-    to just that mode — used by the dashboard's per-mode Standings filter."""
+    to just that mode — used by the dashboard's per-mode Standings filter.
+    `league_id` restricts rows to that league's members; inactive ("ghost")
+    members are returned last with is_active=False."""
     # Always joined to Game (not just when `mode` is passed) so casual games —
     # excluded from Elo but still logged for personal history — never count
     # toward the competitive "games played" used for leaderboard ranking.
     games_query = (
         select(GamePlayer.player_id, func.count().label("games"))
         .join(Game, Game.id == GamePlayer.game_id)
-        .where(Game.is_casual.is_(False))
+        .where(Game.is_casual.is_(False), Game.status == "COMPLETED")
     )
     wins_query = (
         select(GamePlayer.player_id, func.count().label("wins"))
         .join(Game, Game.id == GamePlayer.game_id)
-        .where(Game.is_casual.is_(False), GamePlayer.position == 1)
+        .where(Game.is_casual.is_(False), Game.status == "COMPLETED", GamePlayer.position == 1)
     )
     if mode is not None:
         # A mode filter may be a shared Elo scope name (e.g. "Shanghai") that
@@ -51,8 +57,16 @@ async def get_leaderboard(session: AsyncSession, mode: str | None = None) -> lis
             PlayerRating,
             (PlayerRating.player_id == Player.id) & (PlayerRating.scope == scope),
         )
-        .order_by(elo_col.desc())
     )
+    if league_id is not None:
+        stmt = (
+            stmt.add_columns(LeagueMember.is_active.label("is_active"))
+            .join(LeagueMember, LeagueMember.player_id == Player.id)
+            .where(LeagueMember.league_id == league_id)
+            .order_by(LeagueMember.is_active.desc(), elo_col.desc())
+        )
+    else:
+        stmt = stmt.order_by(elo_col.desc())
     rows = (await session.execute(stmt)).all()
 
     return [
@@ -68,6 +82,11 @@ async def get_leaderboard(session: AsyncSession, mode: str | None = None) -> lis
             win_rate=round(r.wins / r.games, 3) if r.games else 0.0,
             elo=r.elo,
             rank=rank_for_rating(r.elo, config),
+            is_active=getattr(r, "is_active", True),
+            ferveur_xp=r.Player.ferveur_xp,
+            ferveur_level=r.Player.ferveur_level,
+            current_streak=live_streak(r.Player),
+            title=equipped_title(r.Player),
         )
         for r in rows
     ]

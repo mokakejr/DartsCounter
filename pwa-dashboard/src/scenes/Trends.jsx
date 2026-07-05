@@ -7,11 +7,17 @@ import { modeDistribution } from '../lib/derive.js';
 import { MODE_LABEL, fmtDuration } from '../lib/data.js';
 import { fetchPlayerEloHistory } from '../api/players.js';
 import { SERIES, GRID, TICK, ChartTooltip } from '../components/ChartTheme.jsx';
+import { playerColor } from '../lib/playerColors.js';
+import { useAuth } from '../lib/useAuth.jsx';
 import './Trends.css';
 
 const fmtTick = t => new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
 export default function Trends({ games, ranked }) {
+  const auth = useAuth();
+  // Moi = toujours le rouge primaire ; les autres = couleur hashée stable
+  // (Epic 2.3) — plus de palette par index qui change à chaque reclassement.
+  const colorOf = (name) => playerColor(name, auth?.player?.name);
   const dist = useMemo(() => modeDistribution(games), [games]);
   // Top 5 players keep the chart readable + matches the 5-tone series scale.
   const top = useMemo(() => ranked.slice(0, 5).map(s => s.name), [ranked]);
@@ -104,8 +110,8 @@ export default function Trends({ games, ranked }) {
                     key={p}
                     type="monotone"
                     dataKey={p}
-                    stroke={SERIES[i % SERIES.length]}
-                    strokeWidth={2}
+                    stroke={colorOf(p)}
+                    strokeWidth={p === auth?.player?.name ? 3 : 2}
                     strokeDasharray={i > 2 ? '5 4' : undefined}
                     dot={false}
                     connectNulls
@@ -116,9 +122,9 @@ export default function Trends({ games, ranked }) {
             </ResponsiveContainer>
           </div>
           <ul className="legend">
-            {top.map((p, i) => (
+            {top.map((p) => (
               <li key={p}>
-                <span className="legend__dot" style={{ background: SERIES[i % SERIES.length] }} />
+                <span className="legend__dot" style={{ background: colorOf(p) }} />
                 {p}
               </li>
             ))}

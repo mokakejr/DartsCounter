@@ -11,6 +11,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import EloHistory, Game, Player, PlayerRating
+from app.models.game import STATUS_COMPLETED
 from app.services.elo import GameForElo, recompute_elo
 from app.services.elo_config import get_engine_config, get_score_direction_map
 
@@ -24,7 +25,7 @@ async def recompute_all(session: AsyncSession, dry_run: bool = False) -> int:
     rows = (
         await session.execute(
             select(Game.id, Game.mode, Game.variant, Game.raw_data)
-            .where(Game.is_casual.is_(False))
+            .where(Game.is_casual.is_(False), Game.status == STATUS_COMPLETED)
             .order_by(Game.date)
         )
     ).all()

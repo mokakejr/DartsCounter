@@ -1,13 +1,30 @@
-from sqlalchemy import select
+import uuid
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.models import Player
+from app.models import Game, GamePlayer, Player
+from app.models.title import TITLES
 from app.schemas.player import PlayerRead
+from app.services.progression import effective_streak, paris_date
 
 
 def image_url(path: str | None) -> str | None:
     return f"{get_settings().public_api_url}/uploads/{path}" if path else None
+
+
+def live_streak(player: Player) -> int:
+    last = paris_date(player.last_streak_update) if player.last_streak_update else None
+    return effective_streak(last, player.current_streak, paris_date())
+
+
+def equipped_title(player: Player) -> str | None:
+    """Label of the equipped title (Player.titles is selectin-loaded)."""
+    for t in player.titles:
+        if t.is_equipped and t.title_id in TITLES:
+            return TITLES[t.title_id].label
+    return None
 
 
 def player_to_read(player: Player) -> PlayerRead:
@@ -23,6 +40,10 @@ def player_to_read(player: Player) -> PlayerRead:
         accent_color=player.accent_color,
         is_admin=player.is_admin,
         created_at=player.created_at,
+        ferveur_xp=player.ferveur_xp,
+        ferveur_level=player.ferveur_level,
+        current_streak=live_streak(player),
+        title=equipped_title(player),
     )
 
 
@@ -44,6 +65,16 @@ async def get_or_create_player(
 async def list_players(session: AsyncSession) -> list[PlayerRead]:
     rows = (await session.execute(select(Player).order_by(Player.name))).scalars().all()
     return [player_to_read(p) for p in rows]
+
+
+async def count_games_played(session: AsyncSession, player_id: uuid.UUID) -> int:
+    stmt = (
+        select(func.count())
+        .select_from(GamePlayer)
+        .join(Game, Game.id == GamePlayer.game_id)
+        .where(GamePlayer.player_id == player_id, Game.is_casual.is_(False))
+    )
+    return (await session.execute(stmt)).scalar_one()
 
 
 async def get_by_name(session: AsyncSession, name: str) -> Player | None:

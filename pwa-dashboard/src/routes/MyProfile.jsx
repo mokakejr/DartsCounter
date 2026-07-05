@@ -3,6 +3,7 @@ import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../lib/useAuth.jsx';
 import { updateProfile, uploadImage } from '../api/players.js';
 import FlightEditor from '../components/FlightEditor.jsx';
+import { isReducedAnimations, setReducedAnimations } from '../lib/performanceMode.js';
 import './MyProfile.css';
 
 export default function MyProfile() {
@@ -121,6 +122,19 @@ export default function MyProfile() {
           </button>
         </div>
       </form>
+
+      <section className="myprofile__flight-section">
+        <p className="eyebrow">Mode Performance</p>
+        <label className="myprofile__perf">
+          <input
+            type="checkbox"
+            defaultChecked={isReducedAnimations()}
+            onChange={e => setReducedAnimations(e.target.checked)}
+          />
+          Réduire les animations (recommandé sur les téléphones lents — la
+          latence de saisie prime toujours sur le cosmétique)
+        </label>
+      </section>
 
       <section className="myprofile__flight-section">
         <p className="eyebrow">Mon dart</p>

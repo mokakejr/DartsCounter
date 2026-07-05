@@ -1,0 +1,111 @@
+.lfeed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.lfeed__card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 18px;
+}
+
+.lfeed__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.lfeed__when { color: var(--muted); font-size: 12px; }
+
+.lfeed__pseudo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+.lfeed__pseudo:hover { color: var(--primary); }
+
+.lfeed__avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-grid;
+  place-items: center;
+}
+.lfeed__avatar--initial {
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 11px;
+}
+
+.lfeed__type {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+  font-size: 14px;
+}
+
+.lfeed__story {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.lfeed__foot {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.lfeed__btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.lfeed__btn:hover { border-color: var(--muted); }
+.lfeed__btn:disabled { opacity: 0.5; cursor: default; }
+
+/* ── Panthéon (Epic 9.3) — identité premium dorée ──────── */
+.pantheon { margin: 28px 0; }
+
+.pantheon__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.pantheon__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 18px;
+  border-radius: 14px;
+  background: linear-gradient(160deg, rgba(224, 178, 60, 0.08), rgba(0, 0, 0, 0.25));
+  border: 1px solid rgba(224, 178, 60, 0.35);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.pantheon__cell--empty { opacity: 0.55; }
+
+.pantheon__icon { font-size: 26px; }
+
+.pantheon__title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #e0b23c;
+  font-size: 15px;
+}
+
+.pantheon__value { color: var(--muted); font-size: 13px; }
+.pantheon__value b { color: var(--text); font-size: 16px; }

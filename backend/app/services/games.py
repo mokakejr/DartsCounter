@@ -7,10 +7,14 @@ from sqlalchemy.orm import selectinload
 
 from app.models import EloHistory, Game, GamePlayer, Player, PlayerRating
 from app.models.elo import GLOBAL_SCOPE, elo_scope_for
+from app.models.game import STATUS_COMPLETED, STATUS_PENDING_REVIEW
 from app.schemas.game import GameCreate, GamePlayerRead, GameRead
+from app.services.anticheat import TRUST_GAME_COMPLETED, bump_trust, detect_outlier
 from app.services.elo import recompute_elo
 from app.services.elo_config import get_engine_config, get_score_direction_map
 from app.services.players import get_or_create_player
+from app.services.progression import apply_game_to_player
+from app.services.titles import evaluate_titles
 
 _EAGER = (selectinload(Game.players).selectinload(GamePlayer.player), selectinload(Game.winner))
 
@@ -24,6 +28,8 @@ def _to_game_read(game: Game) -> GameRead:
         duration=game.duration,
         winner=game.winner.name if game.winner else None,
         is_casual=game.is_casual,
+        status=game.status,
+        flag_reason=game.flag_reason,
         extra=game.raw_data.get("extra"),
         players=[
             GamePlayerRead(name=gp.player.name, score=gp.score, position=gp.position)
@@ -77,9 +83,32 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
             game.winner_id = player.id
         game_players_read.append(GamePlayerRead(name=name, score=score, position=position))
 
+    # Ferveur XP + daily streak — awarded on every game, casual included:
+    # the progression layer always ends on a positive note (Epic 7.3).
+    darts_by_name = (payload.extra or {}).get("darts") or {}
+    for name, player in players_by_name.items():
+        darts = darts_by_name.get(name, 0)
+        apply_game_to_player(
+            player, payload.date, is_victory=name == payload.winner, darts_total=int(darts or 0)
+        )
+
+    score_direction = await get_score_direction_map(session) if not payload.is_casual else {}
+    scores_by_name = dict(zip(payload.players, payload.scores, strict=True))
+    if not payload.is_casual and await detect_outlier(
+        session, players_by_name, scores_by_name, payload.mode, payload.variant, score_direction,
+        game_id=game_id,
+    ):
+        # Statistically aberrant performance: freeze the game before it
+        # touches Elo — the league tribunal will homologate or void it.
+        game.status = STATUS_PENDING_REVIEW
+        game.flag_reason = "outlier"
+    elif not payload.is_casual:
+        for player in players_by_name.values():
+            bump_trust(player, TRUST_GAME_COMPLETED)
+
     updates = []
     ratings_by_player_id: dict[tuple[uuid.UUID, str], PlayerRating] = {}
-    if not payload.is_casual:
+    if not payload.is_casual and game.status == STATUS_COMPLETED:
         player_ids = [p.id for p in players_by_name.values()]
         existing_ratings = (
             await session.execute(select(PlayerRating).where(PlayerRating.player_id.in_(player_ids)))
@@ -96,7 +125,6 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
                     initial_games_played.setdefault(name, {})[scope] = row.games_played
 
         config = await get_engine_config(session)
-        score_direction = await get_score_direction_map(session)
         updates = recompute_elo(
             [{"id": game_id, "mode": payload.mode, "variant": payload.variant, "players": payload.players, "scores": payload.scores}],
             config,
@@ -126,6 +154,10 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
             row.rating = u.elo_after
             row.games_played += 1
 
+    # Title conditions read the ratings/streaks updated above (same session,
+    # pre-commit state is visible to its own queries).
+    await evaluate_titles(session, list(players_by_name.values()))
+
     await session.commit()
 
     return GameRead(
@@ -136,6 +168,7 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
         duration=payload.duration,
         winner=payload.winner,
         is_casual=payload.is_casual,
+        status=game.status,
         extra=payload.extra,
         players=game_players_read,
     ), True

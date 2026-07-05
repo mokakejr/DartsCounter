@@ -3,7 +3,10 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ALL_MODES } from '../lib/stats.js';
 import { MODE_LABEL } from '../lib/data.js';
-import { displayName, avatarStyle } from '../lib/profiles.js';
+import { displayName } from '../lib/profiles.js';
+import PlayerCard from '../components/PlayerCard.jsx';
+import { useAuth } from '../lib/useAuth.jsx';
+import { ping } from '../api/players.js';
 import { fetchLeaderboard } from '../api/stats.js';
 import { fetchEloSettings } from '../api/elo.js';
 import './Standings.css';
@@ -85,8 +88,36 @@ export default function Standings({ ranked, profiles = {} }) {
         </div>
       </div>
 
+      {rankedRows.length >= 3 && (
+        <Podium top={rankedRows.slice(0, 3)} filter={filter} profiles={profiles} elo={elo} />
+      )}
+
+      {rankedRows.length >= 3 && rankedRows.length > 3 && (
+        <div className="pit">
+          {rankedRows.slice(3).map((s, i) => {
+            const wins = filter === 'Global' ? s.wins : s._wins;
+            const games = filter === 'Global' ? s.games : s._games;
+            const rate = games ? Math.round((wins / games) * 100) : 0;
+            return (
+              <PlayerCard
+                key={s.name}
+                className="pit__card"
+                name={s.name}
+                label={`#${i + 4} ${displayName(profiles, s.name)}`}
+                avatarUrl={profiles[s.name]?.avatar_url}
+                rank={elo[s.name]?.rank}
+                title={`${elo[s.name] ? `${elo[s.name].elo} elo · ` : ''}${rate}% V`}
+                streak={profiles[s.name]?.current_streak ?? 0}
+                size={36}
+                to={`/joueur/${encodeURIComponent(s.name)}`}
+              />
+            );
+          })}
+        </div>
+      )}
+
       <ol className="ladder">
-        {rankedRows.map((s, i) => (
+        {rankedRows.length < 3 && rankedRows.map((s, i) => (
           <LadderRow
             key={s.name}
             s={s}
@@ -123,10 +154,15 @@ export default function Standings({ ranked, profiles = {} }) {
   );
 }
 
+// Médailles top 3 (Epic 2.2): icône + bordure or/argent/bronze.
+const MEDALS = ['🥇', '🥈', '🥉'];
+
 function LadderRow({ s, i, filter, profiles, playerElo, isRanked }) {
   const wins = filter === 'Global' ? s.wins : s._wins;
   const games = filter === 'Global' ? s.games : s._games;
   const rank = isRanked ? rankClass(i) : 'rn';
+  const winRate = games ? wins / games : 0;
+  const profile = profiles[s.name];
   return (
     <motion.li
       className={`ladder__row ${rank} ${isRanked ? '' : 'ladder__row--unranked'}`}
@@ -135,16 +171,32 @@ function LadderRow({ s, i, filter, profiles, playerElo, isRanked }) {
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.45, delay: Math.min(i * 0.04, 0.3) }}
     >
-      <span className={`ladder__rank ${rank}`}>{isRanked ? i + 1 : '–'}</span>
-      <Link to={`/joueur/${encodeURIComponent(s.name)}`} className="ladder__avatar" style={avatarStyle(profiles, s.name)}>
-        {!profiles[s.name]?.avatar_url && s.name.charAt(0)}
-      </Link>
-      <Link to={`/joueur/${encodeURIComponent(s.name)}`} className="ladder__name">
-        {displayName(profiles, s.name)}
-        <span className="ladder__lv">niv. {s.level.lv} · {s.level.name}</span>
-      </Link>
-      <span className="ladder__stat">
-        <b>{wins}</b><em>{wins === 1 ? 'victoire' : 'victoires'}</em>
+      <span className={`ladder__rank ${rank}`}>
+        {isRanked && i < 3 ? MEDALS[i] : isRanked ? i + 1 : '–'}
+      </span>
+      <PlayerCard
+        className="ladder__player"
+        name={s.name}
+        label={displayName(profiles, s.name)}
+        avatarUrl={profile?.avatar_url}
+        rank={playerElo?.rank}
+        title={profile?.title ?? `niv. ${s.level.lv} · ${s.level.name}`}
+        streak={profile?.current_streak ?? 0}
+        size={40}
+        to={`/joueur/${encodeURIComponent(s.name)}`}
+      />
+      {/* Winrate en jauge (Epic 2.2) — vert > 50 %, rouge en dessous. */}
+      <span className="ladder__stat ladder__stat--bar">
+        <span className="winrate-bar" title={`${wins} victoires / ${games} parties`}>
+          <span
+            className="winrate-bar__fill"
+            style={{
+              width: `${Math.round(winRate * 100)}%`,
+              background: winRate >= 0.5 ? '#4CAF50' : '#F44336',
+            }}
+          />
+        </span>
+        <em>{Math.round(winRate * 100)}% · {wins} V</em>
       </span>
       <span className="ladder__stat ladder__stat--rate">
         {isRanked ? (
@@ -162,5 +214,69 @@ function LadderRow({ s, i, filter, profiles, playerElo, isRanked }) {
         <b>{games}</b><em>{games === 1 ? 'partie' : 'parties'}</em>
       </span>
     </motion.li>
+  );
+}
+
+
+// Le Podium Dynamique (Epic 10.1): les 3 premiers ne sont plus des lignes.
+// Ordre visuel 2-1-3, CTA rouge « Prendre sa place » (notifie via le
+// webhook « propose une partie » existant — pas d'infra push).
+function Podium({ top, filter, profiles, elo }) {
+  const auth = useAuth();
+  const [challenged, setChallenged] = useState(null); // name | 'cooldown'
+
+  async function challenge(name) {
+    try {
+      await ping(auth.token);
+      setChallenged(name);
+    } catch (err) {
+      setChallenged(err.status === 429 ? 'cooldown' : null);
+    }
+  }
+
+  const order = [top[1], top[0], top[2]].filter(Boolean);
+  const placeOf = (s) => top.indexOf(s); // 0 = champion
+
+  return (
+    <div className="podium">
+      {order.map((s) => {
+        const place = placeOf(s);
+        const wins = filter === 'Global' ? s.wins : s._wins;
+        const canChallenge = auth.player && auth.player.name !== s.name;
+        return (
+          <div key={s.name} className={`podium__slot podium__slot--p${place + 1}`}>
+            <span className="podium__medal">{['🥇', '🥈', '🥉'][place]}</span>
+            <PlayerCard
+              className="podium__card"
+              name={s.name}
+              label={displayName(profiles, s.name)}
+              avatarUrl={profiles[s.name]?.avatar_url}
+              rank={elo[s.name]?.rank}
+              title={profiles[s.name]?.title}
+              streak={profiles[s.name]?.current_streak ?? 0}
+              size={place === 0 ? 84 : 62}
+              to={`/joueur/${encodeURIComponent(s.name)}`}
+            />
+            <span className="podium__stats">
+              {elo[s.name] ? `${elo[s.name].elo} elo` : `${wins} V`}
+            </span>
+            {canChallenge && (
+              <button
+                className="podium__target"
+                disabled={challenged === s.name}
+                onClick={() => challenge(s.name)}
+              >
+                {challenged === s.name
+                  ? 'Défi lancé !'
+                  : challenged === 'cooldown'
+                    ? 'Déjà proposé…'
+                    : '🎯 Prendre sa place'}
+              </button>
+            )}
+            <span className={`podium__step podium__step--p${place + 1}`} />
+          </div>
+        );
+      })}
+    </div>
   );
 }

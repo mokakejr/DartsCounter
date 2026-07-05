@@ -3,10 +3,15 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   initialFiftyOneState, scoreTurn, nextPlayer, FIFTY_ONE_TARGET,
 } from '../modes/fiftyOne.js';
+import { hitPoints, hitLabel } from '../modes/board.js';
 import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
+import SvgBoard from '../components/SvgBoard.jsx';
 import './FiftyOneGame.css';
+
+// Dart-Wheel par défaut (Epic 4.1) — le numpad reste dispo via le toggle.
+const INPUT_MODE_KEY = 'dartsInputMode';
 
 export default function FiftyOneGame() {
   const { state } = useLocation();
@@ -16,14 +21,19 @@ export default function FiftyOneGame() {
 
   const [game, setGame] = useState(() => initialFiftyOneState(players));
   const [input, setInput] = useState('');
+  const [boardDarts, setBoardDarts] = useState([]); // [{value, ring}] du tour
+  const [inputMode, setInputMode] = useState(() => localStorage.getItem(INPUT_MODE_KEY) || 'board');
   const [phase, setPhase] = useState('playing'); // 'playing' | 'finished'
   const [showExit, setShowExit] = useState(false);
   // [{game}] — lets a player undo a confirmed turn, not just the in-progress input
   const [history, setHistory] = useState([]);
   const startedAt = useRef(Date.now());
+  // Fléchettes réellement lancées par joueur — alimente extra.darts (XP Ferveur).
+  const dartsThrown = useRef(Object.fromEntries(players.map(p => [p, 0])));
 
   const player = game.currentPlayer;
-  const turnTotal = parseInt(input, 10) || 0;
+  const boardTotal = boardDarts.reduce((s, d) => s + hitPoints(d), 0);
+  const turnTotal = inputMode === 'board' ? boardTotal : parseInt(input, 10) || 0;
   const divisible = turnTotal > 0 && turnTotal % 5 === 0;
   const fivesScored = divisible ? turnTotal / 5 : 0;
   const currentFives = game.fives[player];
@@ -41,8 +51,23 @@ export default function FiftyOneGame() {
     setInput(prev => prev.slice(0, -1));
   }
 
+  function onBoardHit(hit) {
+    if (phase !== 'playing' || boardDarts.length >= 3) return;
+    setBoardDarts(prev => [...prev, hit]);
+  }
+
+  function toggleInputMode() {
+    const next = inputMode === 'board' ? 'pad' : 'board';
+    localStorage.setItem(INPUT_MODE_KEY, next);
+    setInputMode(next);
+    setInput('');
+    setBoardDarts([]);
+  }
+
   function confirm() {
     setHistory(h => [...h, { game }]);
+    // Le nombre de fléchettes réellement lancées nourrit la Ferveur (XP).
+    dartsThrown.current[players[player]] += inputMode === 'board' ? boardDarts.length : 3;
     // Invalid score (not multiple of 5, or bust) → pass turn with 0
     const scored = scoreTurn(game, player, validScore ? turnTotal : 0);
     if (scored.winner !== null) {
@@ -52,6 +77,7 @@ export default function FiftyOneGame() {
         winner: players[scored.winner],
         startedAt: startedAt.current,
         isCasual,
+        extra: { darts: dartsThrown.current },
       });
       setGame(scored);
       setPhase('finished');
@@ -59,14 +85,21 @@ export default function FiftyOneGame() {
       setGame(nextPlayer(scored));
     }
     setInput('');
+    setBoardDarts([]);
   }
 
   function undo() {
+    // En mode cible, retirer d'abord la dernière fléchette du tour en cours.
+    if (inputMode === 'board' && boardDarts.length > 0) {
+      setBoardDarts(prev => prev.slice(0, -1));
+      return;
+    }
     if (!history.length) return;
     const prev = history[history.length - 1];
     setGame(prev.game);
     setHistory(h => h.slice(0, -1));
     setInput('');
+    setBoardDarts([]);
   }
 
   // ── Finished screen
@@ -137,34 +170,59 @@ export default function FiftyOneGame() {
 
       {/* Score display */}
       <div className={`f51__display${wouldBust ? ' f51__display--bust' : divisible && fivesScored > 0 ? ' f51__display--ok' : ''}`}>
-        <span className="f51__display-num">{input || '0'}</span>
+        <span className="f51__display-num">
+          {inputMode === 'board' ? turnTotal : (input || '0')}
+        </span>
         <span className="f51__display-hint">
           {wouldBust
             ? 'BUST !'
             : divisible && fivesScored > 0
               ? `+${fivesScored} cinq${fivesScored > 1 ? 's' : ''}`
-              : input && !divisible
+              : turnTotal > 0 && !divisible
                 ? 'pas multiple de 5'
                 : 'score du tour'}
         </span>
       </div>
 
-      {/* Numpad */}
-      <div className="f51__pad">
-        {[7, 8, 9, 4, 5, 6, 1, 2, 3].map(d => (
-          <button key={d} className="f51__key" onClick={() => pressDigit(String(d))}>
-            {d}
+      {inputMode === 'board' ? (
+        <>
+          {/* Dart-Wheel (Epic 4): two-tap, 3 fléchettes par tour */}
+          <div className="f51__board-darts">
+            {[0, 1, 2].map(i => (
+              <span key={i} className={`f51__board-dart${boardDarts[i] ? ' f51__board-dart--filled' : ''}`}>
+                {boardDarts[i] ? hitLabel(boardDarts[i]) : '·'}
+              </span>
+            ))}
+          </div>
+          <SvgBoard onHit={onBoardHit} darts={boardDarts} interactive={boardDarts.length < 3} />
+          <button
+            className={`f51__key f51__key--ok f51__key--confirm${validScore ? ' f51__key--ok-active' : ''}`}
+            onClick={confirm}
+          >
+            ✓ VALIDER {turnTotal > 0 ? turnTotal : ''}
           </button>
-        ))}
-        <button className="f51__key f51__key--back" onClick={pressBack}>⌫</button>
-        <button className="f51__key" onClick={() => pressDigit('0')}>0</button>
-        <button
-          className={`f51__key f51__key--ok${validScore ? ' f51__key--ok-active' : ''}`}
-          onClick={confirm}
-        >
-          ✓
-        </button>
-      </div>
+        </>
+      ) : (
+        <div className="f51__pad">
+          {[7, 8, 9, 4, 5, 6, 1, 2, 3].map(d => (
+            <button key={d} className="f51__key" onClick={() => pressDigit(String(d))}>
+              {d}
+            </button>
+          ))}
+          <button className="f51__key f51__key--back" onClick={pressBack}>⌫</button>
+          <button className="f51__key" onClick={() => pressDigit('0')}>0</button>
+          <button
+            className={`f51__key f51__key--ok${validScore ? ' f51__key--ok-active' : ''}`}
+            onClick={confirm}
+          >
+            ✓
+          </button>
+        </div>
+      )}
+
+      <button className="f51__input-toggle" onClick={toggleInputMode}>
+        {inputMode === 'board' ? '⌨️ Saisie clavier' : '🎯 Saisie sur cible'}
+      </button>
 
       {/* Undo — traverses confirmed turns too */}
       <button className="f51__undo" onClick={undo} disabled={history.length === 0}>⟲ Annuler</button>

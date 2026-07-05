@@ -49,8 +49,16 @@ def is_outlier(score: float, history: list[float], lower_is_better: bool = False
 
 
 async def recent_scores(
-    session: AsyncSession, player_id: uuid.UUID, mode: str, limit: int = WINDOW
+    session: AsyncSession,
+    player_id: uuid.UUID,
+    mode: str,
+    exclude_game_id: uuid.UUID | None = None,
+    limit: int = WINDOW,
 ) -> list[float]:
+    """History window. `exclude_game_id` MUST name the game under scrutiny:
+    it is already flushed to the session when this runs, and an outlier
+    inside its own sample caps the reachable z-score at (n-1)/sqrt(n) —
+    below the 3.0 threshold for any window under 11 games."""
     stmt = (
         select(GamePlayer.score)
         .join(Game, Game.id == GamePlayer.game_id)
@@ -63,6 +71,8 @@ async def recent_scores(
         .order_by(Game.date.desc())
         .limit(limit)
     )
+    if exclude_game_id is not None:
+        stmt = stmt.where(Game.id != exclude_game_id)
     return [float(s) for s in (await session.execute(stmt)).scalars().all()]
 
 
@@ -73,6 +83,7 @@ async def detect_outlier(
     mode: str,
     variant: str | None,
     score_direction: dict[tuple[str, str], bool],
+    game_id: uuid.UUID | None = None,
 ) -> bool:
     """True if any player's score in this game is a statistical outlier
     against their own recent history in the same mode family."""
@@ -82,7 +93,7 @@ async def detect_outlier(
         (mode_key, variant_key), score_direction.get((mode_key, ""), False)
     )
     for name, player in players_by_name.items():
-        history = await recent_scores(session, player.id, mode)
+        history = await recent_scores(session, player.id, mode, exclude_game_id=game_id)
         if is_outlier(float(scores_by_name[name]), history, lower_is_better):
             return True
     return False

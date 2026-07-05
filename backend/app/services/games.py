@@ -95,7 +95,8 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
     score_direction = await get_score_direction_map(session) if not payload.is_casual else {}
     scores_by_name = dict(zip(payload.players, payload.scores, strict=True))
     if not payload.is_casual and await detect_outlier(
-        session, players_by_name, scores_by_name, payload.mode, payload.variant, score_direction
+        session, players_by_name, scores_by_name, payload.mode, payload.variant, score_direction,
+        game_id=game_id,
     ):
         # Statistically aberrant performance: freeze the game before it
         # touches Elo — the league tribunal will homologate or void it.

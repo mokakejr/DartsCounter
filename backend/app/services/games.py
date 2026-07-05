@@ -11,6 +11,7 @@ from app.schemas.game import GameCreate, GamePlayerRead, GameRead
 from app.services.elo import recompute_elo
 from app.services.elo_config import get_engine_config, get_score_direction_map
 from app.services.players import get_or_create_player
+from app.services.progression import apply_game_to_player
 
 _EAGER = (selectinload(Game.players).selectinload(GamePlayer.player), selectinload(Game.winner))
 
@@ -76,6 +77,15 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
         if is_winner:
             game.winner_id = player.id
         game_players_read.append(GamePlayerRead(name=name, score=score, position=position))
+
+    # Ferveur XP + daily streak — awarded on every game, casual included:
+    # the progression layer always ends on a positive note (Epic 7.3).
+    darts_by_name = (payload.extra or {}).get("darts") or {}
+    for name, player in players_by_name.items():
+        darts = darts_by_name.get(name, 0)
+        apply_game_to_player(
+            player, payload.date, is_victory=name == payload.winner, darts_total=int(darts or 0)
+        )
 
     updates = []
     ratings_by_player_id: dict[tuple[uuid.UUID, str], PlayerRating] = {}

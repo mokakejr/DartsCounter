@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import BigInteger, DateTime, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -40,6 +40,14 @@ class Player(Base):
     # Only used when flight_mode == "paired" (vanes 1+3); null in "symmetric" mode.
     flight_crop_b: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     flight_mode: Mapped[str] = mapped_column(nullable=False, server_default="symmetric")
+
+    # Ferveur (parallel, never-negative progression) + daily play streak.
+    # The streak break is derived at read time (services/progression.py) —
+    # last_streak_update is the timestamp of the last counted game.
+    ferveur_xp: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0, server_default="0")
+    ferveur_level: Mapped[int] = mapped_column(nullable=False, default=1, server_default="1")
+    current_streak: Mapped[int] = mapped_column(nullable=False, default=0, server_default="0")
+    last_streak_update: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     game_links: Mapped[list["GamePlayer"]] = relationship(back_populates="player")
     elo_history: Mapped[list["EloHistory"]] = relationship(back_populates="player")

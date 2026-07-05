@@ -6,10 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.models import Game, GamePlayer, Player
 from app.schemas.player import PlayerRead
+from app.services.progression import effective_streak, paris_date
 
 
 def image_url(path: str | None) -> str | None:
     return f"{get_settings().public_api_url}/uploads/{path}" if path else None
+
+
+def live_streak(player: Player) -> int:
+    last = paris_date(player.last_streak_update) if player.last_streak_update else None
+    return effective_streak(last, player.current_streak, paris_date())
 
 
 def player_to_read(player: Player) -> PlayerRead:
@@ -25,6 +31,9 @@ def player_to_read(player: Player) -> PlayerRead:
         accent_color=player.accent_color,
         is_admin=player.is_admin,
         created_at=player.created_at,
+        ferveur_xp=player.ferveur_xp,
+        ferveur_level=player.ferveur_level,
+        current_streak=live_streak(player),
     )
 
 

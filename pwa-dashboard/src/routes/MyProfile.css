@@ -144,3 +144,14 @@
 .myprofile__flight-section .myprofile__hint {
   margin: 6px 0 18px;
 }
+
+.myprofile__perf {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  max-width: 480px;
+}
+.myprofile__perf input { margin-top: 3px; }

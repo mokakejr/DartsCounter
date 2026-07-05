@@ -1,0 +1,67 @@
+.player-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+
+.player-card__frame {
+  width: var(--pc-size, 48px);
+  height: var(--pc-size, 48px);
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background-color: rgba(255, 255, 255, 0.08);
+  font-family: var(--font-display);
+  font-size: calc(var(--pc-size, 48px) * 0.42);
+  color: #fff;
+  border: 2px solid var(--tier-color, transparent);
+}
+
+/* Lueur passive par rang — le "juice" discret qui attire l'œil. */
+.player-card__frame[data-rank] {
+  animation: pc-glow 2.6s ease-in-out infinite;
+}
+
+@keyframes pc-glow {
+  0%, 100% { box-shadow: 0 0 6px 0 var(--tier-color); }
+  50% { box-shadow: 0 0 14px 2px var(--tier-color); }
+}
+
+/* Mode Performance (Epic 8.4): bordure solide, zéro animation. */
+[data-reduce-animations] .player-card__frame[data-rank] {
+  animation: none;
+  box-shadow: none;
+}
+
+.player-card__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.player-card__name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-card__flame {
+  margin-left: 6px;
+  font-size: 0.8em;
+}
+
+.player-card__title {
+  font-size: 0.8rem;
+  color: #a0a0a0;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

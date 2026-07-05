@@ -174,3 +174,8 @@
   background: rgba(0, 0, 0, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.25);
 }
+
+.play-home__instant--resume {
+  background: linear-gradient(120deg, #2f74d2, #173a6b);
+  box-shadow: 0 8px 22px rgba(47, 116, 210, 0.35);
+}

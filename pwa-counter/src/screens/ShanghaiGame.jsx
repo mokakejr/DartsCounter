@@ -19,6 +19,7 @@ import EmoteSplash from '../components/EmoteSplash.jsx';
 import ChatOverlay from '../components/ChatOverlay.jsx';
 import Tribunes from '../components/Tribunes.jsx';
 import { useLiveMatch } from '../useLiveMatch.js';
+import { clearResume, loadResume, saveResume } from '../resume.js';
 import { bigHit, smallHit } from '../juice.js';
 import './ShanghaiGame.css';
 
@@ -61,9 +62,12 @@ export default function ShanghaiGame() {
 
   // Generated once per game, shared by every player — never previewed ahead
   // of the current round.
-  const [targets] = useState(() => TARGET_GENERATOR[shanghaiVariant]());
-  const [game, setGame] = useState(() => initialShanghaiState(players, targets));
-  const [darts, setDarts] = useState([]);
+  // Reprise apres reload accidentel — les cibles tirees au sort (random/
+  // crazy) doivent persister avec la partie, sinon tout change au reload.
+  const resume = loadResume('/shanghai', players);
+  const [targets] = useState(() => resume?.targets ?? TARGET_GENERATOR[shanghaiVariant]());
+  const [game, setGame] = useState(() => resume?.game ?? initialShanghaiState(players, targets));
+  const [darts, setDarts] = useState(resume?.darts ?? []);
   // pending: { pts, isShanghai, nextGame } — set when 3 darts entered, cleared on confirm
   const [pending, setPending] = useState(null);
   // phase: 'playing' | 'turn-done' | 'shanghai' | 'finished'
@@ -83,6 +87,12 @@ export default function ShanghaiGame() {
       return !f;
     });
   }
+
+  useEffect(() => {
+    if (phase === 'playing' || phase === 'turn-done') {
+      saveResume('/shanghai', players, { game, targets, darts , nav: state });
+    }
+  }, [game, darts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const round = game.currentRound;
   const player = game.currentPlayer;
@@ -254,6 +264,7 @@ export default function ShanghaiGame() {
         onConfirm={() => {
           // Quitter = clore le match live, sinon il reste 🔴 LIVE au dashboard.
           emit({ event: 'MATCH_FINISHED', aborted: true });
+          clearResume();
           navigate('/');
         }}
         onCancel={() => setShowExit(false)}

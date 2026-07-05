@@ -16,6 +16,7 @@ import EmoteSplash from '../components/EmoteSplash.jsx';
 import ChatOverlay from '../components/ChatOverlay.jsx';
 import Tribunes from '../components/Tribunes.jsx';
 import { useLiveMatch } from '../useLiveMatch.js';
+import { clearResume, loadResume, saveResume } from '../resume.js';
 import VictoryOverlay from '../components/VictoryOverlay.jsx';
 import './CricketGame.css';
 
@@ -103,15 +104,19 @@ export default function CricketGame() {
   const isCasual = state?.isCasual ?? false;
   const variantLabel = variant === 'cutthroat' ? 'CutThroat' : 'Normal';
 
+  // Reprise apres reload accidentel : l'etat de jeu est snapshotte a chaque
+  // coup (voir l'effet saveResume plus bas).
+  const resume = loadResume(isSC ? '/super-cricket' : '/cricket', players);
   const [game, setGame] = useState(() =>
-    isSC
+    resume?.game
+    ?? (isSC
       ? initialSuperCricketState(players, variant === 'cutthroat' ? SC_MODE.CUT_THROAT : SC_MODE.NORMAL)
-      : initialCricketState(players, variant === 'cutthroat' ? CRICKET_MODE.CUT_THROAT : CRICKET_MODE.NORMAL)
+      : initialCricketState(players, variant === 'cutthroat' ? CRICKET_MODE.CUT_THROAT : CRICKET_MODE.NORMAL))
   );
-  const [dartsUsed, setDartsUsed] = useState(0);
+  const [dartsUsed, setDartsUsed] = useState(resume?.dartsUsed ?? 0);
   const [multiplier, setMultiplier] = useState(1);
   // phase: 'playing' | 'turn-done' | 'finished'
-  const [phase, setPhase] = useState('playing');
+  const [phase, setPhase] = useState(resume?.phase === 'turn-done' ? 'turn-done' : 'playing');
   // SC always uses the board (grid) view; Cricket remembers last choice
   const [view, setView] = useState(() => isSC ? 'apk' : loadView());
   const [history, setHistory] = useState([]); // [{game, dartsUsed, phase}]
@@ -139,6 +144,9 @@ export default function CricketGame() {
   // (le spectateur suit l'avancée du Cricket cible par cible) — couvre tous
   // les chemins de saisie ET les undo sans instrumenter chaque handler.
   useEffect(() => {
+    if (phase !== 'finished') {
+      saveResume(isSC ? '/super-cricket' : '/cricket', players, { game, dartsUsed, phase , nav: state });
+    }
     emit({
       event: 'SCORE_UPDATED',
       scores: Object.fromEntries(players.map((n, i) => [n, game.points[i]])),
@@ -341,6 +349,7 @@ export default function CricketGame() {
         open={showExit}
         onConfirm={() => {
           emit({ event: 'MATCH_FINISHED', aborted: true });
+          clearResume();
           navigate('/');
         }}
         onCancel={() => setShowExit(false)}

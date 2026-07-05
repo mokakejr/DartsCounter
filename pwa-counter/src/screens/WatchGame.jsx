@@ -75,6 +75,40 @@ export default function WatchGame() {
   const connRef = useRef(null);
   const lastEmote = useRef(0);
   const lastChat = useRef(0);
+  // Cricket : la cible s'anime en diffant le tableau des marques — chaque
+  // SCORE_UPDATED correspond a un coup, l'ecart (1/2/3 marques) donne le
+  // multiplicateur. Zero instrumentation cote joueur.
+  const prevMarks = useRef(null);
+  const flashTimer = useRef(null);
+  const [flashTarget, setFlashTarget] = useState(null);
+
+  function cricketHitFromDiff(detail) {
+    const prev = prevMarks.current;
+    prevMarks.current = detail.marks;
+    if (!prev) return null;
+    for (let i = 0; i < detail.marks.length; i++) {
+      for (let t = 0; t < (detail.marks[i]?.length ?? 0); t++) {
+        const added = (detail.marks[i][t] ?? 0) - (prev[i]?.[t] ?? 0);
+        if (added > 0) {
+          const label = detail.labels?.[t];
+          const value = label === 'BULL' ? 25 : parseInt(label, 10);
+          if (!Number.isFinite(value)) return null; // DBL/TRP/BED : pas une case de la cible
+          return { value, ring: added >= 3 ? 'T' : added === 2 ? 'D' : 'S' };
+        }
+      }
+    }
+    return null;
+  }
+
+  const [boardShake, setBoardShake] = useState(false);
+
+  function flashSector(value) {
+    setFlashTarget(value);
+    setBoardShake(true);
+    clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlashTarget(null), 900);
+    setTimeout(() => setBoardShake(false), 200);
+  }
   // Identité connue -> direct aux gradins ; sinon on la demande d'abord
   // (avec bypass anonyme) — le chat signera de ce nom.
   const [name, setName] = useState(() => localStorage.getItem(SPECTATOR_NAME_KEY));
@@ -98,23 +132,40 @@ export default function WatchGame() {
         switch (e.event) {
           case 'STATE':
             setMatch(e.match);
+            prevMarks.current = e.match?.detail?.marks ?? null;
             break;
-          case 'DART_THROWN':
+          case 'DART_THROWN': {
             setMatch(m => m && { ...m, turn_player: e.player_id, dart_index: e.dart_index });
-            setTurnDarts(prev => [...prev.slice(-2), { ...hitFromDelta(e.score_hit), key: Date.now() }]);
+            const d = hitFromDelta(e.score_hit);
+            setTurnDarts(prev => [...prev.slice(-2), { ...d, key: Date.now() }]);
+            if (d.ring !== 'MISS') flashSector(d.value);
             break;
+          }
           case 'TURN_CHANGED':
             setMatch(m => m && { ...m, turn_player: e.player, dart_index: 0, round: e.round ?? m.round });
             setTurnDarts([]);
             break;
-          case 'SCORE_UPDATED':
-            setMatch(m => m && {
+          case 'SCORE_UPDATED': {
+            let hit = null;
+            if (e.detail?.kind === 'cricket') {
+              hit = cricketHitFromDiff(e.detail);
+              if (hit) {
+                setTurnDarts(prev => [...prev.slice(-2), { ...hit, key: Date.now() }]);
+                flashSector(hit.value);
+              }
+            }
+            const apply = () => setMatch(m => m && {
               ...m,
               scores: { ...m.scores, ...e.scores },
               round: e.round ?? m.round,
               detail: e.detail ?? m.detail,
             });
+            // Impact d'abord, chiffres 300 ms plus tard : l'attente cree
+            // l'anticipation (Epic "L'Ame de la Cible").
+            if (hit) setTimeout(apply, 300);
+            else apply();
             break;
+          }
           case 'MATCH_STARTED':
             setMatch(m => m && { ...m, started: true });
             break;
@@ -132,7 +183,11 @@ export default function WatchGame() {
       },
     });
     connRef.current = conn;
-    return () => { conn.close(); connRef.current = null; };
+    return () => {
+      conn.close();
+      connRef.current = null;
+      clearTimeout(flashTimer.current);
+    };
   }, [matchId, name]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function sendEmote(emote) {
@@ -209,7 +264,9 @@ export default function WatchGame() {
             : 'En attente du premier lancer…'}
       </div>
 
-      <SvgBoard interactive={false} darts={turnDarts} />
+      <div className={boardShake ? 'watch__board watch__board--shake' : 'watch__board'}>
+        <SvgBoard interactive={false} darts={turnDarts} highlightTarget={flashTarget} />
+      </div>
 
       {/* Cricket : l'avancée cible par cible, pas juste les points. */}
       {match.detail?.kind === 'cricket' && (

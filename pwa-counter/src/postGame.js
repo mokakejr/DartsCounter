@@ -1,6 +1,7 @@
 import { postGameToServer } from './api/games.js';
 import { enqueueGame } from './offlineQueue.js';
 import { registerBackgroundSync } from './sync.js';
+import { clearResume } from './resume.js';
 
 /**
  * Send a finished game to the backend. If the network is down, queue it in
@@ -26,6 +27,7 @@ export const LAST_GAME_KEY = 'dartsLastGame';
 
 export async function postGame({ mode, variant, players, scores, winner, startedAt, isCasual = false, extra }) {
   const now = Date.now();
+  clearResume(); // partie terminee : plus rien a reprendre apres un reload
   try {
     localStorage.setItem(LAST_GAME_KEY, JSON.stringify({
       mode, variant, players, isCasual, playedAt: now,

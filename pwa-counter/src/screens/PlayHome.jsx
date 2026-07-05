@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { lastGame, replayTarget } from '../replay.js';
+import { loadAnyResume } from '../resume.js';
 import './PlayHome.css';
 
 const DASHBOARD_URL = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:5174';
@@ -17,10 +18,24 @@ export default function PlayHome() {
   // Revanche instantanée (7.4): 1 clic = même mode, mêmes joueurs, direct
   // sur l'écran de score — si une partie a eu lieu dans les dernières 24 h.
   const replay = replayTarget(lastGame());
+  // Partie interrompue (< 1 h) : on propose d'y revenir (Epic Persistance).
+  const paused = loadAnyResume();
 
   return (
     <div className="play-home">
       <h1 className="play-home__title">JOUER</h1>
+
+      {paused && (
+        <button
+          className="play-home__instant play-home__instant--resume"
+          onClick={() => navigate(paused.route, { state: paused.data.nav })}
+        >
+          <span className="play-home__instant-tag">&#9208;&#65039; PARTIE EN PAUSE</span>
+          <span className="play-home__instant-label">
+            Reprendre : {paused.players.split('|').join(' vs ')}
+          </span>
+        </button>
+      )}
 
       {replay && (
         <button

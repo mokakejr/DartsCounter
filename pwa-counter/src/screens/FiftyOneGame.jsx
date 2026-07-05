@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   initialFiftyOneState, scoreTurn, nextPlayer, FIFTY_ONE_TARGET,
@@ -13,6 +13,7 @@ import EmoteSplash from '../components/EmoteSplash.jsx';
 import ChatOverlay from '../components/ChatOverlay.jsx';
 import Tribunes from '../components/Tribunes.jsx';
 import { useLiveMatch } from '../useLiveMatch.js';
+import { clearResume, loadResume, saveResume } from '../resume.js';
 import './FiftyOneGame.css';
 
 // Dart-Wheel par défaut (Epic 4.1) — le numpad reste dispo via le toggle.
@@ -29,9 +30,12 @@ export default function FiftyOneGame() {
   const remote = state?.remote ?? false;
   const me = state?.me ?? null;
 
-  const [game, setGame] = useState(() => initialFiftyOneState(players));
+  // Reprise apres reload accidentel (hors remote : l'etat y est resynchro
+  // par le serveur via STATE, et le tour adverse ne doit pas etre ecrase).
+  const resume = (state?.remote ?? false) ? null : loadResume('/51', players);
+  const [game, setGame] = useState(() => resume?.game ?? initialFiftyOneState(players));
   const [input, setInput] = useState('');
-  const [boardDarts, setBoardDarts] = useState([]); // [{value, ring}] du tour
+  const [boardDarts, setBoardDarts] = useState(resume?.boardDarts ?? []); // [{value, ring}] du tour
   // En remote, le Dart-Wheel est obligatoire : l'overlay adverse
   // (« Fléchette 2/3 ») est nourri par les DART_THROWN, que le clavier
   // n'émet pas.
@@ -89,6 +93,12 @@ export default function FiftyOneGame() {
       return !f;
     });
   }
+
+  useEffect(() => {
+    if (!remote && phase !== 'finished') {
+      saveResume('/51', players, { game, boardDarts , nav: state });
+    }
+  }, [game, boardDarts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const player = game.currentPlayer;
   // Handover (13.2): hors de mon tour, le Dart-Wheel est verrouillé.
@@ -227,6 +237,7 @@ export default function FiftyOneGame() {
         onConfirm={() => {
           // Quitter = clore le match live, sinon il reste 🔴 LIVE au dashboard.
           emit({ event: 'MATCH_FINISHED', aborted: true });
+          clearResume();
           navigate('/');
         }}
         onCancel={() => setShowExit(false)}

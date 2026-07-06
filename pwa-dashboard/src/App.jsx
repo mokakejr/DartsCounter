@@ -98,6 +98,16 @@ function AppInner() {
   const [calloutRemaining, setCalloutRemaining] = useState(calloutRemainingMs);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Badge rouge de l'onglet Tournois : inscriptions ouvertes ou LIVE.
+  const [openTournaments, setOpenTournaments] = useState(0);
+  useEffect(() => {
+    const league = activeLeague ?? leagues[0];
+    if (!league) { setOpenTournaments(0); return; }
+    fetchTournaments(league.id)
+      .then(rows => setOpenTournaments(rows.filter(t => t.phase !== 'past').length))
+      .catch(() => setOpenTournaments(0));
+  }, [activeLeague?.id, leagues.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => setMenuOpen(false), [location.pathname]);
 
   // Local cache of the cooldown countdown — Redis on the backend is the
@@ -152,16 +162,6 @@ function AppInner() {
   const home = onboardingDone
     ? <Home games={games} stats={stats} ranked={ranked} profiles={profiles} eloBoard={eloBoard} />
     : <Welcome hasAccount={!!auth.player} />;
-
-  // Badge rouge de l'onglet Tournois : inscriptions ouvertes ou LIVE.
-  const [openTournaments, setOpenTournaments] = useState(0);
-  useEffect(() => {
-    const league = activeLeague ?? leagues[0];
-    if (!league) { setOpenTournaments(0); return; }
-    fetchTournaments(league.id)
-      .then(rows => setOpenTournaments(rows.filter(t => t.phase !== 'past').length))
-      .catch(() => setOpenTournaments(0));
-  }, [activeLeague?.id, leagues.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const knownPlayers = allGames
     ? [...new Set(allGames.flatMap(g => g.players ?? []))].sort((a, b) => a.localeCompare(b, 'fr'))

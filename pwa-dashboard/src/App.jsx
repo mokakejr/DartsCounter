@@ -4,6 +4,7 @@ import { useLenis } from './lib/useLenis.js';
 import { useGames } from './lib/useGames.js';
 import { LeagueProvider, useLeague } from './lib/useLeague.jsx';
 import { AuthProvider, useAuth } from './lib/useAuth.jsx';
+import { censorName } from './lib/censor.js';
 import { fetchPlayers } from './api/players.js';
 import { fetchLeaderboard } from './api/stats.js';
 import CalloutModal from './components/CalloutModal.jsx';
@@ -52,13 +53,14 @@ function Home({ games, stats, ranked, profiles = {}, eloBoard }) {
 const ORDINALS = ['1er', '2e', '3e'];
 const ordinal = (n) => ORDINALS[n - 1] ?? `${n}e`;
 
-// Global Elo leaderboard (name/elo/rank/...), fetched once — used to crown
-// the homepage's "reigning champion" by rating instead of by win count.
-function useEloBoard() {
+// Elo leaderboard (name/elo/rank/...) — scoped à la ligue active quand il y
+// en a une : les positions (et donc le Roi du Hero et le rang du header)
+// deviennent relatives à la ligue ; la valeur elo reste la cote globale.
+function useEloBoard(leagueId) {
   const [board, setBoard] = useState([]);
   useEffect(() => {
-    fetchLeaderboard().then(setBoard).catch(() => {});
-  }, []);
+    fetchLeaderboard(undefined, leagueId).then(setBoard).catch(() => {});
+  }, [leagueId]);
   return board;
 }
 
@@ -100,8 +102,8 @@ function AppInner() {
   const navigate = useNavigate();
   const auth = useAuth();
   const profiles = usePlayerProfiles();
-  const eloBoard = useEloBoard();
   const { leagues, activeLeague, activateLeague, ready: leaguesReady } = useLeague();
+  const eloBoard = useEloBoard(activeLeague?.id);
   const { games, allGames, stats, ranked, loading, error } = useGames(activeLeague?.players ?? null);
   const [calloutOpen, setCalloutOpen] = useState(false);
   const [calloutRemaining, setCalloutRemaining] = useState(calloutRemainingMs);
@@ -176,7 +178,8 @@ function AppInner() {
     ? [...new Set(allGames.flatMap(g => g.players ?? []))].sort((a, b) => a.localeCompare(b, 'fr'))
     : [];
 
-  // Mon rang dans le header (Epic 5.2) : [Pseudo | Silver III (7e)].
+  // Mon rang dans le header : [Pseudo | Silver III · 1000 (7e)] — position et
+  // elo suivent la ligue active (eloBoard est rescopé par useEloBoard).
   const myIdx = auth.player ? eloBoard.findIndex(r => r.name === auth.player.name) : -1;
   const myEntry = myIdx >= 0 ? eloBoard[myIdx] : null;
 
@@ -203,8 +206,8 @@ function AppInner() {
         )}
         <div className="nav__right">
           <Link to={auth.player ? '/profile' : '/login'} className="nav__account">
-            {auth.player ? (auth.player.display_name || auth.player.name) : 'Connexion'}
-            {myEntry && <span className="nav__rank"> | {myEntry.rank} ({ordinal(myIdx + 1)})</span>}
+            {auth.player ? censorName(auth.player.display_name || auth.player.name) : 'Connexion'}
+            {myEntry && <span className="nav__rank"> | {myEntry.rank} · {myEntry.elo} ({ordinal(myIdx + 1)})</span>}
           </Link>
           <button
             className="nav__callout"

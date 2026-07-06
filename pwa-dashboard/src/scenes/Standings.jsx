@@ -6,6 +6,7 @@ import { MODE_LABEL } from '../lib/data.js';
 import { displayName } from '../lib/profiles.js';
 import PlayerCard from '../components/PlayerCard.jsx';
 import { useAuth } from '../lib/useAuth.jsx';
+import { useLeague } from '../lib/useLeague.jsx';
 import { ping } from '../api/players.js';
 import { fetchLeaderboard } from '../api/stats.js';
 import { fetchEloSettings } from '../api/elo.js';
@@ -21,27 +22,31 @@ function rankClass(i) {
 }
 
 export default function Standings({ ranked, profiles = {} }) {
+  const { activeLeague } = useLeague();
+  const leagueId = activeLeague?.id;
   const [filter, setFilter] = useState('Global');
   // Elo is ranked server-side (it's the whole point of the rating engine) —
-  // fetched per filter and cached so flipping between tabs doesn't refetch.
+  // fetched per filter+league and cached so flipping between tabs doesn't
+  // refetch (league in the key: positions are league-relative).
   const [eloByFilter, setEloByFilter] = useState({});
   const [minRankedGames, setMinRankedGames] = useState(DEFAULT_MIN_RANKED_GAMES);
+  const cacheKey = `${leagueId ?? 'all'}:${filter}`;
 
   useEffect(() => {
     fetchEloSettings().then(s => setMinRankedGames(s.min_ranked_games)).catch(() => {});
   }, []);
 
   useEffect(() => {
-    if (eloByFilter[filter]) return;
-    fetchLeaderboard(filter === 'Global' ? undefined : filter)
+    if (eloByFilter[cacheKey]) return;
+    fetchLeaderboard(filter === 'Global' ? undefined : filter, leagueId)
       .then(rows => {
         const byName = Object.fromEntries(rows.map(r => [r.name, r]));
-        setEloByFilter(prev => ({ ...prev, [filter]: byName }));
+        setEloByFilter(prev => ({ ...prev, [cacheKey]: byName }));
       })
       .catch(() => {});
-  }, [filter, eloByFilter]);
+  }, [cacheKey, filter, leagueId, eloByFilter]);
 
-  const elo = eloByFilter[filter] || {};
+  const elo = eloByFilter[cacheKey] || {};
 
   const { rankedRows, unrankedRows } = useMemo(() => {
     const base = filter === 'Global'

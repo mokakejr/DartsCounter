@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import SvgBoard from '../components/SvgBoard.jsx';
 import { connectLive } from '../live.js';
+import { censorName } from '../censor.js';
 import './WatchGame.css';
 
 // Barre d'interaction des gradins (Epic 12.2).
@@ -27,7 +28,7 @@ function CricketTable({ detail, players, turnPlayer }) {
         <tr>
           <th />
           {players.map(p => (
-            <th key={p} className={p === turnPlayer ? 'watch__cricket-active' : ''}>{p}</th>
+            <th key={p} className={p === turnPlayer ? 'watch__cricket-active' : ''}>{censorName(p)}</th>
           ))}
         </tr>
       </thead>
@@ -76,24 +77,23 @@ export default function WatchGame() {
   const lastEmote = useRef(0);
   const lastChat = useRef(0);
   // Cricket : la cible s'anime en diffant le tableau des marques — chaque
-  // SCORE_UPDATED correspond a un coup, l'ecart (1/2/3 marques) donne le
-  // multiplicateur. Zero instrumentation cote joueur.
+  // SCORE_UPDATED correspond a un coup. On n'infère PAS l'anneau (S/D/T) :
+  // les marques capent à 3, un T17 sur cible entamée ressort comme +1 mark
+  // et donnerait un « simple » mensonger. On flashe toute la zone touchée.
   const prevMarks = useRef(null);
   const flashTimer = useRef(null);
   const [flashTarget, setFlashTarget] = useState(null);
 
-  function cricketHitFromDiff(detail) {
+  function cricketZoneFromDiff(detail) {
     const prev = prevMarks.current;
     prevMarks.current = detail.marks;
     if (!prev) return null;
     for (let i = 0; i < detail.marks.length; i++) {
       for (let t = 0; t < (detail.marks[i]?.length ?? 0); t++) {
-        const added = (detail.marks[i][t] ?? 0) - (prev[i]?.[t] ?? 0);
-        if (added > 0) {
+        if ((detail.marks[i][t] ?? 0) > (prev[i]?.[t] ?? 0)) {
           const label = detail.labels?.[t];
           const value = label === 'BULL' ? 25 : parseInt(label, 10);
-          if (!Number.isFinite(value)) return null; // DBL/TRP/BED : pas une case de la cible
-          return { value, ring: added >= 3 ? 'T' : added === 2 ? 'D' : 'S' };
+          return Number.isFinite(value) ? value : null; // DBL/TRP/BED : pas une case de la cible
         }
       }
     }
@@ -115,7 +115,7 @@ export default function WatchGame() {
   const [nameDraft, setNameDraft] = useState('');
 
   function chooseName(value) {
-    const chosen = value.trim().slice(0, 20) || anonymousName();
+    const chosen = censorName(value.trim().slice(0, 20)) || anonymousName();
     localStorage.setItem(SPECTATOR_NAME_KEY, chosen);
     setName(chosen);
   }
@@ -146,13 +146,12 @@ export default function WatchGame() {
             setTurnDarts([]);
             break;
           case 'SCORE_UPDATED': {
-            let hit = null;
+            let zone = null;
             if (e.detail?.kind === 'cricket') {
-              hit = cricketHitFromDiff(e.detail);
-              if (hit) {
-                setTurnDarts(prev => [...prev.slice(-2), { ...hit, key: Date.now() }]);
-                flashSector(hit.value);
-              }
+              // Toute la zone s'illumine (S+D+T+numéro via flashSector) —
+              // pas de marqueur planté : l'anneau exact n'est pas connu.
+              zone = cricketZoneFromDiff(e.detail);
+              if (zone != null) flashSector(zone);
             }
             const apply = () => setMatch(m => m && {
               ...m,
@@ -162,7 +161,7 @@ export default function WatchGame() {
             });
             // Impact d'abord, chiffres 300 ms plus tard : l'attente cree
             // l'anticipation (Epic "L'Ame de la Cible").
-            if (hit) setTimeout(apply, 300);
+            if (zone != null) setTimeout(apply, 300);
             else apply();
             break;
           }
@@ -258,9 +257,9 @@ export default function WatchGame() {
 
       <div className="watch__status">
         {match.finished
-          ? (match.winner ? `🏆 ${match.winner} remporte le match !` : 'Match terminé.')
+          ? (match.winner ? `🏆 ${censorName(match.winner)} remporte le match !` : 'Match terminé.')
           : match.turn_player
-            ? `${match.turn_player} prépare sa ${(match.dart_index ?? 0) + 1}ᵉ fléchette…`
+            ? `${censorName(match.turn_player)} prépare sa ${(match.dart_index ?? 0) + 1}ᵉ fléchette…`
             : 'En attente du premier lancer…'}
       </div>
 
@@ -276,7 +275,7 @@ export default function WatchGame() {
       <div className="watch__scores">
         {scores.map(({ name: p, score }) => (
           <div key={p} className={`watch__score-row${p === match.turn_player ? ' watch__score-row--active' : ''}`}>
-            <span>{p}</span>
+            <span>{censorName(p)}</span>
             <b>{score}</b>
           </div>
         ))}
@@ -286,7 +285,7 @@ export default function WatchGame() {
       <div className="watch__chat">
         {messages.map(m => (
           <p key={m.id} className="watch__chat-msg">
-            <b>{m.sender}</b> {m.message}
+            <b>{censorName(m.sender)}</b> {m.message}
           </p>
         ))}
       </div>

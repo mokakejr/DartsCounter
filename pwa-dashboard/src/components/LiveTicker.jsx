@@ -56,7 +56,8 @@ export default function LiveTicker() {
             target="_blank"
             rel="noreferrer"
           >
-            [ REJOINDRE LES GRADINS{m.spectators > 0 ? ` · ${m.spectators} 👀` : ''} ]
+            {/* Les 👀 sont toujours là — l'appât marche aussi gradins vides. */}
+            👀{m.spectators > 0 ? ` ${m.spectators} ·` : ''} REJOINDRE LES GRADINS
           </a>
         </span>
       ))}

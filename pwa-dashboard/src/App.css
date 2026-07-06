@@ -98,6 +98,8 @@
   padding: 5px 12px;
   cursor: pointer;
   max-width: 40vw;
+  text-align: center;
+  text-align-last: center; /* la propriété qui centre l'option affichée d'un <select> */
 }
 .nav__league option { background: #0a0a0c; color: #fff; text-transform: none; }
 

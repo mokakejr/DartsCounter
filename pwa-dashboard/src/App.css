@@ -7,7 +7,11 @@
   justify-content: space-between;
   padding: 16px var(--gutter);
   mix-blend-mode: difference;
+  /* La barre est surtout du vide : sans ça, ses 68px pleine largeur avalent
+     les clics du contenu en dessous (chevron du tiroir, barre LIVE). */
+  pointer-events: none;
 }
+.nav > * { pointer-events: auto; }
 .nav__brand { font-size: 22px; letter-spacing: 0.04em; }
 .nav__right { display: flex; align-items: center; gap: 8px; }
 

@@ -373,3 +373,23 @@
   text-align: center;
 }
 .sg__board .svgboard { width: min(72vw, 300px); }
+
+/* ── Verrouillage hors tour (Epic 13.2) — même pattern que le 51 ─────── */
+.sg__remote-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(10, 10, 14, 0.82);
+  backdrop-filter: blur(2px);
+}
+.sg__remote-title {
+  font-size: 22px;
+  font-weight: 900;
+  margin: 0;
+}
+.sg__remote-sub { color: #9a9aa3; margin: 0; }

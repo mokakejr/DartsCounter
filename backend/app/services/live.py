@@ -36,6 +36,11 @@ class LiveMatch:
     players: list[str]
     remote: bool = False
     variant: str | None = None
+    # Réglages de partie opaques (id de mode front, cibles Shanghai, numéros
+    # Killer, vies, isCasual…) — posés à la création, relayés tels quels au
+    # rejoignant via GET /live/matches/{id} et le snapshot STATE. Le serveur
+    # ne les interprète jamais (même modèle que `detail`).
+    options: dict | None = None
     created_at: float = field(default_factory=time.time)
     last_activity: float = field(default_factory=time.time)
     started: bool = False
@@ -68,12 +73,17 @@ MATCHES: dict[str, LiveMatch] = {}
 
 
 def create_match(
-    mode: str, players: list[str], remote: bool = False, variant: str | None = None
+    mode: str,
+    players: list[str],
+    remote: bool = False,
+    variant: str | None = None,
+    options: dict | None = None,
 ) -> LiveMatch:
     match = LiveMatch(
         id=uuid.uuid4().hex[:12],
         mode=mode,
         variant=variant,
+        options=options,
         players=players,
         remote=remote,
         started=not remote,  # local matches are live immediately; remote waits on READY
@@ -129,6 +139,7 @@ def to_dict(match: LiveMatch, include_chat: bool = False) -> dict[str, Any]:
         "id": match.id,
         "mode": match.mode,
         "variant": match.variant,
+        "options": match.options,
         "players": match.players,
         "remote": match.remote,
         "started": match.started,

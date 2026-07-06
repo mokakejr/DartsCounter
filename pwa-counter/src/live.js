@@ -7,13 +7,13 @@ import { apiPost } from './api/client.js';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const WS_URL = API_URL.replace(/^http/, 'ws');
 
-export async function createLiveMatch({ mode, players, variant = null, remote = false, timeoutMs = 1500 }) {
+export async function createLiveMatch({ mode, players, variant = null, remote = false, options = null, timeoutMs = 1500 }) {
   try {
     // Le lancement d'une partie locale ne doit jamais attendre le réseau :
     // au-delà du timeout on joue sans diffusion (les retries d'apiPost
     // pourraient sinon bloquer plusieurs secondes).
     return await Promise.race([
-      apiPost('/live/matches', { mode, players, variant, remote }),
+      apiPost('/live/matches', { mode, players, variant, remote, options }),
       new Promise(resolve => setTimeout(() => resolve(null), timeoutMs)),
     ]);
   } catch {

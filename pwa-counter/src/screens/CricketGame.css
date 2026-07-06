@@ -442,3 +442,20 @@
 .cg__podium-pts { font-size: 18px; font-weight: 700; }
 .cg__fin-actions { display: flex; gap: 12px; }
 .cg__fin-actions .cg__btn { flex: 1; text-align: center; }
+
+/* ── Verrouillage hors tour (Epic 13.2) — bandeau, pas d'overlay : on
+   regarde les marques adverses tomber en direct ──────────────────────── */
+.cg__remote-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(10, 10, 14, 0.6);
+  text-align: center;
+}
+.cg__remote-title { font-size: 15px; font-weight: 900; }
+.cg__remote-sub { color: #9a9aa3; font-size: 12px; }

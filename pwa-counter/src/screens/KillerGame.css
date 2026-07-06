@@ -126,3 +126,23 @@
 .kg__btn--primary { background: var(--primary); color: #fff; }
 .kg__btn--secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
 .kg__btn:hover { opacity: 0.85; }
+
+/* ── Verrouillage hors tour (Epic 13.2) — même pattern que le 51 ─────── */
+.kg__remote-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(10, 10, 14, 0.82);
+  backdrop-filter: blur(2px);
+}
+.kg__remote-title {
+  font-size: 22px;
+  font-weight: 900;
+  margin: 0;
+}
+.kg__remote-sub { color: #9a9aa3; margin: 0; }

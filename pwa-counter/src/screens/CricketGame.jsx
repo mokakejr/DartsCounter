@@ -103,10 +103,15 @@ export default function CricketGame() {
   const variant = state?.variant === 'cutthroat' ? 'cutthroat' : 'normal';
   const isCasual = state?.isCasual ?? false;
   const variantLabel = variant === 'cutthroat' ? 'CutThroat' : 'Normal';
+  // Remote (Epic 13): chaque client ne saisit que ses propres tours, l'état
+  // adverse arrive par les deltas WS.
+  const remote = state?.remote ?? false;
+  const me = state?.me ?? null;
 
   // Reprise apres reload accidentel : l'etat de jeu est snapshotte a chaque
-  // coup (voir l'effet saveResume plus bas).
-  const resume = loadResume(isSC ? '/super-cricket' : '/cricket', players);
+  // coup (voir l'effet saveResume plus bas). Hors remote : l'état y est
+  // resynchronisé par le serveur via STATE.
+  const resume = remote ? null : loadResume(isSC ? '/super-cricket' : '/cricket', players);
   const [game, setGame] = useState(() =>
     resume?.game
     ?? (isSC
@@ -125,9 +130,72 @@ export default function CricketGame() {
   const [scoringDialog, setScoringDialog] = useState(null);
   const startedAt = useRef(Date.now());
   const liveId = state?.liveId ?? null;
+  const [oppLeft, setOppLeft] = useState(false);
+  // Fin à distance sans vainqueur (adversaire parti / inactivité) — pas de
+  // VictoryOverlay sur un match avorté.
+  const [remoteAborted, setRemoteAborted] = useState(false);
+  // Les émissions passent par des useEffect([game]) : appliquer un delta
+  // adverse re-déclencherait ces effects et renverrait l'état en boucle.
+  // Le drapeau est posé avant chaque setGame entrant et relâché par un
+  // effect placé APRÈS les deux émetteurs (ordre d'exécution garanti).
+  const inbound = useRef(false);
+
+  const labels = isSC ? SC_LABELS : CRICKET_LABELS;
 
   // Diffusion live (Epic 11) + Mode Focus (12.2) — comme 51/Shanghai.
-  const { emit, emote, chatMessage } = useLiveMatch(liveId, players[0]);
+  const { emit, emote, chatMessage } = useLiveMatch(liveId, remote ? me : players[0], {
+    onEvent(e) {
+      if (!remote) return;
+      if (e.player_id && e.player_id !== me) setOppLeft(false); // il est vivant
+      if (e.event === 'PLAYER_LEFT' && e.player_id !== me) {
+        setOppLeft(true);
+        return;
+      }
+      // NB: pour TURN_CHANGED le serveur pose player_id = event.player (le
+      // NOUVEAU joueur), pas l'émetteur — on ne filtre les échos que sur les
+      // deltas où player_id est bien l'expéditeur ; le reste est idempotent.
+      if (e.event === 'SCORE_UPDATED' && e.scores) {
+        if (e.player_id === me) return; // écho de mon propre delta
+        inbound.current = true;
+        setGame(g => ({
+          ...g,
+          points: players.map((n, i) => e.scores[n] ?? g.points[i]),
+          marks: e.detail?.kind === 'cricket' && e.detail.marks ? e.detail.marks : g.marks,
+        }));
+      } else if (e.event === 'TURN_CHANGED' && e.player) {
+        const idx = players.indexOf(e.player);
+        if (idx !== -1) {
+          inbound.current = true;
+          setGame(g => ({ ...g, currentPlayer: idx }));
+        }
+        setDartsUsed(0);
+        setMultiplier(1);
+        setPhase('playing');
+        setHistory([]); // un tour confirmé est déjà chez l'adversaire
+      } else if (e.event === 'MATCH_FINISHED') {
+        const idx = players.indexOf(e.winner);
+        if (idx !== -1) {
+          inbound.current = true;
+          setGame(g => ({ ...g, winner: idx }));
+        } else {
+          setRemoteAborted(true);
+        }
+        setPhase('finished');
+      } else if (e.event === 'STATE' && e.match) {
+        // Reconnexion en pleine partie : le snapshot serveur fait foi
+        // (points + tableau des marques via detail + tour).
+        const m = e.match;
+        inbound.current = true;
+        setGame(g => ({
+          ...g,
+          points: players.map((n, i) => m.scores?.[n] ?? g.points[i]),
+          marks: m.detail?.kind === 'cricket' && m.detail.marks ? m.detail.marks : g.marks,
+          currentPlayer: Math.max(players.indexOf(m.turn_player), 0),
+        }));
+        if (m.finished) setPhase('finished');
+      }
+    },
+  });
   const [focusMode, setFocusMode] = useState(false);
   function toggleFocus() {
     setFocusMode(f => {
@@ -137,16 +205,18 @@ export default function CricketGame() {
   }
 
   const player = game.currentPlayer;
-  const labels = isSC ? SC_LABELS : CRICKET_LABELS;
   const isAPK = view === 'apk';
+  // Handover (13.2): hors de mon tour, la saisie est verrouillée.
+  const myTurn = !remote || players[player] === me;
 
   // Une synchro complète par évolution d'état : points + tableau des marques
   // (le spectateur suit l'avancée du Cricket cible par cible) — couvre tous
   // les chemins de saisie ET les undo sans instrumenter chaque handler.
   useEffect(() => {
-    if (phase !== 'finished') {
+    if (!remote && phase !== 'finished') {
       saveResume(isSC ? '/super-cricket' : '/cricket', players, { game, dartsUsed, phase , nav: state });
     }
+    if (inbound.current) return; // delta adverse : ne pas le renvoyer
     emit({
       event: 'SCORE_UPDATED',
       scores: Object.fromEntries(players.map((n, i) => [n, game.points[i]])),
@@ -155,8 +225,14 @@ export default function CricketGame() {
   }, [game]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (inbound.current) return;
     emit({ event: 'TURN_CHANGED', player: players[game.currentPlayer] });
   }, [game.currentPlayer]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Relâche le drapeau une fois les émetteurs ci-dessus passés.
+  useEffect(() => {
+    inbound.current = false;
+  }, [game]);
 
   function switchView(v) {
     setView(v);
@@ -170,9 +246,12 @@ export default function CricketGame() {
     setHistory(h => [...h, { game, dartsUsed, phase }]);
   }
 
-  // Undo traverses confirmed turns too — history is only cleared by leaving the screen.
+  // Undo traverses confirmed turns too — history is only cleared by leaving
+  // the screen. Remote: l'historique est vidé aux frontières de tour, l'undo
+  // reste donc borné à mon tour en cours (le re-broadcast via l'effect
+  // SCORE_UPDATED auto-corrige l'écran adverse).
   function undo() {
-    if (!history.length) return;
+    if (!history.length || !myTurn) return;
     const prev = history[history.length - 1];
     setGame(prev.game);
     setDartsUsed(prev.dartsUsed);
@@ -199,7 +278,7 @@ export default function CricketGame() {
   // ── APK mode: tap directly on board cell ────────────────────────────────────────────
 
   function tapCell(tIdx) {
-    if (phase !== 'playing') return;
+    if (phase !== 'playing' || !myTurn) return;
     // APK (table view): unlimited clicks — no 3-dart limit
     if (!isAPK && dartsUsed >= 3) return;
 
@@ -234,6 +313,7 @@ export default function CricketGame() {
   // ── SC scoring dialogs: DOUBLE/TRIPLE/BED points once the target is closed ──
 
   function applySpecialScoring(targetIdx, pts) {
+    if (!myTurn) return;
     pushHistory();
     const next = addSpecialScoring(game, player, targetIdx, pts);
     setGame(next);
@@ -259,7 +339,7 @@ export default function CricketGame() {
   }
 
   function tapMissAPK() {
-    if (phase !== 'playing') return;
+    if (phase !== 'playing' || !myTurn) return;
     if (!isAPK && dartsUsed >= 3) return;
     pushHistory();
     const used = dartsUsed + 1;
@@ -270,7 +350,7 @@ export default function CricketGame() {
   // ── Classic mode: multiplier + target buttons ──────────────────────────────
 
   function tapTarget(tIdx) {
-    if (dartsUsed >= 3 || phase !== 'playing') return;
+    if (dartsUsed >= 3 || phase !== 'playing' || !myTurn) return;
     pushHistory();
     let next = game;
     if (isSC) {
@@ -295,7 +375,7 @@ export default function CricketGame() {
   }
 
   function tapMiss() {
-    if (dartsUsed >= 3 || phase !== 'playing') return;
+    if (dartsUsed >= 3 || phase !== 'playing' || !myTurn) return;
     pushHistory();
     setMultiplier(1);
     const used = dartsUsed + 1;
@@ -306,7 +386,11 @@ export default function CricketGame() {
   // ── Shared ────────────────────────────────────────────────────────────────────────────
 
   function confirmTurn() {
-    pushHistory();
+    if (!myTurn) return;
+    // Remote : un tour confirmé est déjà chez l'adversaire — l'undo ne doit
+    // pas franchir la frontière du tour (13.2).
+    if (remote) setHistory([]);
+    else pushHistory();
     setGame(g => isSC ? scNext(g) : nextPlayer(g));
     setDartsUsed(0);
     setMultiplier(1);
@@ -320,7 +404,9 @@ export default function CricketGame() {
       .sort((a, b) => variant === 'cutthroat' ? a.pts - b.pts : b.pts - a.pts);
     return (
       <div className="cg cg--finished">
-        <VictoryOverlay winner={ranked[0]?.name} losers={ranked.slice(1).map(r => r.name)} />
+        {!remoteAborted && (
+          <VictoryOverlay winner={ranked[0]?.name} losers={ranked.slice(1).map(r => r.name)} />
+        )}
         <p className="cg__eyebrow">FIN DE PARTIE</p>
         <div className="cg__podium">
           {ranked.map((r, rank) => (
@@ -375,6 +461,17 @@ export default function CricketGame() {
 
       <EmoteSplash emote={focusMode ? null : emote} />
       <ChatOverlay message={focusMode ? null : chatMessage} />
+
+      {/* Verrouillage hors tour (13.2) — bandeau fin plutôt qu'un overlay :
+          on regarde les marques adverses tomber en direct. */}
+      {remote && !myTurn && (
+        <div className="cg__remote-banner">
+          <span className="cg__remote-title">Au tour de {players[player]}…</span>
+          <span className="cg__remote-sub">
+            {oppLeft ? '⚠️ Déconnecté — il peut revenir avec le même lien' : 'saisie verrouillée'}
+          </span>
+        </div>
+      )}
 
       {/* Header */}
       <div className="cg__header">
@@ -438,7 +535,7 @@ export default function CricketGame() {
                 ? players.every((_, p) => game.marks[p][tIdx] >= 3)
                 : isGloballyClosed(game, tIdx);
               // APK mode: no dartsUsed limit — unlimited clicks
-              const canTap = isAPK && phase === 'playing' && !globClosed;
+              const canTap = isAPK && phase === 'playing' && !globClosed && myTurn;
               const isSpecial = isSC && tIdx >= 7;
               return (
                 <Fragment key={lbl}>
@@ -516,7 +613,7 @@ export default function CricketGame() {
         {/* SUIVANT — APK: always visible while playing; Classic: only after 3 darts */}
         {(isAPK ? phase === 'playing' : phase === 'turn-done') && (
           <div className="cg__confirm">
-            <button className="cg__btn cg__btn--primary cg__btn--wide" onClick={confirmTurn}>
+            <button className="cg__btn cg__btn--primary cg__btn--wide" onClick={confirmTurn} disabled={!myTurn}>
               SUIVANT &rarr;
             </button>
           </div>
@@ -542,7 +639,7 @@ export default function CricketGame() {
                   key={lbl}
                   className="cg__tgt"
                   onClick={() => tapTarget(tIdx)}
-                  disabled={dartsUsed >= 3}
+                  disabled={dartsUsed >= 3 || !myTurn}
                 >
                   {lbl}
                 </button>
@@ -550,7 +647,7 @@ export default function CricketGame() {
               <button
                 className="cg__tgt cg__tgt--miss"
                 onClick={tapMiss}
-                disabled={dartsUsed >= 3}
+                disabled={dartsUsed >= 3 || !myTurn}
               >
                 MISS
               </button>

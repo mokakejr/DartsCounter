@@ -9,7 +9,7 @@ import {
   leader,
   BULL,
 } from '../modes/shanghai.js';
-import { classicTargets, bullTargets, randomTargets, crazyTargets } from '../modes/shanghaiVariants.js';
+import { TARGET_GENERATOR } from '../modes/shanghaiVariants.js';
 import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
@@ -35,14 +35,6 @@ const BULL_ZONES = [
   { zone: 2, label: 'D-BULL' },
 ];
 
-// variant id (picked on the setup screen, same pattern as Cricket's
-// Normal/Cut Throat) -> target generator
-const TARGET_GENERATOR = {
-  classic: classicTargets,
-  bull: bullTargets,
-  random: randomTargets,
-  crazy: crazyTargets,
-};
 // variant id -> literal Game.mode posted to the backend (grouped under the
 // same Elo scope server-side — see backend/app/models/elo.py MODE_FAMILY)
 const BACKEND_MODE = {
@@ -58,14 +50,21 @@ export default function ShanghaiGame() {
   const players = state?.players ?? ['Joueur 1', 'Joueur 2'];
   const isCasual = state?.isCasual ?? false;
   const liveId = state?.liveId ?? null;
+  // Remote (Epic 13): chaque client ne saisit que ses propres tours, l'état
+  // adverse arrive par les deltas WS.
+  const remote = state?.remote ?? false;
+  const me = state?.me ?? null;
   const shanghaiVariant = TARGET_GENERATOR[state?.variant] ? state.variant : 'classic';
 
   // Generated once per game, shared by every player — never previewed ahead
   // of the current round.
   // Reprise apres reload accidentel — les cibles tirees au sort (random/
   // crazy) doivent persister avec la partie, sinon tout change au reload.
-  const resume = loadResume('/shanghai', players);
-  const [targets] = useState(() => resume?.targets ?? TARGET_GENERATOR[shanghaiVariant]());
+  // Remote : pas de reprise locale (le serveur resynchronise via STATE), et
+  // les cibles viennent du créateur via les options du match — les deux
+  // écrans jouent la même séquence random/crazy.
+  const resume = remote ? null : loadResume('/shanghai', players);
+  const [targets] = useState(() => state?.targets ?? resume?.targets ?? TARGET_GENERATOR[shanghaiVariant]());
   const [game, setGame] = useState(() => resume?.game ?? initialShanghaiState(players, targets));
   const [darts, setDarts] = useState(resume?.darts ?? []);
   // pending: { pts, isShanghai, nextGame } — set when 3 darts entered, cleared on confirm
@@ -78,8 +77,69 @@ export default function ShanghaiGame() {
   const startedAt = useRef(Date.now());
   // Fléchettes lancées par joueur — alimente extra.darts (XP Ferveur).
   const dartsThrown = useRef(Object.fromEntries(players.map(p => [p, 0])));
+  const [oppDart, setOppDart] = useState(0);
+  const [oppLeft, setOppLeft] = useState(false);
+  // Fin à distance sans vainqueur (abandon/inactivité) — pas d'overlay.
+  const [remoteAborted, setRemoteAborted] = useState(false);
   // Diffusion live (Epic 11) + Mode Focus (12.2).
-  const { emit, emote, chatMessage } = useLiveMatch(liveId, players[0]);
+  const { emit, emote, chatMessage } = useLiveMatch(liveId, remote ? me : players[0], {
+    onEvent(e) {
+      if (!remote) return;
+      if (e.player_id && e.player_id !== me) setOppLeft(false); // il est vivant
+      if (e.event === 'PLAYER_LEFT' && e.player_id !== me) {
+        setOppLeft(true);
+        return;
+      }
+      // NB: pour TURN_CHANGED le serveur pose player_id = event.player (le
+      // NOUVEAU joueur), pas l'émetteur — on ne filtre les échos que sur les
+      // deltas où player_id est bien l'expéditeur ; le reste est idempotent.
+      if (e.event === 'DART_THROWN') {
+        if (e.player_id !== me) setOppDart((e.dart_index ?? 0) + 1);
+      } else if (e.event === 'SCORE_UPDATED') {
+        if (e.player_id === me) return; // écho de mon propre delta
+        setGame(g => ({
+          ...g,
+          scores: e.detail?.kind === 'shanghai' && e.detail.board ? e.detail.board : g.scores,
+          // les émissions portent round = currentRound + 1 (affichage)
+          currentRound: e.round != null ? e.round - 1 : g.currentRound,
+        }));
+      } else if (e.event === 'TURN_CHANGED' && e.player) {
+        const idx = players.indexOf(e.player);
+        setGame(g => ({
+          ...g,
+          currentPlayer: idx !== -1 ? idx : g.currentPlayer,
+          currentRound: e.round != null ? e.round - 1 : g.currentRound,
+        }));
+        setOppDart(0);
+        setDarts([]);
+        setPending(null);
+        setPhase('playing');
+        setHistory([]); // un tour confirmé est déjà chez l'adversaire
+      } else if (e.event === 'MATCH_FINISHED') {
+        const idx = players.indexOf(e.winner);
+        if (idx !== -1) {
+          // shanghaiWinner force leader() à annoncer le vainqueur reçu,
+          // même sur une victoire Shanghai instantanée où les totaux seuls
+          // ne suffiraient pas.
+          setGame(g => ({ ...g, finished: true, shanghaiWinner: idx }));
+        } else {
+          setGame(g => ({ ...g, finished: true }));
+          setRemoteAborted(true);
+        }
+        setPhase('finished');
+      } else if (e.event === 'STATE' && e.match) {
+        // Reconnexion en pleine partie : le snapshot serveur fait foi.
+        const m = e.match;
+        setGame(g => ({
+          ...g,
+          scores: m.detail?.kind === 'shanghai' && m.detail.board ? m.detail.board : g.scores,
+          currentPlayer: Math.max(players.indexOf(m.turn_player), 0),
+          currentRound: m.round != null ? Math.max(m.round - 1, 0) : g.currentRound,
+        }));
+        if (m.finished) setPhase('finished');
+      }
+    },
+  });
   const [focusMode, setFocusMode] = useState(false);
   function toggleFocus() {
     setFocusMode(f => {
@@ -89,7 +149,7 @@ export default function ShanghaiGame() {
   }
 
   useEffect(() => {
-    if (phase === 'playing' || phase === 'turn-done') {
+    if (!remote && (phase === 'playing' || phase === 'turn-done')) {
       saveResume('/shanghai', players, { game, targets, darts , nav: state });
     }
   }, [game, darts]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -100,13 +160,15 @@ export default function ShanghaiGame() {
   const isBullRound = isBullTarget(target);
   const zones = isBullRound ? BULL_ZONES : ZONES;
   const turnPts = darts.reduce((s, z) => s + z * target, 0);
+  // Handover (13.2): hors de mon tour, la saisie est verrouillée.
+  const myTurn = !remote || players[player] === me;
 
   function pushHistory() {
     setHistory(h => [...h, { game, darts, pending, phase }]);
   }
 
   function tapZone(zone) {
-    if (phase !== 'playing' || darts.length >= 3) return;
+    if (phase !== 'playing' || darts.length >= 3 || !myTurn) return;
     // Juice (Epic 4.4): impact lourd sur triple/double-bull, léger sinon.
     if (zone === 3 || (isBullRound && zone === 2)) bigHit();
     else if (zone > 0) smallHit();
@@ -123,7 +185,7 @@ export default function ShanghaiGame() {
   // Tap direct sur la cible SVG: la zone à viser est en surbrillance, tout
   // le reste compte MISS (Epic 4.3). Le juice est géré par SvgBoard.
   function onBoardHit(hit) {
-    if (phase !== 'playing' || darts.length >= 3) return;
+    if (phase !== 'playing' || darts.length >= 3 || !myTurn) return;
     let zone = 0;
     if (hit.value === target) {
       if (isBullRound) zone = hit.ring === 'DBULL' ? 2 : 1;
@@ -149,8 +211,10 @@ export default function ShanghaiGame() {
     setPhase(shanghai ? 'shanghai' : 'turn-done');
   }, [darts]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Remote : l'historique est vidé aux frontières de tour (confirmTurn +
+  // TURN_CHANGED entrant), l'undo reste borné à mes fléchettes du tour.
   function undo() {
-    if (!history.length) return;
+    if (!history.length || !myTurn) return;
     const prev = history[history.length - 1];
     setGame(prev.game);
     setDarts(prev.darts);
@@ -166,6 +230,9 @@ export default function ShanghaiGame() {
       event: 'SCORE_UPDATED',
       scores: Object.fromEntries(players.map((n, i) => [n, totalScore(ng, i)])),
       round: ng.currentRound + 1,
+      // La matrice par manche : le serveur ne stocke que les totaux, l'écran
+      // adverse et le resync STATE ont besoin du détail pour le podium.
+      detail: { kind: 'shanghai', board: ng.scores },
     });
     emit({ event: 'MATCH_FINISHED', winner: win !== null ? players[win] : null });
     postGame({
@@ -182,8 +249,11 @@ export default function ShanghaiGame() {
   }
 
   function confirmTurn() {
-    if (!pending) return;
-    pushHistory();
+    if (!pending || !myTurn) return;
+    // Remote : un tour confirmé est déjà chez l'adversaire — pas d'undo
+    // au-delà de la frontière du tour (13.2).
+    if (remote) setHistory([]);
+    else pushHistory();
     dartsThrown.current[players[player]] += 3;
     const ng = pending.nextGame;
     setDarts([]);
@@ -195,6 +265,7 @@ export default function ShanghaiGame() {
         event: 'SCORE_UPDATED',
         scores: Object.fromEntries(players.map((n, i) => [n, totalScore(ng, i)])),
         round: ng.currentRound + 1,
+        detail: { kind: 'shanghai', board: ng.scores },
       });
       emit({ event: 'TURN_CHANGED', player: players[ng.currentPlayer], round: ng.currentRound + 1 });
       setGame(ng);
@@ -223,7 +294,7 @@ export default function ShanghaiGame() {
     const win = leader(game);
     return (
       <div className="sg sg--finished">
-        {win !== null && (
+        {win !== null && !remoteAborted && (
           <VictoryOverlay
             winner={players[win]}
             losers={players.filter((_, i) => i !== win)}
@@ -282,6 +353,18 @@ export default function ShanghaiGame() {
       <EmoteSplash emote={focusMode ? null : emote} />
       <ChatOverlay message={focusMode ? null : chatMessage} />
 
+      {/* Verrouillage hors tour (13.2) — même overlay que le 51. */}
+      {remote && !myTurn && (
+        <div className="sg__remote-overlay">
+          <p className="sg__remote-title">Au tour de {players[player]}…</p>
+          <p className="sg__remote-sub">
+            {oppLeft
+              ? '⚠️ Déconnecté — il peut revenir avec le même lien'
+              : `Fléchette ${Math.min(oppDart + 1, 3)}/3`}
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="sg__header">
         <button className="sg__back" onClick={() => setShowExit(true)}>←</button>
@@ -308,7 +391,7 @@ export default function ShanghaiGame() {
         <SvgBoard
           highlightTarget={target}
           onHit={onBoardHit}
-          interactive={phase === 'playing' && darts.length < 3}
+          interactive={phase === 'playing' && darts.length < 3 && myTurn}
           darts={darts.filter(z => z > 0).map(z => ({
             value: target,
             ring: isBullRound ? (z === 2 ? 'DBULL' : 'BULL') : (z === 3 ? 'T' : z === 2 ? 'D' : 'S'),
@@ -359,7 +442,7 @@ export default function ShanghaiGame() {
               key={zone}
               className={`sg__zone sg__zone--${zone}`}
               onClick={() => tapZone(zone)}
-              disabled={phase !== 'playing' || darts.length >= 3}
+              disabled={phase !== 'playing' || darts.length >= 3 || !myTurn}
             >
               <span className="sg__zone-label">{label}</span>
               <span className="sg__zone-pts">{pts > 0 ? `${pts} pts` : '—'}</span>
@@ -373,7 +456,7 @@ export default function ShanghaiGame() {
         {phase === 'turn-done' && (
           <>
             <p className="sg__confirm-pts">+{pending?.pts ?? 0} pts</p>
-            <button className="sg__btn sg__btn--primary sg__btn--wide" onClick={confirmTurn}>
+            <button className="sg__btn sg__btn--primary sg__btn--wide" onClick={confirmTurn} disabled={!myTurn}>
               SUIVANT
             </button>
           </>

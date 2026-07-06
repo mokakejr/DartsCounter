@@ -24,6 +24,9 @@ class LiveMatchCreate(BaseModel):
     players: list[str] = Field(min_length=1, max_length=8)
     variant: str | None = None
     remote: bool = False
+    # Réglages opaques posés par le créateur (mode front, cibles Shanghai,
+    # numéros Killer, vies, isCasual…) — le rejoignant les lit via GET.
+    options: dict | None = None
 
 
 class ReadyPayload(BaseModel):
@@ -32,7 +35,9 @@ class ReadyPayload(BaseModel):
 
 @router.post("/live/matches", status_code=201)
 async def create_live_match(payload: LiveMatchCreate) -> dict:
-    match = live.create_match(payload.mode, payload.players, payload.remote, payload.variant)
+    match = live.create_match(
+        payload.mode, payload.players, payload.remote, payload.variant, payload.options
+    )
     return live.to_dict(match)
 
 

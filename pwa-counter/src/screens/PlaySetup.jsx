@@ -3,6 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { fetchPlayers } from '../api/players.js';
 import { apiGet } from '../api/client.js';
 import { createLiveMatch } from '../live.js';
+import { MODE_ROUTE, MODE_LABEL } from '../modes/registry.js';
+import { assignNumbers } from '../modes/killer.js';
+import { TARGET_GENERATOR } from '../modes/shanghaiVariants.js';
 import './PlaySetup.css';
 
 // Two separate caches, so a backend rename can't leave a ghost chip behind:
@@ -33,28 +36,6 @@ function mergeNames(...lists) {
   const all = new Set(lists.flat());
   return [...all].sort((a, b) => a.localeCompare(b, 'fr'));
 }
-
-const MODE_ROUTE = {
-  shanghai: '/shanghai',
-  cricket: '/cricket',
-  superCricket: '/super-cricket',
-  fiftyOne: '/51',
-  bob27: '/bob27',
-  roundTheClock: '/round-the-clock',
-  killer: '/killer',
-  halveIt: '/halve-it',
-};
-
-const MODE_LABEL = {
-  shanghai: 'Shanghai',
-  cricket: 'Cricket',
-  superCricket: 'Super Cricket',
-  fiftyOne: '51',
-  bob27: "Bob's 27",
-  roundTheClock: 'Round the Clock',
-  killer: 'Killer',
-  halveIt: 'Halve It',
-};
 
 const CRICKET_FAMILY = new Set(['cricket', 'superCricket']);
 // Solo/training modes: 1 player, always casual — no reorder list, no
@@ -107,9 +88,10 @@ export default function PlaySetup() {
   });
   const [lives, setLives] = useState(() => (Number.isInteger(state?.lives) ? state.lives : 3));
   const [topPlayers, setTopPlayers] = useState([]);
-  // Match à distance (Epic 13) — v1: mode 51 uniquement, 2 joueurs.
+  // Match à distance (Epic 13) — 2 joueurs / 2 écrans, tous les modes
+  // multijoueurs (les modes solo n'ont personne en face).
   const [remote, setRemote] = useState(false);
-  const remoteEligible = mode === 'fiftyOne' && !isSolo;
+  const remoteEligible = !isSolo;
 
   // Moteur de Rivalité (Epic 5.2): head-to-head + proba ELO dès 2 joueurs.
   const [rivalry, setRivalry] = useState(null);
@@ -179,11 +161,18 @@ export default function PlaySetup() {
   async function start() {
     // À distance (Epic 13): la room attend les deux « Prêt » dans le sas.
     if (remoteEligible && remote && selected.length === 2) {
+      // Tout ce que le rejoignant doit connaître transite par le serveur :
+      // l'id de mode front (routage du sas), les réglages, et l'aléatoire
+      // tiré UNE fois ici pour que les deux écrans jouent la même partie.
+      const options = { mode, variant, isCasual, lives };
+      if (isShanghaiFamily) options.targets = TARGET_GENERATOR[variant]();
+      if (isKiller) options.numbers = assignNumbers(selected.length);
       const live = await createLiveMatch({
         mode: MODE_LABEL[mode] ?? mode,
         players: selected,
         variant,
         remote: true,
+        options,
         timeoutMs: 8000, // ici le match live est indispensable, on patiente
       });
       if (!live) return; // pas de réseau, pas de match à distance
@@ -469,7 +458,7 @@ export default function PlaySetup() {
 
       <button
         className="play-setup__start"
-        disabled={selected.length < (isSolo ? 1 : 2)}
+        disabled={selected.length < (isSolo ? 1 : 2) || (remoteEligible && remote && selected.length !== 2)}
         onClick={start}
       >
         JOUER →

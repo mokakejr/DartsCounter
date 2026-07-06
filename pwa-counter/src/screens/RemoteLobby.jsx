@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { apiGet, apiPost } from '../api/client.js';
 import { connectLive } from '../live.js';
+import { MODE_ROUTE } from '../modes/registry.js';
 import './RemoteLobby.css';
 
 /**
@@ -42,11 +43,21 @@ export default function RemoteLobby() {
           setMatch(m => m && { ...m, ready: [...new Set([...(m.ready ?? []), e.player_id])] });
         }
         if (e.event === 'MATCH_STARTED' || (e.event === 'STATE' && e.match?.started)) {
-          navigate('/51', {
+          // Handover générique : le créateur a posé le mode et ses réglages
+          // (variante, vies, cibles/numéros tirés au sort) dans les options
+          // du match — les deux écrans démarrent la même partie. Fallback
+          // /51 pour un match créé par un ancien front (sans options).
+          const opts = match.options ?? {};
+          const modeId = opts.mode ?? 'fiftyOne';
+          navigate(MODE_ROUTE[modeId] ?? '/51', {
             state: {
-              mode: 'fiftyOne',
+              mode: modeId,
               players: match.players,
-              isCasual: false,
+              variant: opts.variant ?? match.variant ?? undefined,
+              isCasual: opts.isCasual ?? false,
+              lives: opts.lives,
+              targets: opts.targets,
+              numbers: opts.numbers,
               liveId: matchId,
               remote: true,
               me,

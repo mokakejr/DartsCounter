@@ -26,3 +26,14 @@ export const randomTargets = () => shuffle([...NUMBERS, BULL]).slice(0, 7).sort(
 // Same pool, but the picked order is never sorted — deliberately keeps the
 // player from knowing whether a harder target is coming up next.
 export const crazyTargets = () => shuffle([...NUMBERS, BULL]).slice(0, 7);
+
+// variant id (picked on the setup screen) -> target generator. Shared by
+// ShanghaiGame and PlaySetup (remote: the creator draws the targets once and
+// ships them through the live match options so both screens play the same
+// sequence).
+export const TARGET_GENERATOR = {
+  classic: classicTargets,
+  bull: bullTargets,
+  random: randomTargets,
+  crazy: crazyTargets,
+};

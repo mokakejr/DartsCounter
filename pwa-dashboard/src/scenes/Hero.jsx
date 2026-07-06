@@ -4,34 +4,22 @@ import Dart from '../components/Dart.jsx';
 import PlayerCard from '../components/PlayerCard.jsx';
 import RankBadge from '../components/RankBadge.jsx';
 import { displayName } from '../lib/profiles.js';
-import { useAuth } from '../lib/useAuth.jsx';
 import './Hero.css';
 
 const COUNTER_URL = import.meta.env.VITE_COUNTER_URL || 'http://localhost:5174';
 
-const ORDINALS = ['1er', '2e', '3e'];
-const ordinal = (n) => ORDINALS[n - 1] ?? `${n}e`;
-
 /**
- * La Trinité de l'Accueil (zéro charge cognitive) :
- *   1. Le Boss Final — le Roi de la ligue, typo massive, la carotte.
- *   2. Le Miroir — MA distance au trône, rien d'autre.
- *   3. JOUER — le tunnel direct vers le gameplay, friction zéro.
- * Tout le reste (dernière partie, winrate, niveaux) vit plus bas dans les
- * scènes ou sur les profils — pas sur le premier écran.
+ * Le Lobby Cinématique (Epic 5) — l'écran ne dit que deux choses :
+ *   1. Le Boss Final — "X RÈGNE." en décor derrière la fléchette 3D.
+ *   2. JOUER — l'unique soleil, il pulse et attire le clic.
+ * Mon rang vit dans le header, le classement dans le tiroir (LobbyDrawer),
+ * tout le reste plus bas dans le tiroir ou sur les profils.
  */
 export default function Hero({ ranked, profiles = {}, eloBoard = [] }) {
-  const auth = useAuth();
   const champEntry = eloBoard[0];
   const champStats = champEntry ? ranked.find(r => r.name === champEntry.name) : null;
   const champName = champEntry?.name;
   const champProfile = champName ? profiles[champName] : null;
-
-  // Le Miroir : ma position vs le sommet.
-  const myName = auth.player?.name;
-  const myIdx = myName ? eloBoard.findIndex(r => r.name === myName) : -1;
-  const me = myIdx >= 0 ? eloBoard[myIdx] : null;
-  const gap = me && champEntry ? Math.max(champEntry.elo - me.elo, 0) : null;
 
   return (
     <header className="hero">
@@ -101,21 +89,12 @@ export default function Hero({ ranked, profiles = {}, eloBoard = [] }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            {me && champEntry && (
-              <p className="hero__mirror">
-                {myIdx === 0
-                  ? 'Tu règnes. Défends ton trône.'
-                  : <>Tu es <b>{ordinal(myIdx + 1)}</b> · {me.rank} — <b>{gap}</b> pts de retard sur le trône</>}
-              </p>
-            )}
             <a href={COUNTER_URL} className="hero__cta hero__cta--play">
               🎯 JOUER
             </a>
           </motion.div>
         </div>
       </div>
-
-      <a href="#classement" className="hero__scroll">↓ Voir le classement</a>
     </header>
   );
 }

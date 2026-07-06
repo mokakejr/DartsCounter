@@ -1,0 +1,47 @@
+/* Barre HUD collée sous le header — hors du corps de la page, elle ne
+   détruit pas la composition du lobby. */
+.live-ticker {
+  position: fixed;
+  top: 56px;
+  left: 0; right: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 14px;
+  padding: 6px var(--gutter);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(230, 30, 42, 0.35);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: #ff4d57;
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.live-ticker::-webkit-scrollbar { display: none; }
+
+.live-ticker__badge {
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  animation: live-blink 1.6s ease-in-out infinite;
+  text-shadow: 0 0 8px rgba(230, 30, 42, 0.8);
+}
+@keyframes live-blink { 50% { opacity: 0.5; } }
+[data-reduce-animations] .live-ticker__badge { animation: none; }
+
+.live-ticker__match { display: inline-flex; align-items: center; gap: 10px; }
+.live-ticker__match b { color: #fff; font-weight: 700; }
+
+.live-ticker__cta {
+  color: #ff4d57;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.15s, text-shadow 0.15s;
+}
+.live-ticker__cta:hover {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(230, 30, 42, 0.9);
+}

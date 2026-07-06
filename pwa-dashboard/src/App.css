@@ -71,16 +71,35 @@
   text-transform: uppercase;
   color: var(--muted);
   white-space: nowrap;
-  max-width: 110px;
+  max-width: 260px; /* le rang fait partie du pseudo maintenant */
   overflow: hidden;
   text-overflow: ellipsis;
   transition: color 0.15s;
 }
 .nav__account:hover { color: var(--text); }
 
+.nav__rank { color: var(--text); font-weight: 700; }
+
 @media (max-width: 600px) {
-  .nav__account { display: none; }
+  .nav__account { font-size: 10px; max-width: 150px; }
 }
+
+/* Sélecteur de ligue — élément de HUD discret au centre du header. */
+.nav__league {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  cursor: pointer;
+  max-width: 40vw;
+}
+.nav__league option { background: #0a0a0c; color: #fff; text-transform: none; }
 
 .nav__callout {
   font-size: 11px;
@@ -103,55 +122,6 @@
 @media (max-width: 600px) {
   .nav__callout { font-size: 10px; padding: 5px 10px; }
 }
-
-/* ── Active league banner ──────────────────────────────── */
-.league-banner {
-  position: fixed;
-  top: 56px;
-  left: 0; right: 0;
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px var(--gutter);
-  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
-  border-bottom: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
-  font-size: 12px;
-  flex-wrap: wrap;
-}
-.league-banner__label {
-  color: var(--primary);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.league-banner__name {
-  font-weight: 700;
-  color: var(--text);
-  text-decoration: none;
-}
-.league-banner__name:hover { text-decoration: underline; }
-.league-banner__players {
-  color: var(--muted);
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.league-banner__clear {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 3px 10px;
-  font-family: inherit;
-  font-size: 11px;
-  color: var(--muted);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: border-color 0.12s, color 0.12s;
-  flex-shrink: 0;
-}
-.league-banner__clear:hover { border-color: var(--muted); color: var(--text); }
 
 .footer {
   display: flex;

@@ -110,9 +110,10 @@ function DartMesh({ accentColor, flightImageUrl, flightCropA, flightCropB, fligh
       <mesh geometry={barrelGeo}>
         <meshStandardMaterial color="#17171b" metalness={0.95} roughness={0.3} />
       </mesh>
-      {/* Shaft */}
-      <mesh position={[0, 0.12, 0]}>
-        <cylinderGeometry args={[0.04, 0.045, 0.96, 24]} />
+      {/* Shaft — runs through the flight bases (vanes sit at y=0.78..1.58):
+          stopping short leaves a floating gap that reads as a render bug. */}
+      <mesh position={[0, 0.32, 0]}>
+        <cylinderGeometry args={[0.035, 0.045, 1.36, 24]} />
         <meshStandardMaterial color="#0e0e10" metalness={0.6} roughness={0.5} />
       </mesh>
       {/* Flights — 4 vanes. A champion's uploaded flight image (if any) is
@@ -156,24 +157,67 @@ function DartMesh({ accentColor, flightImageUrl, flightCropA, flightCropB, fligh
   );
 }
 
+// Fake depth of field: the dart drifts a few degrees *against* the pointer
+// (desktop mousemove) or the device tilt (Android deviceorientation — the
+// event simply never fires on iOS without a permission prompt, so iOS keeps
+// the plain drei Float and we ship zero permission UX).
+function ParallaxRig({ children }) {
+  const rig = useRef();
+  const target = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (document.documentElement.hasAttribute('data-reduce-animations')) return;
+    const clamp = v => Math.max(-1, Math.min(1, v));
+    const onMouse = e => {
+      target.current.x = (e.clientX / window.innerWidth) * 2 - 1;
+      target.current.y = (e.clientY / window.innerHeight) * 2 - 1;
+    };
+    const onTilt = e => {
+      if (e.gamma == null) return;
+      target.current.x = clamp(e.gamma / 30);          // roulis gauche/droite
+      target.current.y = clamp((e.beta - 45) / 30);    // tenue "en main" ~45°
+    };
+    window.addEventListener('mousemove', onMouse);
+    window.addEventListener('deviceorientation', onTilt);
+    return () => {
+      window.removeEventListener('mousemove', onMouse);
+      window.removeEventListener('deviceorientation', onTilt);
+    };
+  }, []);
+
+  useFrame(() => {
+    const g = rig.current;
+    const { x, y } = target.current;
+    // Lerp doux vers la cible, en opposition au mouvement.
+    g.position.x += (-x * 0.35 - g.position.x) * 0.05;
+    g.position.y += (y * 0.22 - g.position.y) * 0.05;
+    g.rotation.y += (-x * 0.14 - g.rotation.y) * 0.05;
+    g.rotation.x += (-y * 0.08 - g.rotation.x) * 0.05;
+  });
+
+  return <group ref={rig}>{children}</group>;
+}
+
 export default function Dart({ accentColor, flightImageUrl, flightCropA, flightCropB, flightMode }) {
   return (
     <Canvas camera={{ position: [0, 0, 8], fov: 34 }} dpr={[1, 2]}>
       <ambientLight intensity={0.45} />
       <directionalLight position={[5, 6, 6]} intensity={2.4} />
       <directionalLight position={[-6, -1, -3]} intensity={0.7} color="#E61E2A" />
-      <Float speed={1.2} rotationIntensity={0.25} floatIntensity={0.5}>
-        {/* Lean the whole dart for a dynamic read; spin stays on its own axis. */}
-        <group rotation={[0.18, 0, -0.32]}>
-          <DartMesh
-            accentColor={accentColor}
-            flightImageUrl={flightImageUrl}
-            flightCropA={flightCropA}
-            flightCropB={flightCropB}
-            flightMode={flightMode}
-          />
-        </group>
-      </Float>
+      <ParallaxRig>
+        <Float speed={1.2} rotationIntensity={0.25} floatIntensity={0.5}>
+          {/* Lean the whole dart for a dynamic read; spin stays on its own axis. */}
+          <group rotation={[0.18, 0, -0.32]}>
+            <DartMesh
+              accentColor={accentColor}
+              flightImageUrl={flightImageUrl}
+              flightCropA={flightCropA}
+              flightCropB={flightCropB}
+              flightMode={flightMode}
+            />
+          </group>
+        </Float>
+      </ParallaxRig>
       {/* Studio environment built in-scene (no external HDR fetch). */}
       <Environment resolution={256}>
         <Lightformer intensity={3} position={[3, 4, 4]} scale={[6, 6, 1]} color="#ffffff" />

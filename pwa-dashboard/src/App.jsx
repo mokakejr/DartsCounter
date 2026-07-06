@@ -23,25 +23,34 @@ import Welcome from './routes/Welcome.jsx';
 import Login from './routes/Login.jsx';
 import MyProfile from './routes/MyProfile.jsx';
 import Admin from './routes/Admin.jsx';
-import LiveCarousel from './components/LiveCarousel.jsx';
+import LiveTicker from './components/LiveTicker.jsx';
+import LobbyDrawer from './components/LobbyDrawer.jsx';
 import NemesisWall from './components/NemesisWall.jsx';
 import Tournois from './routes/Tournois.jsx';
 import { fetchTournaments } from './api/tournaments.js';
 import './App.css';
 
+// Le Lobby Cinématique (Epic 5) : l'écran = le Hero, rien d'autre. Tout le
+// hub (classement, feed, tendances, trophées) vit dans le tiroir qui glisse
+// par-dessus, et le LIVE est une barre HUD sous le header.
 function Home({ games, stats, ranked, profiles = {}, eloBoard }) {
   return (
     <main>
-      <LiveCarousel />
-      <Hero ranked={ranked} games={games} profiles={profiles} eloBoard={eloBoard} />
-      <Standings ranked={ranked} profiles={profiles} />
-      <NemesisWall ranked={ranked} profiles={profiles} />
-      <Feed games={games} profiles={profiles} />
-      <Trends games={games} ranked={ranked} />
-      <Trophies stats={stats} profiles={profiles} />
+      <LiveTicker />
+      <Hero ranked={ranked} profiles={profiles} eloBoard={eloBoard} />
+      <LobbyDrawer>
+        <Standings ranked={ranked} profiles={profiles} />
+        <NemesisWall ranked={ranked} profiles={profiles} />
+        <Feed games={games} profiles={profiles} />
+        <Trends games={games} ranked={ranked} />
+        <Trophies stats={stats} profiles={profiles} />
+      </LobbyDrawer>
     </main>
   );
 }
+
+const ORDINALS = ['1er', '2e', '3e'];
+const ordinal = (n) => ORDINALS[n - 1] ?? `${n}e`;
 
 // Global Elo leaderboard (name/elo/rank/...), fetched once — used to crown
 // the homepage's "reigning champion" by rating instead of by win count.
@@ -167,14 +176,35 @@ function AppInner() {
     ? [...new Set(allGames.flatMap(g => g.players ?? []))].sort((a, b) => a.localeCompare(b, 'fr'))
     : [];
 
+  // Mon rang dans le header (Epic 5.2) : [Pseudo | Silver III (7e)].
+  const myIdx = auth.player ? eloBoard.findIndex(r => r.name === auth.player.name) : -1;
+  const myEntry = myIdx >= 0 ? eloBoard[myIdx] : null;
+
   return (
     <>
       <ScrollTop />
       <nav className="nav">
         <Link to="/" className="nav__brand display">DC</Link>
+        {leagues.length > 0 && (
+          <select
+            className="nav__league"
+            value={activeLeague?.id ?? ''}
+            aria-label="Ligue active"
+            onChange={e => {
+              const id = e.target.value;
+              // activateLeague est un toggle : re-passer l'id actif le désactive.
+              if (id) { if (activeLeague?.id !== id) activateLeague(id); }
+              else if (activeLeague) activateLeague(activeLeague.id);
+            }}
+          >
+            <option value="">Toutes les ligues</option>
+            {leagues.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+          </select>
+        )}
         <div className="nav__right">
           <Link to={auth.player ? '/profile' : '/login'} className="nav__account">
             {auth.player ? (auth.player.display_name || auth.player.name) : 'Connexion'}
+            {myEntry && <span className="nav__rank"> | {myEntry.rank} ({ordinal(myIdx + 1)})</span>}
           </Link>
           <button
             className="nav__callout"
@@ -208,21 +238,6 @@ function AppInner() {
         </>
       )}
 
-      {activeLeague && (
-        <div className="league-banner">
-          <span className="league-banner__label">Ligue active :</span>
-          <Link to="/ligues" className="league-banner__name">{activeLeague.name}</Link>
-          <span className="league-banner__players">{activeLeague.players.join(' · ')}</span>
-          <button
-            className="league-banner__clear"
-            onClick={() => activateLeague(activeLeague.id)}
-            title="Désactiver le filtre ligue"
-          >
-            × Tout voir
-          </button>
-        </div>
-      )}
-
       <OnboardingModal />
 
       <CalloutModal
@@ -249,12 +264,15 @@ function AppInner() {
         <Route path="*" element={home} />
       </Routes>
 
-      <footer className="footer shell">
-        <span>DartsCounter — La Ligue</span>
-        <a href="https://github.com/mokakejr/DartsCounter-" target="_blank" rel="noreferrer">
-          GitHub ↗
-        </a>
-      </footer>
+      {/* Pas de footer sur le lobby : zéro scroll de page, l'écran est le jeu. */}
+      {location.pathname !== '/' && (
+        <footer className="footer shell">
+          <span>DartsCounter — La Ligue</span>
+          <a href="https://github.com/mokakejr/DartsCounter-" target="_blank" rel="noreferrer">
+            GitHub ↗
+          </a>
+        </footer>
+      )}
     </>
   );
 }

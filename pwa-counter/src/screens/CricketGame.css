@@ -1,11 +1,17 @@
 .cg {
+  /* Même remède que le 51 (af93306) : hauteur FIXE + overflow-y — si le
+     contenu dépasse (Chrome desktop, fenêtre courte), ce conteneur scrolle
+     (le body est verrouillé). Sur téléphone tout tient : auto ≡ hidden,
+     comportement inchangé, pull-to-refresh toujours neutralisé. */
   height: 100svh;
   display: flex;
   flex-direction: column;
   background: var(--bg);
   padding: 0 16px 16px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Header ─────────────────────────────────────────── */
@@ -88,7 +94,11 @@
 .cg__board-wrap {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  /* auto, pas hidden : sur desktop le tableau SC (10 lignes) dépasse la
+     part flex — hidden rendait BULL/DBL/TRP/BED inatteignables (pas de
+     scroll, partie infinissable). Sur téléphone tout tient : identique. */
+  overflow-y: auto;
+  overflow-x: hidden;
   margin-bottom: 6px;
 }
 .cg__board {

@@ -366,12 +366,12 @@ async def remove_member(
     """Leave (self) or kick (admin+). Deactivates the membership — the player
     becomes a ghost, history is preserved."""
     league = await _get_league_or_404(session, league_id)
-    if player_id == league.owner_id:
-        raise HTTPException(400, "The owner can't leave — transfer ownership or delete the league")
     if player_id != player.id:
         _require_role(league, player, "admin")
         target = leagues_service.membership_of(league, player_id)
         # An admin can kick members; only the owner can kick another admin.
         if target is not None and target.role == "admin":
             _require_role(league, player, "owner")
+    if player_id == league.owner_id:
+        raise HTTPException(400, "The owner can't leave — transfer ownership or delete the league")
     await leagues_service.deactivate_member(session, league, player_id)

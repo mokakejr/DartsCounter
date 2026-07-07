@@ -60,6 +60,10 @@ async def update_settings(session: AsyncSession, updates: dict) -> EloSettings:
         await session.rollback()
         raise InvalidSettingsError("k_thresholds must have exactly one fewer entry than k_factors")
     await session.commit()
+    # updated_at (server-side onupdate) is expired by the commit even with
+    # expire_on_commit=False; refresh so validating the row in the router
+    # doesn't trigger a sync lazy-load in async context.
+    await session.refresh(row)
     return row
 
 

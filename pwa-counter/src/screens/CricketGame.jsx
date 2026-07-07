@@ -18,6 +18,7 @@ import Tribunes from '../components/Tribunes.jsx';
 import { useLiveMatch } from '../useLiveMatch.js';
 import { clearResume, loadResume, saveResume } from '../resume.js';
 import VictoryOverlay from '../components/VictoryOverlay.jsx';
+import { censorName } from '../censor.js';
 import './CricketGame.css';
 
 const CRICKET_LABELS = ['20', '19', '18', '17', '16', '15', 'BULL'];
@@ -412,7 +413,7 @@ export default function CricketGame() {
           {ranked.map((r, rank) => (
             <div key={r.name} className={`cg__podium-row${rank === 0 ? ' cg__podium-row--first' : ''}`}>
               <span className="cg__podium-rank">#{rank + 1}</span>
-              <span className="cg__podium-name">{r.name}</span>
+              <span className="cg__podium-name">{censorName(r.name)}</span>
               <span className="cg__podium-pts">{r.pts} pts</span>
             </div>
           ))}
@@ -466,7 +467,7 @@ export default function CricketGame() {
           on regarde les marques adverses tomber en direct. */}
       {remote && !myTurn && (
         <div className="cg__remote-banner">
-          <span className="cg__remote-title">Au tour de {players[player]}…</span>
+          <span className="cg__remote-title">Au tour de {censorName(players[player])}…</span>
           <span className="cg__remote-sub">
             {oppLeft ? '⚠️ Déconnecté — il peut revenir avec le même lien' : 'saisie verrouillée'}
           </span>
@@ -512,7 +513,7 @@ export default function CricketGame() {
 
       {/* Current player */}
       <div className="cg__player">
-        <span className="cg__player-name">{players[player]}</span>
+        <span className="cg__player-name">{censorName(players[player])}</span>
         <span className="cg__player-pts">{game.points[player]} pts</span>
       </div>
 
@@ -524,7 +525,7 @@ export default function CricketGame() {
               <th className="cg__th-lbl" />
               {players.map((name, i) => (
                 <th key={name} className={`cg__th${i === player ? ' cg__th--active' : ''}`}>
-                  {name}
+                  {censorName(name)}
                 </th>
               ))}
             </tr>

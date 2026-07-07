@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { apiGet, apiPost } from '../api/client.js';
 import { connectLive } from '../live.js';
 import { MODE_ROUTE } from '../modes/registry.js';
+import { censorName } from '../censor.js';
 import './RemoteLobby.css';
 
 /**
@@ -123,7 +124,7 @@ export default function RemoteLobby() {
                   disabled={taken}
                   onClick={() => setMe(p)}
                 >
-                  {p}, c'est moi{taken ? ' (déjà connecté)' : ''}
+                  {censorName(p)}, c'est moi{taken ? ' (déjà connecté)' : ''}
                 </button>
               );
             })}
@@ -134,7 +135,7 @@ export default function RemoteLobby() {
           <div className="lobby__players">
             {match.players.map(p => (
               <div key={p} className={`lobby__player${readySet.has(p) ? ' lobby__player--ready' : ''}`}>
-                <span>{p}{p === me ? ' (toi)' : ''}</span>
+                <span>{censorName(p)}{p === me ? ' (toi)' : ''}</span>
                 <span>{readySet.has(p) ? '✓ Prêt' : '… en attente'}</span>
               </div>
             ))}

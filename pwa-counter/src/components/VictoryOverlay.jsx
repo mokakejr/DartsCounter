@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
 import { apiGet } from '../api/client.js';
 import { vibrate, reduced } from '../juice.js';
+import { censorName } from '../censor.js';
 import './VictoryOverlay.css';
 
 /**
@@ -72,11 +73,11 @@ export default function VictoryOverlay({ winner, losers = [], dartsThrown = 0 })
       {step === 'zoom' && (
         <div className={`victory__stage${level >= 2 ? ' victory__stage--hitstop' : ''}`}>
           <span className={`victory__winner${level >= 2 ? ' victory__winner--zoom' : ''}`}>
-            {winner}
+            {censorName(winner)}
           </span>
           {level === 3 && (
             <>
-              <span className="victory__shatter">{losers[0]}</span>
+              <span className="victory__shatter">{censorName(losers[0])}</span>
               <span className="victory__taunt">LE TRÔNE A UN NOUVEAU MAÎTRE.</span>
             </>
           )}

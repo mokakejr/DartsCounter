@@ -21,6 +21,7 @@ import Tribunes from '../components/Tribunes.jsx';
 import { useLiveMatch } from '../useLiveMatch.js';
 import { clearResume, loadResume, saveResume } from '../resume.js';
 import { bigHit, smallHit } from '../juice.js';
+import { censorName } from '../censor.js';
 import './ShanghaiGame.css';
 
 const ZONES = [
@@ -306,7 +307,7 @@ export default function ShanghaiGame() {
           {rankings.map((r, rank) => (
             <div key={r.name} className={`sg__podium-row${rank === 0 ? ' sg__podium-row--first' : ''}`}>
               <span className="sg__podium-rank">#{rank + 1}</span>
-              <span className="sg__podium-name">{r.name}</span>
+              <span className="sg__podium-name">{censorName(r.name)}</span>
               <span className="sg__podium-pts">{r.total} pts</span>
             </div>
           ))}
@@ -346,7 +347,7 @@ export default function ShanghaiGame() {
         <div className="sg__overlay">
           <p className="sg__overlay-icon">🎯</p>
           <p className="sg__overlay-title">SHANGHAI !</p>
-          <p className="sg__overlay-sub">{players[player]} remporte la partie !</p>
+          <p className="sg__overlay-sub">{censorName(players[player])} remporte la partie !</p>
         </div>
       )}
 
@@ -356,7 +357,7 @@ export default function ShanghaiGame() {
       {/* Verrouillage hors tour (13.2) — même overlay que le 51. */}
       {remote && !myTurn && (
         <div className="sg__remote-overlay">
-          <p className="sg__remote-title">Au tour de {players[player]}…</p>
+          <p className="sg__remote-title">Au tour de {censorName(players[player])}…</p>
           <p className="sg__remote-sub">
             {oppLeft
               ? '⚠️ Déconnecté — il peut revenir avec le même lien'
@@ -404,7 +405,7 @@ export default function ShanghaiGame() {
 
       {/* Current player */}
       <div className="sg__player">
-        <span className="sg__player-name">{players[player]}</span>
+        <span className="sg__player-name">{censorName(players[player])}</span>
         <span className="sg__player-total">{totalScore(game, player)} pts</span>
       </div>
 
@@ -477,7 +478,7 @@ export default function ShanghaiGame() {
             key={name}
             className={`sg__score-row${i === player && phase === 'playing' ? ' sg__score-row--active' : ''}`}
           >
-            <span className="sg__score-name">{name}</span>
+            <span className="sg__score-name">{censorName(name)}</span>
             <div className="sg__score-bar-track">
               <div
                 className="sg__score-bar-fill"

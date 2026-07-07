@@ -6,6 +6,7 @@ import { createLiveMatch } from '../live.js';
 import { MODE_ROUTE, MODE_LABEL } from '../modes/registry.js';
 import { assignNumbers } from '../modes/killer.js';
 import { TARGET_GENERATOR } from '../modes/shanghaiVariants.js';
+import { censorName } from '../censor.js';
 import './PlaySetup.css';
 
 // Two separate caches, so a backend rename can't leave a ghost chip behind:
@@ -133,7 +134,7 @@ export default function PlaySetup() {
   }, []);
 
   function label(name) {
-    return profiles[name]?.display_name || name;
+    return censorName(profiles[name]?.display_name || name);
   }
 
   const q = search.trim();

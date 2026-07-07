@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { lastGame, replayTarget } from '../replay.js';
 import { loadAnyResume } from '../resume.js';
+import { censorName } from '../censor.js';
 import './PlayHome.css';
 
 const DASHBOARD_URL = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:5174';
@@ -32,7 +33,7 @@ export default function PlayHome() {
         >
           <span className="play-home__instant-tag">&#9208;&#65039; PARTIE EN PAUSE</span>
           <span className="play-home__instant-label">
-            Reprendre : {paused.players.split('|').join(' vs ')}
+            Reprendre : {paused.players.split('|').map(censorName).join(' vs ')}
           </span>
         </button>
       )}
@@ -44,7 +45,7 @@ export default function PlayHome() {
         >
           <span className="play-home__instant-tag">⚡ REVANCHE</span>
           <span className="play-home__instant-label">
-            {replay.label} — {replay.state.players.join(' vs ')}
+            {replay.label} — {replay.state.players.map(censorName).join(' vs ')}
           </span>
         </button>
       )}

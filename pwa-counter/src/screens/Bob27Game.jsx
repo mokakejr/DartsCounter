@@ -4,6 +4,7 @@ import { initialBob27State, scoreRound, isGameOver, BOB27_ROUNDS } from '../mode
 import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
+import { censorName } from '../censor.js';
 import './Bob27Game.css';
 
 const HIT_OPTIONS = [0, 1, 2, 3];
@@ -90,7 +91,7 @@ export default function Bob27Game() {
       </div>
 
       <div className="bob27__player">
-        <span className="bob27__player-name">{playerName}</span>
+        <span className="bob27__player-name">{censorName(playerName)}</span>
         <span className="bob27__player-sub">Round {game.round} / {BOB27_ROUNDS}</span>
       </div>
 

@@ -15,6 +15,7 @@ import ChatOverlay from '../components/ChatOverlay.jsx';
 import Tribunes from '../components/Tribunes.jsx';
 import { useLiveMatch } from '../useLiveMatch.js';
 import { clearResume, loadResume, saveResume } from '../resume.js';
+import { censorName } from '../censor.js';
 import './FiftyOneGame.css';
 
 // Dart-Wheel par défaut (Epic 4.1) — le numpad reste dispo via le toggle.
@@ -224,7 +225,7 @@ export default function FiftyOneGame() {
           {ranked.map((r, rank) => (
             <div key={r.name} className={`f51__podium-row${rank === 0 ? ' f51__podium-row--first' : ''}`}>
               <span className="f51__podium-rank">#{rank + 1}</span>
-              <span className="f51__podium-name">{r.name}</span>
+              <span className="f51__podium-name">{censorName(r.name)}</span>
               <span className="f51__podium-pts">{r.fives} / {FIFTY_ONE_TARGET}</span>
             </div>
           ))}
@@ -284,7 +285,7 @@ export default function FiftyOneGame() {
 
       {remote && !myTurn && (
         <div className="f51__remote-overlay">
-          <p className="f51__remote-title">Au tour de {players[player]}…</p>
+          <p className="f51__remote-title">Au tour de {censorName(players[player])}…</p>
           <p className="f51__remote-sub">
             {oppLeft
               ? '⚠️ Déconnecté — il peut revenir avec le même lien'
@@ -295,7 +296,7 @@ export default function FiftyOneGame() {
 
       {/* Current player */}
       <div className="f51__player">
-        <span className="f51__player-name">{players[player]}</span>
+        <span className="f51__player-name">{censorName(players[player])}</span>
         <span className="f51__player-sub">{currentFives} / {FIFTY_ONE_TARGET} cinqs</span>
       </div>
 
@@ -306,7 +307,7 @@ export default function FiftyOneGame() {
           const pct = (fives / FIFTY_ONE_TARGET) * 100;
           return (
             <div key={name} className={`f51__row${i === player ? ' f51__row--active' : ''}`}>
-              <span className="f51__row-name">{name}</span>
+              <span className="f51__row-name">{censorName(name)}</span>
               <div className="f51__bar-track">
                 <div className="f51__bar-fill" style={{ width: `${pct}%` }} />
               </div>

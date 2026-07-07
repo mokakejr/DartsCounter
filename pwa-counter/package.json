@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node src/modes/models.test.mjs && node src/modes/board.test.mjs"
+    "test": "node src/modes/models.test.mjs && node src/modes/board.test.mjs && node src/censor.test.mjs"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",

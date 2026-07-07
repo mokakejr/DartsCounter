@@ -8,6 +8,7 @@ import EmoteSplash from '../components/EmoteSplash.jsx';
 import ChatOverlay from '../components/ChatOverlay.jsx';
 import Tribunes from '../components/Tribunes.jsx';
 import { useLiveMatch } from '../useLiveMatch.js';
+import { censorName } from '../censor.js';
 import './KillerGame.css';
 
 // L'état Killer complet est petit et JSON-safe : on l'expédie en bloc dans
@@ -171,7 +172,7 @@ export default function KillerGame() {
           {podium.map((name, rank) => (
             <div key={name} className={`kg__podium-row${rank === 0 && !remoteAborted ? ' kg__podium-row--first' : ''}`}>
               <span className="kg__podium-rank">#{rank + 1}</span>
-              <span className="kg__podium-name">{name}</span>
+              <span className="kg__podium-name">{censorName(name)}</span>
             </div>
           ))}
         </div>
@@ -209,7 +210,7 @@ export default function KillerGame() {
       {/* Verrouillage hors tour (13.2) — même overlay que le 51. */}
       {remote && !myTurn && (
         <div className="kg__remote-overlay">
-          <p className="kg__remote-title">Au tour de {thrower.name}…</p>
+          <p className="kg__remote-title">Au tour de {censorName(thrower.name)}…</p>
           <p className="kg__remote-sub">
             {oppLeft
               ? '⚠️ Déconnecté — il peut revenir avec le même lien'
@@ -234,7 +235,7 @@ export default function KillerGame() {
       </div>
 
       <div className="kg__player">
-        <span className="kg__player-name">{thrower.name}</span>
+        <span className="kg__player-name">{censorName(thrower.name)}</span>
         <span className="kg__player-sub">
           N°{thrower.number} · {thrower.isKiller ? 'Killer 🔪' : 'Pas encore killer'} · dart {game.dartsThisTurn + 1}/3
         </span>
@@ -257,7 +258,7 @@ export default function KillerGame() {
               disabled={!enabled}
               onClick={() => throwDart(i)}
             >
-              <span className="kg__target-name">{p.name}{isSelf ? ' (toi)' : ''}</span>
+              <span className="kg__target-name">{censorName(p.name)}{isSelf ? ' (toi)' : ''}</span>
               <span className="kg__target-num">{isDoubleOnly ? `D${p.number}` : `N°${p.number}`}</span>
             </button>
           );
@@ -276,7 +277,7 @@ export default function KillerGame() {
             key={p.name}
             className={`kg__status-row${p.eliminated ? ' kg__status-row--out' : ''}${i === game.currentPlayer ? ' kg__status-row--active' : ''}`}
           >
-            <span className="kg__status-name">{p.name}</span>
+            <span className="kg__status-name">{censorName(p.name)}</span>
             <span className="kg__status-num">N°{p.number}</span>
             <span className="kg__status-killer">{p.isKiller && !p.eliminated ? '🔪' : ''}</span>
             <span className="kg__status-lives">{p.eliminated ? 'ÉLIMINÉ' : '♥'.repeat(p.lives)}</span>

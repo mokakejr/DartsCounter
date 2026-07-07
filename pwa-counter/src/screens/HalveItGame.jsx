@@ -10,6 +10,7 @@ import EmoteSplash from '../components/EmoteSplash.jsx';
 import ChatOverlay from '../components/ChatOverlay.jsx';
 import Tribunes from '../components/Tribunes.jsx';
 import { useLiveMatch } from '../useLiveMatch.js';
+import { censorName } from '../censor.js';
 import './HalveItGame.css';
 
 export default function HalveItGame() {
@@ -162,7 +163,7 @@ export default function HalveItGame() {
           {ranked.map((r, rank) => (
             <div key={r.name} className={`hi__podium-row${rank === 0 && !remoteAborted ? ' hi__podium-row--first' : ''}`}>
               <span className="hi__podium-rank">#{rank + 1}</span>
-              <span className="hi__podium-name">{r.name}</span>
+              <span className="hi__podium-name">{censorName(r.name)}</span>
               <span className="hi__podium-pts">{r.score} pts</span>
             </div>
           ))}
@@ -203,7 +204,7 @@ export default function HalveItGame() {
           la saisie adverse est un total au pavé numérique. */}
       {remote && !myTurn && (
         <div className="hi__remote-overlay">
-          <p className="hi__remote-title">Au tour de {players[player]}…</p>
+          <p className="hi__remote-title">Au tour de {censorName(players[player])}…</p>
           <p className="hi__remote-sub">
             {oppLeft
               ? '⚠️ Déconnecté — il peut revenir avec le même lien'
@@ -240,7 +241,7 @@ export default function HalveItGame() {
 
       {/* Current player */}
       <div className="hi__player">
-        <span className="hi__player-name">{players[player]}</span>
+        <span className="hi__player-name">{censorName(players[player])}</span>
         <span className="hi__player-total">{currentScore} pts</span>
       </div>
 
@@ -283,7 +284,7 @@ export default function HalveItGame() {
       <div className="hi__scores">
         {players.map((name, i) => (
           <div key={name} className={`hi__row${i === player ? ' hi__row--active' : ''}`}>
-            <span className="hi__row-name">{name}</span>
+            <span className="hi__row-name">{censorName(name)}</span>
             <span className="hi__row-val">{game.scores[i]}</span>
           </div>
         ))}

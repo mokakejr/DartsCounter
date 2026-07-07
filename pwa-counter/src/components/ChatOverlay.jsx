@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { speak } from '../speech.js';
+import { censorName } from '../censor.js';
 import './ChatOverlay.css';
 
 /**
@@ -24,7 +25,7 @@ export default function ChatOverlay({ message }) {
     if (message.key === lastKey.current) return;
     lastKey.current = message.key;
     // Lecture vocale façon Twitch — les mains du joueur sont occupées.
-    speak(`${message.sender_id} dit : ${message.message}`);
+    speak(`${censorName(message.sender_id)} dit : ${message.message}`);
     const id = message.key;
     setMessages(prev => [...prev.slice(-(MAX_SHOWN - 1)), message]);
     const t = setTimeout(() => {
@@ -38,7 +39,7 @@ export default function ChatOverlay({ message }) {
     <div className="chat-overlay" aria-live="polite">
       {messages.map(m => (
         <p key={m.key} className="chat-overlay__msg">
-          <b>{m.sender_id}</b> {m.message}
+          <b>{censorName(m.sender_id)}</b> {m.message}
         </p>
       ))}
     </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiGet } from '../api/client.js';
+import { censorName } from '../censor.js';
 import './Tribunes.css';
 
 /**
@@ -29,7 +30,7 @@ export default function Tribunes({ liveId }) {
         <div className="tribunes__list">
           {chat.map((m, i) => (
             <p key={i} className="tribunes__msg">
-              <b>{m.sender_id}</b> {m.message}
+              <b>{censorName(m.sender_id)}</b> {m.message}
             </p>
           ))}
         </div>

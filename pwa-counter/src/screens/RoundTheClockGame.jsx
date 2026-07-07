@@ -4,6 +4,7 @@ import { initialRoundTheClockState, recordDart, currentTarget, RTC_TARGETS } fro
 import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
+import { censorName } from '../censor.js';
 import './RoundTheClockGame.css';
 
 function fmtElapsed(ms) {
@@ -88,7 +89,7 @@ export default function RoundTheClockGame() {
       </div>
 
       <div className="rtc__player">
-        <span className="rtc__player-name">{playerName}</span>
+        <span className="rtc__player-name">{censorName(playerName)}</span>
         <span className="rtc__player-sub">
           Cible {game.targetIndex + 1} / {RTC_TARGETS.length} · {game.darts} fléchette{game.darts === 1 ? '' : 's'}
         </span>

@@ -7,7 +7,6 @@ import { displayName } from '../lib/profiles.js';
 import PlayerCard from '../components/PlayerCard.jsx';
 import { useAuth } from '../lib/useAuth.jsx';
 import { useLeague } from '../lib/useLeague.jsx';
-import { ping } from '../api/players.js';
 import { fetchLeaderboard } from '../api/stats.js';
 import { fetchEloSettings } from '../api/elo.js';
 import './Standings.css';
@@ -224,19 +223,13 @@ function LadderRow({ s, i, filter, profiles, playerElo, isRanked }) {
 
 
 // Le Podium Dynamique (Epic 10.1): les 3 premiers ne sont plus des lignes.
-// Ordre visuel 2-1-3, CTA rouge « Prendre sa place » (notifie via le
-// webhook « propose une partie » existant — pas d'infra push).
+// Ordre visuel 2-1-3, CTA rouge « Prendre sa place » (feature à venir,
+// n'envoie plus de webhook pour l'instant).
 function Podium({ top, filter, profiles, elo }) {
   const auth = useAuth();
-  const [challenged, setChallenged] = useState(null); // name | 'cooldown'
 
-  async function challenge(name) {
-    try {
-      await ping(auth.token);
-      setChallenged(name);
-    } catch (err) {
-      setChallenged(err.status === 429 ? 'cooldown' : null);
-    }
+  function challenge() {
+    window.alert('🚧 Ça va arriver, fonctionnalité pas encore prête !');
   }
 
   const order = [top[1], top[0], top[2]].filter(Boolean);
@@ -266,16 +259,8 @@ function Podium({ top, filter, profiles, elo }) {
               {elo[s.name] ? `${elo[s.name].elo} elo` : `${wins} V`}
             </span>
             {canChallenge && (
-              <button
-                className="podium__target"
-                disabled={challenged === s.name}
-                onClick={() => challenge(s.name)}
-              >
-                {challenged === s.name
-                  ? 'Défi lancé !'
-                  : challenged === 'cooldown'
-                    ? 'Déjà proposé…'
-                    : '🎯 Prendre sa place'}
+              <button className="podium__target" onClick={challenge}>
+                🎯 Prendre sa place
               </button>
             )}
             <span className={`podium__step podium__step--p${place + 1}`} />

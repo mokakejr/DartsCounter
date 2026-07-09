@@ -56,15 +56,19 @@ export default function Standings({ ranked, profiles = {} }) {
           .filter(s => s._games > 0);
 
     const gamesOf = s => (filter === 'Global' ? s.games : s._games);
-    const winsOf = s => (filter === 'Global' ? s.wins : s._wins);
+    const eloOf = s => elo[s.name]?.elo;
 
     const sorted = [...base].sort((a, b) => {
-      const eloA = elo[a.name]?.elo;
-      const eloB = elo[b.name]?.elo;
-      if (eloA != null && eloB != null) return eloB - eloA;
-      // Elo for this filter hasn't loaded yet — fall back to wins so the
-      // list isn't empty/unordered for a moment, then re-sorts once it has.
-      return winsOf(b) - winsOf(a);
+      const ea = eloOf(a);
+      const eb = eloOf(b);
+      // L'Elo est l'unique clé de classement compétitif. Les joueurs sans Elo
+      // chargé / hors scope passent en dernier ; départage par parties jouées
+      // puis nom — jamais par victoires (sinon un Elo égal ou non chargé
+      // ferait resurgir l'ordre des victoires du podium).
+      if (ea == null && eb == null) return gamesOf(b) - gamesOf(a) || a.name.localeCompare(b.name);
+      if (ea == null) return 1;
+      if (eb == null) return -1;
+      return eb - ea || gamesOf(b) - gamesOf(a) || a.name.localeCompare(b.name);
     });
 
     return {
@@ -94,7 +98,7 @@ export default function Standings({ ranked, profiles = {} }) {
       </div>
 
       {rankedRows.length >= 3 && (
-        <Podium top={rankedRows.slice(0, 3)} filter={filter} profiles={profiles} elo={elo} />
+        <Podium top={rankedRows.slice(0, 3)} profiles={profiles} elo={elo} />
       )}
 
       {rankedRows.length >= 3 && rankedRows.length > 3 && (
@@ -226,7 +230,7 @@ function LadderRow({ s, i, filter, profiles, playerElo, isRanked }) {
 // Le Podium Dynamique (Epic 10.1): les 3 premiers ne sont plus des lignes.
 // Ordre visuel 2-1-3, CTA rouge « Prendre sa place » (notifie via le
 // webhook « propose une partie » existant — pas d'infra push).
-function Podium({ top, filter, profiles, elo }) {
+function Podium({ top, profiles, elo }) {
   const auth = useAuth();
   const [challenged, setChallenged] = useState(null); // name | 'cooldown'
 
@@ -246,7 +250,6 @@ function Podium({ top, filter, profiles, elo }) {
     <div className="podium">
       {order.map((s) => {
         const place = placeOf(s);
-        const wins = filter === 'Global' ? s.wins : s._wins;
         const canChallenge = auth.player && auth.player.name !== s.name;
         return (
           <div key={s.name} className={`podium__slot podium__slot--p${place + 1}`}>
@@ -263,7 +266,7 @@ function Podium({ top, filter, profiles, elo }) {
               to={`/joueur/${encodeURIComponent(s.name)}`}
             />
             <span className="podium__stats">
-              {elo[s.name] ? `${elo[s.name].elo} elo` : `${wins} V`}
+              {elo[s.name] ? `${elo[s.name].elo} elo` : '—'}
             </span>
             {canChallenge && (
               <button

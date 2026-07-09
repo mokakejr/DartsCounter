@@ -1,6 +1,6 @@
 import httpx
 
-from app.services.recap import fmt_duration, mode_label, rank_emoji, summarize_week
+from app.services.recap import format_elo_delta, fmt_duration, mode_label, rank_emoji, summarize_week
 from app.services.targets.base import GameEvent
 
 COLOR_GAME = 0xE53935   # matches the PWAs' red/black palette
@@ -19,6 +19,8 @@ class DiscordTarget:
             body = _weekly_recap_body(event.data)
         elif event.type == "player_ping":
             body = _player_ping_body(event.data)
+        elif event.type == "provocation":
+            body = _provocation_body(event.data)
         else:
             return
         async with httpx.AsyncClient(timeout=10) as client:
@@ -33,8 +35,10 @@ def _game_finished_body(data: dict) -> dict:
 
     players = data.get("players", [])
     scores = data.get("scores", [])
+    elo: dict[str, dict] = data.get("elo") or {}
     score_lines = "\n".join(
         f"{rank_emoji(i)} **{p}** — {s} pts"
+        + (f" · {format_elo_delta(elo[p]['after'], elo[p]['delta'])}" if p in elo else "")
         for i, (p, s) in enumerate(zip(players, scores))
     )
 
@@ -71,6 +75,11 @@ def _game_finished_body(data: dict) -> dict:
 
 def _player_ping_body(data: dict) -> dict:
     return {"content": f"🎯 **{data['by']}** propose une partie de fléchettes ! Qui est chaud ?"}
+
+
+def _provocation_body(data: dict) -> dict:
+    target = f" **{data['target']}**" if data.get("target") else ""
+    return {"content": f"⚔️ **{data['by']}** provoque{target} : « {data['story']} »"}
 
 
 def _weekly_recap_body(data: dict) -> dict:

@@ -1,0 +1,47 @@
+.versus {
+  margin: 22px 0;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid rgba(230, 30, 42, 0.35);
+  max-width: 480px;
+}
+
+.versus__score {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 15px;
+  margin: 8px 0;
+}
+.versus__side b {
+  font-family: var(--font-display);
+  font-size: 30px;
+  margin-right: 6px;
+  color: var(--muted);
+}
+.versus__side--up b { color: var(--text); }
+.versus__vs { color: var(--muted); }
+
+.versus__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(244, 67, 54, 0.35);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.versus__bar span {
+  display: block;
+  height: 100%;
+  background: #4caf50;
+  border-radius: 3px;
+}
+
+.versus__facts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.versus__facts b { color: var(--text); }

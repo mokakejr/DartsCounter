@@ -1,0 +1,39 @@
+.onboarding__card { max-width: 380px; }
+
+.onboarding__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.onboarding__cta {
+  padding: 13px 18px;
+  border-radius: 10px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+}
+.onboarding__cta:hover { opacity: 0.85; }
+
+.onboarding__cta--primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+.onboarding__cta--secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.onboarding__cta--ghost {
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-family: inherit;
+  text-decoration: underline;
+}

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, DateTime
+from sqlalchemy import Boolean, ForeignKey, Integer, DateTime
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,6 +13,13 @@ if TYPE_CHECKING:
     from app.models.player import Player
     from app.models.season import Season
 
+# Game homologation states (Epic 6): only COMPLETED games feed Elo and
+# ranked stats. PENDING_REVIEW = outlier-flagged or player-reported, waiting
+# for the league tribunal; VOIDED = cancelled by the tribunal.
+STATUS_COMPLETED = "COMPLETED"
+STATUS_PENDING_REVIEW = "PENDING_REVIEW"
+STATUS_VOIDED = "VOIDED"
+
 
 class Game(Base):
     __tablename__ = "games"
@@ -22,6 +29,19 @@ class Game(Base):
     mode: Mapped[str] = mapped_column(nullable=False)
     variant: Mapped[str | None] = mapped_column(nullable=True)
     duration: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Casual games are excluded from Elo (both the incremental update in
+    # games.py::create_game and the full rebuild in elo_recompute.py) but
+    # still counted for personal history/achievements.
+    is_casual: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    status: Mapped[str] = mapped_column(
+        nullable=False, default=STATUS_COMPLETED, server_default=STATUS_COMPLETED
+    )
+    # Why the game sits in PENDING_REVIEW: "outlier" (auto-flag) or a report
+    # reason from REPORT_REASONS; reported_by = the accusing player, if any.
+    flag_reason: Mapped[str | None] = mapped_column(nullable=True)
+    reported_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("players.id"), nullable=True
+    )
     winner_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("players.id"), nullable=True
     )

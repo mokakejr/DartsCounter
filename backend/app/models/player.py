@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import BigInteger, DateTime, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -11,6 +11,7 @@ from app.core.db import Base
 if TYPE_CHECKING:
     from app.models.elo import EloHistory
     from app.models.game import GamePlayer
+    from app.models.title import PlayerTitle
 
 
 class Player(Base):
@@ -25,6 +26,9 @@ class Player(Base):
     # Signing up either claims an existing unclaimed row or creates a new one.
     password_hash: Mapped[str | None] = mapped_column(nullable=True)
     is_admin: Mapped[bool] = mapped_column(nullable=False, default=False, server_default="false")
+    # Activity signal (login + throttled touch on authenticated requests) —
+    # drives league ownership inheritance for absentee owners.
+    last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     display_name: Mapped[str | None] = mapped_column(nullable=True)
     avatar_path: Mapped[str | None] = mapped_column(nullable=True)
     flight_image_path: Mapped[str | None] = mapped_column(nullable=True)
@@ -38,5 +42,21 @@ class Player(Base):
     flight_crop_b: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     flight_mode: Mapped[str] = mapped_column(nullable=False, server_default="symmetric")
 
+    # Shadow karma (Epic 6.1) — NEVER exposed through public schemas.
+    # 0-100, starts at 50; moves on completed games / reports / tribunal
+    # verdicts. Kept server-side to weight moderation decisions.
+    trust_factor: Mapped[int] = mapped_column(nullable=False, default=50, server_default="50")
+
+    # Ferveur (parallel, never-negative progression) + daily play streak.
+    # The streak break is derived at read time (services/progression.py) —
+    # last_streak_update is the timestamp of the last counted game.
+    ferveur_xp: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0, server_default="0")
+    ferveur_level: Mapped[int] = mapped_column(nullable=False, default=1, server_default="1")
+    current_streak: Mapped[int] = mapped_column(nullable=False, default=0, server_default="0")
+    last_streak_update: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     game_links: Mapped[list["GamePlayer"]] = relationship(back_populates="player")
     elo_history: Mapped[list["EloHistory"]] = relationship(back_populates="player")
+    # selectin: cheap (few rows) and lets player_to_read expose the equipped
+    # title without every call site growing a join.
+    titles: Mapped[list["PlayerTitle"]] = relationship(lazy="selectin")

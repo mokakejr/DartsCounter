@@ -1,25 +1,25 @@
 import { motion } from 'framer-motion';
 import { Suspense } from 'react';
-import { Link } from 'react-router-dom';
 import Dart from '../components/Dart.jsx';
+import PlayerCard from '../components/PlayerCard.jsx';
 import RankBadge from '../components/RankBadge.jsx';
-import { MODE_LABEL, fmtDuration, relDate } from '../lib/data.js';
 import { displayName } from '../lib/profiles.js';
 import './Hero.css';
 
 const COUNTER_URL = import.meta.env.VITE_COUNTER_URL || 'http://localhost:5174';
 
-export default function Hero({ ranked, games, profiles = {}, eloBoard = [] }) {
-  // Reigning champion = highest global Elo (eloBoard is already sorted desc
-  // by the backend), not highest win count. champStats (level/streak — XP
-  // concepts the backend doesn't track) is looked up by name from the
-  // client-computed `ranked` for the same player.
+/**
+ * Le Lobby Cinématique (Epic 5) — l'écran ne dit que deux choses :
+ *   1. Le Boss Final — "X RÈGNE." en décor derrière la fléchette 3D.
+ *   2. JOUER — l'unique soleil, il pulse et attire le clic.
+ * Mon rang vit dans le header, le classement dans le tiroir (LobbyDrawer),
+ * tout le reste plus bas dans le tiroir ou sur les profils.
+ */
+export default function Hero({ ranked, profiles = {}, eloBoard = [] }) {
   const champEntry = eloBoard[0];
   const champStats = champEntry ? ranked.find(r => r.name === champEntry.name) : null;
   const champName = champEntry?.name;
   const champProfile = champName ? profiles[champName] : null;
-  const last = games && games.length ? games[0] : null;
-  const others = last ? (last.players || []).filter(p => p !== last.winner) : [];
 
   return (
     <header className="hero">
@@ -69,65 +69,32 @@ export default function Hero({ ranked, games, profiles = {}, eloBoard = [] }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.25 }}
             >
-              <RankBadge rank={champEntry.rank} elo={champEntry.elo} size="lg" />
-              {champStats && (
-                <span className="hero__champ-meta">
-                  {champStats.wins} victoires · niv. {champStats.level.lv} · {champStats.level.name}
-                </span>
-              )}
-              {/* Pourquoi il règne : le détail derrière la 1re place. */}
-              <span className="hero__champ-why">
-                {Math.round((champEntry.win_rate || 0) * 100)}% de winrate
-                {champStats?.curStreak >= 2 && <> · 🔥 {champStats.curStreak} victoires de suite</>}
+              <span className={`hero__avatar${(champStats?.curStreak ?? 0) >= 3 ? ' on-fire' : ''}`}>
+                <PlayerCard
+                  name={champName}
+                  label=""
+                  avatarUrl={champProfile?.avatar_url}
+                  rank={champEntry.rank}
+                  size={120}
+                  to={`/joueur/${encodeURIComponent(champName)}`}
+                />
               </span>
+              <RankBadge rank={champEntry.rank} elo={champEntry.elo} size="lg" />
             </motion.div>
           )}
 
           <motion.div
+            className="hero__action"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <a href={COUNTER_URL} className="hero__cta">
-              🎯 Jouer maintenant
+            <a href={COUNTER_URL} className="hero__cta hero__cta--play">
+              🎯 JOUER
             </a>
           </motion.div>
         </div>
-
-        {last && (
-          <motion.div
-            className="ticket"
-            initial={{ opacity: 0, y: 24, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="ticket__top">
-              <span className="ticket__tag">Dernière partie</span>
-              <span className="ticket__when">{relDate(last.date)}</span>
-            </div>
-
-            <Link
-              to={`/joueur/${encodeURIComponent(last.winner || '')}`}
-              className="ticket__winner display"
-            >
-              {last.winner ? displayName(profiles, last.winner) : '—'}
-            </Link>
-
-            {others.length > 0 && (
-              <p className="ticket__beat">
-                bat {others.map(p => displayName(profiles, p)).join(' · ')}
-              </p>
-            )}
-
-            <div className="ticket__foot">
-              <span className="ticket__mode">{MODE_LABEL[last.mode] || last.mode}</span>
-              <span className="ticket__dur">{fmtDuration(last.duration)}</span>
-            </div>
-          </motion.div>
-        )}
       </div>
-
-      <a href="#classement" className="hero__scroll">↓ Voir le classement</a>
     </header>
   );
 }

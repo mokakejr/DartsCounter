@@ -37,3 +37,8 @@ export function fetchPlayerRatings(name) {
 export function fetchPlayerEloHistory(name, scope) {
   return apiGet(`/players/${encodeURIComponent(name)}/elo-history`, scope ? { scope } : {});
 }
+
+// scope: omit to default to 'global' server-side.
+export function fetchPlayerEloExtremes(name, scope) {
+  return apiGet(`/players/${encodeURIComponent(name)}/elo-extremes`, scope ? { scope } : {});
+}

@@ -29,7 +29,7 @@
 
 .ladder__row {
   display: grid;
-  grid-template-columns: 44px 46px 1fr auto auto auto;
+  grid-template-columns: 44px 1fr auto auto auto;
   align-items: center;
   gap: 18px;
   padding: 16px 22px;
@@ -86,13 +86,27 @@
 
 .ladder__empty { color: var(--muted); padding: 24px; }
 
+.ladder__row--unranked { opacity: 0.8; }
+
+.ladder__divider {
+  margin-top: 10px;
+  padding: 10px 22px 4px;
+  border-top: 1px dashed var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ladder__divider span { text-transform: none; letter-spacing: normal; font-weight: 400; }
+
 @media (max-width: 720px) {
-  .ladder__row { grid-template-columns: 34px 40px 1fr auto auto; gap: 12px; padding: 14px 16px; }
+  .ladder__row { grid-template-columns: 34px 1fr auto auto; gap: 12px; padding: 14px 16px; }
   .ladder__stat--hide { display: none; }
 }
 
 @media (max-width: 480px) {
-  .ladder__row { grid-template-columns: 28px 36px 1fr auto; gap: 10px; padding: 12px 14px; }
+  .ladder__row { grid-template-columns: 28px 1fr auto; gap: 10px; padding: 12px 14px; }
   .ladder__stat--rate { display: none; }
   .ladder__lv { display: none; }
   .ladder__avatar { width: 36px; height: 36px; font-size: 16px; }
@@ -100,4 +114,96 @@
   .ladder__name { font-size: 16px; }
   .ladder__stat { min-width: 52px; }
   .ladder__stat b { font-size: 18px; }
+}
+
+/* ── PlayerCard rows + winrate gauge (Epic 2.2) ────────── */
+.ladder__player { min-width: 0; }
+.ladder__player .player-card__name { font-size: 16px; }
+
+.ladder__stat--bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 90px;
+}
+.winrate-bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.winrate-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+.ladder__stat--bar em {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: normal;
+}
+@media (max-width: 720px) {
+  .ladder__stat--bar { display: none; }
+}
+
+/* ── Podium dynamique + le Pit (Epic 10.1) ─────────────── */
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.podium__slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.podium__slot .player-card { flex-direction: column; gap: 4px; }
+.podium__slot .player-card__meta { align-items: center; }
+
+.podium__medal { font-size: 22px; }
+.podium__stats { color: var(--muted); font-size: 12px; }
+
+.podium__target {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 9px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.podium__target:hover { opacity: 0.85; }
+.podium__target:disabled { opacity: 0.6; cursor: default; }
+
+.podium__step {
+  width: 100%;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border);
+  border-bottom: none;
+}
+.podium__step--p1 { height: 64px; border-color: color-mix(in srgb, var(--rank-1) 55%, var(--border)); }
+.podium__step--p2 { height: 42px; border-color: color-mix(in srgb, var(--rank-2) 45%, var(--border)); }
+.podium__step--p3 { height: 28px; border-color: color-mix(in srgb, var(--rank-3) 45%, var(--border)); }
+
+/* La Fosse: places 4+ en cartes compactes. */
+.pit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.pit__card {
+  padding: 8px 14px 8px 8px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
 }

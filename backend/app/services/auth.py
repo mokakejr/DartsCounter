@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,6 +25,7 @@ async def signup(session: AsyncSession, name: str, password: str) -> Player:
     else:
         player.password_hash = hash_password(password)
 
+    player.last_login = datetime.now(timezone.utc)
     await session.commit()
     return player
 
@@ -33,4 +36,6 @@ async def authenticate(session: AsyncSession, name: str, password: str) -> Playe
         return None
     if not verify_password(password, player.password_hash):
         return None
+    player.last_login = datetime.now(timezone.utc)
+    await session.commit()
     return player

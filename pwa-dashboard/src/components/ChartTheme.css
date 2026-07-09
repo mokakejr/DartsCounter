@@ -1,0 +1,10 @@
+.tt {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+.tt__label { color: var(--muted); margin-bottom: 6px; font-size: 11px; letter-spacing: 0.08em; }
+.tt__row { display: flex; align-items: center; gap: 7px; }
+.tt__dot { width: 9px; height: 9px; border-radius: 50%; }

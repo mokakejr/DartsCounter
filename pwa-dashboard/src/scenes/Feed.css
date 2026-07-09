@@ -73,3 +73,58 @@
   .feed__row { grid-template-columns: 90px 1fr; }
   .feed__meta { grid-column: 2; }
 }
+
+/* ── Signalement (Epic 6.3) ────────────────────────────── */
+.feed__doubt {
+  display: block;
+  margin-top: 4px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+.feed__doubt:hover { color: var(--primary); }
+
+.feed__sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 60;
+}
+.feed__sheet {
+  background: var(--surface, #16161a);
+  border: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  padding: 20px 22px 28px;
+  width: min(480px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.feed__sheet-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+.feed__sheet-btn {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+}
+.feed__sheet-btn:hover { border-color: var(--muted); }
+.feed__sheet-btn--ghost {
+  background: none;
+  border: none;
+  color: var(--muted);
+  text-decoration: underline;
+}

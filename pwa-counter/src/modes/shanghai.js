@@ -1,17 +1,25 @@
-// Shanghai — port fidèle de app/.../model/ShanghaiModel.kt.
-// 7 rounds ; au round N (1-indexé) la cible est le nombre N. 3 fléchettes/tour,
-// zones 0=miss / 1=simple / 2=double / 3=triple. Points du tour = somme×round.
-// Shanghai = simple + double + triple sur le même nombre dans un tour → victoire immédiate.
+// Shanghai — port fidèle de app/.../model/ShanghaiModel.kt, généralisé pour
+// couvrir les 3 variantes (Bull/Random/Crazy) en plus du Shanghai classique.
+// `targets` est la liste des cibles jouées, dans l'ordre (round N = targets[N]).
+// 3 fléchettes/tour, zones 0=miss / 1=simple / 2=double / 3=triple. Points du
+// tour = somme(zones) × cible. La cible spéciale BULL (25 — simple bull=25,
+// double bull=50, pas de triple bull) n'a que 2 zones possibles.
+// Shanghai = simple+double+triple sur la même cible en un tour → victoire
+// immédiate ; sur un round BULL (pas de triple possible), l'équivalent est
+// 3 doubles-bull dans le même tour.
 
-export const SHANGHAI_ROUNDS = 7;
+export const BULL = 25;
 
 const count = s => s.playerNames.length;
 
-export function initialShanghaiState(playerNames) {
+export const isBullTarget = target => target === BULL;
+
+export function initialShanghaiState(playerNames, targets) {
   return {
     playerNames,
-    scores: playerNames.map(() => Array.from({ length: SHANGHAI_ROUNDS }, () => 0)),
-    currentRound: 0, // 0-6
+    targets,
+    scores: playerNames.map(() => targets.map(() => 0)),
+    currentRound: 0,
     currentPlayer: 0,
     finished: false,
     shanghaiWinner: null,
@@ -21,10 +29,14 @@ export function initialShanghaiState(playerNames) {
 export const totalScore = (s, player) => s.scores[player].reduce((a, b) => a + b, 0);
 
 // darts : zones jouées ce tour (1=simple, 2=double, 3=triple).
-export const isShanghai = darts =>
-  darts.length === 3 && [1, 2, 3].every(z => darts.includes(z));
+export function isInstantWin(darts, target) {
+  if (darts.length !== 3) return false;
+  return isBullTarget(target)
+    ? darts.every(z => z === 2) // 3 doubles-bull
+    : [1, 2, 3].every(z => darts.includes(z));
+}
 
-// points : score du tour déjà calculé (somme des zones × (round+1)).
+// points : score du tour déjà calculé (somme des zones × cible).
 export function addScore(s, player, round, points, shanghai = false) {
   const scores = s.scores.map(r => r.slice());
   scores[player][round] = points;
@@ -35,7 +47,7 @@ export function addScore(s, player, round, points, shanghai = false) {
 
   const nextPlayer = (player + 1) % count(s);
   const nextRound = nextPlayer === 0 ? round + 1 : round;
-  const done = nextRound >= SHANGHAI_ROUNDS;
+  const done = nextRound >= s.targets.length;
 
   return {
     ...s,

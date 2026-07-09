@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -13,6 +14,10 @@ class GameCreate(BaseModel):
     players: list[str]
     scores: list[int]
     winner: str | None = None  # None/empty for a tie — Shanghai allows this
+    is_casual: bool = False  # excluded from Elo, still recorded for personal history
+    # Generic per-mode metadata bag (e.g. Bob's 27's rounds_completed/busted) —
+    # preserved via raw_data without every mode needing its own typed fields.
+    extra: dict[str, Any] | None = None
 
     @model_validator(mode="after")
     def _check_consistency(self) -> "GameCreate":
@@ -40,4 +45,18 @@ class GameRead(BaseModel):
     variant: str | None
     duration: int
     winner: str | None
+    is_casual: bool
+    # COMPLETED | PENDING_REVIEW | VOIDED — PENDING_REVIEW means the outlier
+    # detector froze it: no Elo yet, the client shows the homologation modal.
+    status: str = "COMPLETED"
+    flag_reason: str | None = None
+    extra: dict[str, Any] | None = None
     players: list[GamePlayerRead]
+
+
+class GameReport(BaseModel):
+    reason: str  # one of services.tribunal.REPORT_REASONS
+
+
+class GameAdjudication(BaseModel):
+    action: str  # "validate" | "void"

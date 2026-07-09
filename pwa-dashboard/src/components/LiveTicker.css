@@ -1,0 +1,59 @@
+/* Barre HUD collée sous le header — hors du corps de la page, elle ne
+   détruit pas la composition du lobby. */
+.live-ticker {
+  position: fixed;
+  top: 56px;
+  left: 0; right: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 14px;
+  padding: 6px var(--gutter);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(230, 30, 42, 0.35);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: #ff4d57;
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.live-ticker::-webkit-scrollbar { display: none; }
+
+.live-ticker__badge {
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  animation: live-blink 1.6s ease-in-out infinite;
+  text-shadow: 0 0 8px rgba(230, 30, 42, 0.8);
+}
+@keyframes live-blink { 50% { opacity: 0.5; } }
+[data-reduce-animations] .live-ticker__badge { animation: none; }
+
+.live-ticker__match { display: inline-flex; align-items: center; gap: 10px; }
+.live-ticker__match b { color: #fff; font-weight: 700; }
+
+/* Vrai bouton pill — même langage que le CTA JOUER du lobby. */
+.live-ticker__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 14px;
+  border-radius: 999px;
+  background: var(--primary, #E61E2A);
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  box-shadow: 0 0 12px rgba(230, 30, 42, 0.55);
+  animation: ticker-pulse 2s ease-in-out infinite;
+  transition: transform 0.15s;
+}
+.live-ticker__cta:hover { transform: scale(1.05); animation-play-state: paused; }
+@keyframes ticker-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(230, 30, 42, 0.45); }
+  50% { box-shadow: 0 0 18px rgba(230, 30, 42, 0.9); }
+}
+[data-reduce-animations] .live-ticker__cta { animation: none; }

@@ -30,7 +30,7 @@ async def test_test_webhook_sends_to_configured_target(client, fake_httpx):
     assert len(fake_httpx.calls) == 1
     url, body = fake_httpx.calls[0]
     assert url == "https://chat.example/x"
-    assert "text" in body  # game_finished uses the simple {text} format
+    assert "cardsV2" in body  # game_finished uses the cardsV2 format
 
 
 async def test_test_webhook_404_when_not_configured(client):

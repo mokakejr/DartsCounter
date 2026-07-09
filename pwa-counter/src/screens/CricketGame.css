@@ -1,11 +1,17 @@
 .cg {
+  /* Même remède que le 51 (af93306) : hauteur FIXE + overflow-y — si le
+     contenu dépasse (Chrome desktop, fenêtre courte), ce conteneur scrolle
+     (le body est verrouillé). Sur téléphone tout tient : auto ≡ hidden,
+     comportement inchangé, pull-to-refresh toujours neutralisé. */
   height: 100svh;
   display: flex;
   flex-direction: column;
   background: var(--bg);
   padding: 0 16px 16px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Header ─────────────────────────────────────────── */
@@ -88,7 +94,11 @@
 .cg__board-wrap {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  /* auto, pas hidden : sur desktop le tableau SC (10 lignes) dépasse la
+     part flex — hidden rendait BULL/DBL/TRP/BED inatteignables (pas de
+     scroll, partie infinissable). Sur téléphone tout tient : identique. */
+  overflow-y: auto;
+  overflow-x: hidden;
   margin-bottom: 6px;
 }
 .cg__board {
@@ -432,3 +442,20 @@
 .cg__podium-pts { font-size: 18px; font-weight: 700; }
 .cg__fin-actions { display: flex; gap: 12px; }
 .cg__fin-actions .cg__btn { flex: 1; text-align: center; }
+
+/* ── Verrouillage hors tour (Epic 13.2) — bandeau, pas d'overlay : on
+   regarde les marques adverses tomber en direct ──────────────────────── */
+.cg__remote-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(10, 10, 14, 0.6);
+  text-align: center;
+}
+.cg__remote-title { font-size: 15px; font-weight: 900; }
+.cg__remote-sub { color: #9a9aa3; font-size: 12px; }

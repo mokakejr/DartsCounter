@@ -4,7 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_db
 from app.core.security import get_current_player
 from app.models import Player
-from app.schemas.elo import EloHistoryRead, PlayerRatingRead
+from app.models.elo import GLOBAL_SCOPE
+from app.schemas.elo import EloHistoryRead, PlayerEloExtremesRead, PlayerRatingRead
 from app.schemas.player import PlayerRead, ProfileUpdate
 from app.services import elo_query
 from app.services import ping as ping_service
@@ -22,7 +23,47 @@ async def get_players(session: AsyncSession = Depends(get_db)) -> list[PlayerRea
 
 
 @router.get("/players/me", response_model=PlayerRead)
-async def get_me(player: Player = Depends(get_current_player)) -> PlayerRead:
+async def get_me(
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> PlayerRead:
+    data = players_service.player_to_read(player)
+    data.games_played = await players_service.count_games_played(session, player.id)
+    return data
+
+
+@router.get("/players/me/titles")
+async def my_titles(
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    from app.models.title import TITLES
+    from app.services import titles as titles_service
+
+    rows = await titles_service.list_titles(session, player.id)
+    return [
+        {
+            "id": r.title_id,
+            "label": TITLES[r.title_id].label if r.title_id in TITLES else r.title_id,
+            "description": TITLES[r.title_id].description if r.title_id in TITLES else "",
+            "unlocked_at": r.unlocked_at,
+            "is_equipped": r.is_equipped,
+        }
+        for r in rows
+    ]
+
+
+@router.post("/players/me/titles/{title_id}/equip", response_model=PlayerRead)
+async def equip_title(
+    title_id: str,
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> PlayerRead:
+    from app.services import titles as titles_service
+
+    if not await titles_service.equip(session, player.id, title_id):
+        raise HTTPException(404, "Title not unlocked")
+    await session.refresh(player)
     return players_service.player_to_read(player)
 
 
@@ -74,6 +115,19 @@ async def get_player_elo_history(
         raise HTTPException(404, "Player not found")
     rows = await elo_query.get_player_elo_history(session, player.id, scope)
     return [EloHistoryRead(**r) for r in rows]
+
+
+@router.get("/players/{name}/elo-extremes", response_model=PlayerEloExtremesRead)
+async def get_player_elo_extremes(
+    name: str,
+    scope: str = Query(default=GLOBAL_SCOPE),
+    session: AsyncSession = Depends(get_db),
+) -> PlayerEloExtremesRead:
+    player = await players_service.get_by_name(session, name)
+    if player is None:
+        raise HTTPException(404, "Player not found")
+    data = await elo_query.get_player_elo_extremes(session, player.id, scope)
+    return PlayerEloExtremesRead(**data)
 
 
 @router.post("/players/ping", status_code=202)

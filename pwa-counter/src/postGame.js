@@ -1,6 +1,7 @@
 import { postGameToServer } from './api/games.js';
 import { enqueueGame } from './offlineQueue.js';
 import { registerBackgroundSync } from './sync.js';
+import { clearResume } from './resume.js';
 
 /**
  * Send a finished game to the backend. If the network is down, queue it in
@@ -17,9 +18,21 @@ import { registerBackgroundSync } from './sync.js';
  * @param {number[]} opts.scores    – parallel to players
  * @param {string}   opts.winner    – winning player name, or '' for a tie
  * @param {number}   opts.startedAt – Date.now() captured when the game screen mounted
+ * @param {boolean}  [opts.isCasual] – excluded from Elo when true (default false)
+ * @param {object}   [opts.extra]    – generic per-mode metadata (e.g. Bob's 27 bust info)
  */
-export async function postGame({ mode, variant, players, scores, winner, startedAt }) {
+// Dernier match joué sur cet appareil — nourrit la "Revanche Rapide" 1-clic
+// du PlayHome (Epics 5.1 / 7.4).
+export const LAST_GAME_KEY = 'dartsLastGame';
+
+export async function postGame({ mode, variant, players, scores, winner, startedAt, isCasual = false, extra }) {
   const now = Date.now();
+  clearResume(); // partie terminee : plus rien a reprendre apres un reload
+  try {
+    localStorage.setItem(LAST_GAME_KEY, JSON.stringify({
+      mode, variant, players, isCasual, playedAt: now,
+    }));
+  } catch { /* stockage plein/désactivé : la revanche est un bonus */ }
   const duration = Math.round((now - startedAt) / 1000);
   const payload = {
     date: new Date(startedAt).toISOString(),
@@ -29,6 +42,8 @@ export async function postGame({ mode, variant, players, scores, winner, started
     scores,
     winner: winner || null,
     duration,
+    is_casual: isCasual,
+    ...(extra ? { extra } : {}),
   };
 
   try {

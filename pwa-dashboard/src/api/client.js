@@ -44,7 +44,14 @@ export async function apiPatch(path, body, token = null) {
     body: JSON.stringify(body),
   });
   if (!res.ok) throw await parseError(res, url);
-  return res.json();
+  return res.status === 204 ? null : res.json();
+}
+
+export async function apiDelete(path, token = null) {
+  const url = new URL(path, API_URL);
+  const res = await fetch(url, { method: 'DELETE', headers: authHeaders(token) });
+  if (!res.ok) throw await parseError(res, url);
+  return null;
 }
 
 // Multipart upload — `params` go on the query string (e.g. ?slot=avatar),

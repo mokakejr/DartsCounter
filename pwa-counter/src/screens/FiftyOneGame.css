@@ -1,12 +1,21 @@
 .f51 {
+  /* Hauteur FIXE + overflow-y : c'est ce conteneur qui scrolle (le body est
+     verrouillé par global.css) — min-height poussait le body et Chrome ne
+     scrollait plus du tout. overscroll-behavior garde le pull-to-refresh
+     désactivé pendant une partie. */
   height: 100svh;
   display: flex;
   flex-direction: column;
   background: var(--bg);
-  padding: 0 20px 24px;
-  overflow: hidden;
+  padding: 0 20px 32px;
+  overflow-y: auto;
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
+
+/* Cible bornée par la hauteur d'écran pour que saisie + validation + annuler
+   restent visibles sans scroller sur un téléphone standard. */
+.f51 .svgboard { width: min(92vw, 44svh, 420px); }
 
 /* ── Header ─────────────────────────────────────────── */
 .f51__header {
@@ -70,6 +79,7 @@
 
 .f51__display-num {
   font-family: var(--font-display); font-size: 48px; line-height: 1;
+  color: var(--text);
 }
 .f51__display-hint {
   font-size: 13px; color: var(--muted);
@@ -106,8 +116,10 @@
 /* ── Undo ───────────────────────────────────────────── */
 .f51__undo {
   width: 100%;
-  height: 48px;
-  margin-top: 10px;
+  min-height: 48px;
+  flex: none;
+  margin-top: 12px;
+  margin-bottom: env(safe-area-inset-bottom);
   background: var(--surface);
   border: 1px solid #333333;
   border-radius: 8px;
@@ -157,3 +169,75 @@
 .f51__btn--primary { background: var(--primary); color: #fff; }
 .f51__btn--secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
 .f51__btn:hover { opacity: 0.85; }
+
+/* ── Dart-Wheel (Epic 4) ───────────────────────────────── */
+.f51__board-darts {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 6px 0;
+}
+.f51__board-dart {
+  min-width: 52px;
+  padding: 8px 10px;
+  text-align: center;
+  border-radius: 8px;
+  font-size: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  color: #9a9aa3;
+  font-weight: 800;
+}
+.f51__board-dart--filled {
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.7);
+  color: #0a0a0b;
+  font-weight: 800;
+  background: #f4f3ef;
+}
+.f51__key--confirm {
+  display: block;
+  width: min(92vw, 420px);
+  margin: 10px auto 0;
+  min-height: 52px;
+  font-size: 17px;
+}
+.f51__input-toggle {
+  display: block;
+  margin: 12px auto 0;
+  background: none;
+  border: none;
+  color: #9a9aa3;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ── Verrouillage hors tour (Epic 13.2) ────────────────── */
+.f51__remote-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(10, 10, 14, 0.82);
+  backdrop-filter: blur(2px);
+}
+.f51__remote-title {
+  font-size: 22px;
+  font-weight: 900;
+  margin: 0;
+}
+.f51__remote-sub { color: #9a9aa3; margin: 0; }
+
+.f51__attempt {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffd23c;
+  margin: 10px 0 0;
+}
+.f51__attempt--err { color: #f44336; }

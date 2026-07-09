@@ -16,7 +16,7 @@ import statistics
 from dataclasses import dataclass
 from typing import TypedDict
 
-from app.models.elo import GLOBAL_SCOPE
+from app.models.elo import GLOBAL_SCOPE, elo_scope_for
 
 RANK_TIERS = ("Silver", "Gold", "Platinum", "Diamond")
 
@@ -166,7 +166,7 @@ def recompute_elo(
             for p in players
         }
 
-        for scope in (GLOBAL_SCOPE, mode):
+        for scope in (GLOBAL_SCOPE, elo_scope_for(mode)):
             before = {p: state_for(p, scope).rating for p in players}
             k = {p: get_k_factor(state_for(p, scope).games_played, config.k_factors, config.k_thresholds) for p in players}
             deltas = dict.fromkeys(players, 0.0)

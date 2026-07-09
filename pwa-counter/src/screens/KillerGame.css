@@ -1,0 +1,148 @@
+.kg {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  padding: 0 20px 24px;
+  overscroll-behavior: none;
+}
+
+/* ── Header ─────────────────────────────────────────── */
+.kg__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0 8px;
+}
+.kg__back {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  background: none; border: 1px solid var(--border);
+  border-radius: 8px; font-size: 18px; color: var(--text);
+  cursor: pointer; font-family: inherit;
+}
+.kg__back:hover { border-color: var(--muted); }
+.kg__title { font-family: var(--font-display); font-size: 20px; }
+
+/* ── Current player ─────────────────────────────────── */
+.kg__player {
+  display: flex; flex-direction: column; gap: 2px;
+  margin: 12px 0 16px;
+}
+.kg__player-name { font-size: 26px; font-weight: 700; }
+.kg__player-sub { font-size: 13px; color: var(--muted); }
+
+/* ── Targets ────────────────────────────────────────── */
+.kg__targets {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 10px;
+}
+.kg__target {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 10px; font-family: inherit;
+  cursor: pointer; touch-action: manipulation;
+  transition: background 0.1s, border-color 0.1s, transform 0.08s, opacity 0.15s;
+}
+.kg__target:active:not(:disabled) { transform: scale(0.98); }
+.kg__target:hover:not(:disabled) { border-color: var(--muted); background: var(--surface-2); }
+.kg__target:disabled { opacity: 0.3; cursor: not-allowed; }
+.kg__target--miss { justify-content: center; color: var(--muted); font-weight: 700; letter-spacing: 0.08em; }
+.kg__target--self { border-color: var(--primary); }
+.kg__target-name { font-size: 16px; font-weight: 700; }
+.kg__target-num { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ── Undo ───────────────────────────────────────────── */
+.kg__undo {
+  width: 100%;
+  height: 44px;
+  margin-bottom: 16px;
+  background: var(--surface);
+  border: 1px solid #333333;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: #888888;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.kg__undo:hover:not(:disabled) { color: #B6B6BB; border-color: #555; }
+.kg__undo:disabled {
+  background: #141414;
+  border-color: #1A1A1A;
+  color: #333333;
+  cursor: not-allowed;
+}
+
+/* ── Status table ───────────────────────────────────── */
+.kg__status {
+  display: flex; flex-direction: column; gap: 6px;
+  margin-top: auto;
+}
+.kg__status-row {
+  display: grid;
+  grid-template-columns: 1fr auto 24px auto;
+  align-items: center; gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  transition: border-color 0.15s, opacity 0.15s;
+}
+.kg__status-row--active { border-color: var(--primary); }
+.kg__status-row--out { opacity: 0.4; }
+.kg__status-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kg__status-num { color: var(--muted); font-variant-numeric: tabular-nums; }
+.kg__status-lives { color: var(--win); font-variant-numeric: tabular-nums; }
+.kg__status-row--out .kg__status-lives { color: var(--muted); letter-spacing: 0.06em; }
+
+/* ── Finished screen ────────────────────────────────── */
+.kg--finished {
+  justify-content: center; align-items: center; gap: 32px; padding: 40px 20px;
+}
+.kg__fin-eyebrow {
+  font-size: 11px; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--muted);
+}
+.kg__podium { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.kg__podium-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+}
+.kg__podium-row--first {
+  border-color: var(--rank-1);
+  background: color-mix(in srgb, var(--rank-1) 8%, var(--surface));
+}
+.kg__podium-rank { font-size: 13px; color: var(--muted); min-width: 28px; }
+.kg__podium-row--first .kg__podium-rank { color: var(--rank-1); }
+.kg__podium-name { flex: 1; font-size: 20px; font-weight: 700; }
+.kg__fin-actions { width: 100%; display: flex; gap: 12px; }
+.kg__btn {
+  flex: 1; padding: 14px 28px; border-radius: 10px; border: none;
+  font-family: var(--font-display); font-size: 18px; letter-spacing: 0.06em;
+  cursor: pointer; text-align: center; transition: opacity 0.15s;
+}
+.kg__btn--primary { background: var(--primary); color: #fff; }
+.kg__btn--secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+.kg__btn:hover { opacity: 0.85; }
+
+/* ── Verrouillage hors tour (Epic 13.2) — même pattern que le 51 ─────── */
+.kg__remote-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(10, 10, 14, 0.82);
+  backdrop-filter: blur(2px);
+}
+.kg__remote-title {
+  font-size: 22px;
+  font-weight: 900;
+  margin: 0;
+}
+.kg__remote-sub { color: #9a9aa3; margin: 0; }

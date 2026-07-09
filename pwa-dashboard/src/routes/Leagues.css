@@ -37,6 +37,95 @@
   font-size: 14px;
   margin-top: 8px;
 }
+.leagues__empty a { color: var(--primary); }
+
+.leagues__error {
+  color: #e55;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+/* ── Toolbar (create + join) ───────────────────────────── */
+.leagues__toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 36px;
+}
+.leagues__toolbar .leagues__new { margin-bottom: 0; }
+
+.leagues__join {
+  display: flex;
+  gap: 8px;
+}
+.leagues__join-input {
+  width: 170px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-family: var(--font-mono, monospace);
+}
+
+/* ── Members ───────────────────────────────────────────── */
+.leagues__members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.leagues__members--add {
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.leagues__member {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: default;
+}
+.leagues__member-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.leagues__member-you {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--primary);
+}
+.leagues__member-remove {
+  background: none;
+  border: none;
+  color: #e55;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+/* ── Invite code ───────────────────────────────────────── */
+.leagues__code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.leagues__code-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.leagues__code {
+  font-size: 16px;
+  letter-spacing: 0.22em;
+  padding: 5px 12px;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
 
 /* ── Card list ─────────────────────────────────────────── */
 .leagues__list {
@@ -207,4 +296,100 @@
   gap: 10px;
   margin-top: 8px;
   justify-content: flex-end;
+}
+
+/* ── Rôles, fantômes, wizard, litiges (Epic 3) ─────────── */
+.leagues__icon { margin-right: 6px; }
+.leagues__motto {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 13px;
+  margin: -6px 0 12px;
+}
+.leagues__section-title {
+  font-size: clamp(24px, 4vw, 36px);
+  margin: 40px 0 16px;
+}
+.leagues__role { margin-right: 4px; }
+.leagues__chip--ghost {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+.leagues__member-promote {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0 2px;
+}
+.leagues__member-promote:hover { color: #fff; }
+.leagues__step { color: var(--muted); font-size: 0.7em; }
+
+.leagues__icon-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.leagues__icon-cell {
+  font-size: 28px;
+  padding: 10px 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.leagues__icon-cell--on {
+  border-color: var(--primary);
+  background: rgba(230, 30, 42, 0.12);
+}
+
+.leagues__privacy {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.leagues__privacy--on { border-color: var(--primary); }
+.leagues__privacy small { color: var(--muted); }
+
+.leagues__requests,
+.leagues__disputes {
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.leagues__req-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 3px;
+}
+.leagues__req-btn--ok { color: #4caf50; }
+.leagues__req-btn--no { color: #f44336; }
+
+.leagues__dispute {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid rgba(244, 67, 54, 0.35);
+  border-radius: 10px;
+  font-size: 14px;
+}
+.leagues__dispute-reason { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.leagues__dispute-actions { display: flex; gap: 8px; }
+.leagues__btn--validate {
+  border-color: #4caf50;
+  color: #4caf50;
 }

@@ -16,6 +16,27 @@ if TYPE_CHECKING:
 # value is a game mode string (e.g. "Cricket") tracked independently.
 GLOBAL_SCOPE = "global"
 
+# Some modes are variants of one another and should share a single Elo scope
+# rather than each getting their own independent rating (e.g. the Shanghai
+# variants below all count toward one "Shanghai" scope). Maps a literal
+# Game.mode string -> the shared scope name; anything not listed here is its
+# own scope (the mode string itself).
+MODE_FAMILY: dict[str, str] = {
+    "ShanghaiBull": "Shanghai",
+    "ShanghaiRandom": "Shanghai",
+    "ShanghaiCrazy": "Shanghai",
+}
+
+
+def elo_scope_for(mode: str) -> str:
+    return MODE_FAMILY.get(mode, mode)
+
+
+def modes_in_family(family: str) -> list[str]:
+    """Every literal Game.mode string that shares `family`'s Elo scope,
+    including the family name itself (e.g. classic 'Shanghai' games)."""
+    return [family, *(m for m, f in MODE_FAMILY.items() if f == family)]
+
 
 class EloHistory(Base):
     """One row per (game, player, scope) — the net rating change from that

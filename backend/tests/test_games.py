@@ -63,6 +63,37 @@ async def test_create_game_tie_has_no_winner(client):
     assert all(row["elo"] == 10000 for row in leaderboard)  # no elo movement on a tie
 
 
+async def test_casual_game_recorded_but_excluded_from_elo(client):
+    payload = {**BASE_GAME, "is_casual": True}
+    resp = await client.post("/games", json=payload)
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["is_casual"] is True
+
+    # Still logged as a played game...
+    games = (await client.get("/games")).json()
+    assert len(games) == 1
+    assert games[0]["is_casual"] is True
+
+    # ...but never touched Elo — no rating row was ever created for it.
+    assert (await client.get("/players/Alice/ratings")).json() == []
+
+
+async def test_competitive_game_defaults_is_casual_false(client):
+    resp = await client.post("/games", json=BASE_GAME)
+    assert resp.json()["is_casual"] is False
+
+
+async def test_casual_game_excluded_from_leaderboard_games_count(client):
+    await client.post("/games", json={**BASE_GAME, "is_casual": True})
+    await client.post("/games", json={**BASE_GAME, "date": "2026-01-02T10:00:00Z"})
+
+    leaderboard = (await client.get("/stats/leaderboard")).json()
+    alice = next(r for r in leaderboard if r["name"] == "Alice")
+    assert alice["games"] == 1
+    assert alice["wins"] == 1
+
+
 async def test_list_games_ordered_newest_first(client):
     for day in (1, 2, 3):
         await client.post("/games", json={**BASE_GAME, "date": f"2026-01-0{day}T10:00:00Z"})

@@ -1,4 +1,4 @@
-import { useState, useRef, Fragment } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   initialCricketState, addHit, nextPlayer,
@@ -12,6 +12,13 @@ import {
 import { postGame } from '../postGame.js';
 import ExitConfirmModal from './ExitConfirmModal.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
+import EmoteSplash from '../components/EmoteSplash.jsx';
+import ChatOverlay from '../components/ChatOverlay.jsx';
+import Tribunes from '../components/Tribunes.jsx';
+import { useLiveMatch } from '../useLiveMatch.js';
+import { clearResume, loadResume, saveResume } from '../resume.js';
+import VictoryOverlay from '../components/VictoryOverlay.jsx';
+import { censorName } from '../censor.js';
 import './CricketGame.css';
 
 const CRICKET_LABELS = ['20', '19', '18', '17', '16', '15', 'BULL'];
@@ -95,17 +102,27 @@ export default function CricketGame() {
   const players = state?.players ?? ['J1', 'J2'];
   const isSC = state?.mode === 'superCricket';
   const variant = state?.variant === 'cutthroat' ? 'cutthroat' : 'normal';
+  const isCasual = state?.isCasual ?? false;
   const variantLabel = variant === 'cutthroat' ? 'CutThroat' : 'Normal';
+  // Remote (Epic 13): chaque client ne saisit que ses propres tours, l'état
+  // adverse arrive par les deltas WS.
+  const remote = state?.remote ?? false;
+  const me = state?.me ?? null;
 
+  // Reprise apres reload accidentel : l'etat de jeu est snapshotte a chaque
+  // coup (voir l'effet saveResume plus bas). Hors remote : l'état y est
+  // resynchronisé par le serveur via STATE.
+  const resume = remote ? null : loadResume(isSC ? '/super-cricket' : '/cricket', players);
   const [game, setGame] = useState(() =>
-    isSC
+    resume?.game
+    ?? (isSC
       ? initialSuperCricketState(players, variant === 'cutthroat' ? SC_MODE.CUT_THROAT : SC_MODE.NORMAL)
-      : initialCricketState(players, variant === 'cutthroat' ? CRICKET_MODE.CUT_THROAT : CRICKET_MODE.NORMAL)
+      : initialCricketState(players, variant === 'cutthroat' ? CRICKET_MODE.CUT_THROAT : CRICKET_MODE.NORMAL))
   );
-  const [dartsUsed, setDartsUsed] = useState(0);
+  const [dartsUsed, setDartsUsed] = useState(resume?.dartsUsed ?? 0);
   const [multiplier, setMultiplier] = useState(1);
   // phase: 'playing' | 'turn-done' | 'finished'
-  const [phase, setPhase] = useState('playing');
+  const [phase, setPhase] = useState(resume?.phase === 'turn-done' ? 'turn-done' : 'playing');
   // SC always uses the board (grid) view; Cricket remembers last choice
   const [view, setView] = useState(() => isSC ? 'apk' : loadView());
   const [history, setHistory] = useState([]); // [{game, dartsUsed, phase}]
@@ -113,10 +130,110 @@ export default function CricketGame() {
   // null | {type:'double'|'triple'|'bedNumber'} | {type:'bedMultiplier', number}
   const [scoringDialog, setScoringDialog] = useState(null);
   const startedAt = useRef(Date.now());
+  const liveId = state?.liveId ?? null;
+  const [oppLeft, setOppLeft] = useState(false);
+  // Fin à distance sans vainqueur (adversaire parti / inactivité) — pas de
+  // VictoryOverlay sur un match avorté.
+  const [remoteAborted, setRemoteAborted] = useState(false);
+  // Les émissions passent par des useEffect([game]) : appliquer un delta
+  // adverse re-déclencherait ces effects et renverrait l'état en boucle.
+  // Le drapeau est posé avant chaque setGame entrant et relâché par un
+  // effect placé APRÈS les deux émetteurs (ordre d'exécution garanti).
+  const inbound = useRef(false);
+
+  const labels = isSC ? SC_LABELS : CRICKET_LABELS;
+
+  // Diffusion live (Epic 11) + Mode Focus (12.2) — comme 51/Shanghai.
+  const { emit, emote, chatMessage } = useLiveMatch(liveId, remote ? me : players[0], {
+    onEvent(e) {
+      if (!remote) return;
+      if (e.player_id && e.player_id !== me) setOppLeft(false); // il est vivant
+      if (e.event === 'PLAYER_LEFT' && e.player_id !== me) {
+        setOppLeft(true);
+        return;
+      }
+      // NB: pour TURN_CHANGED le serveur pose player_id = event.player (le
+      // NOUVEAU joueur), pas l'émetteur — on ne filtre les échos que sur les
+      // deltas où player_id est bien l'expéditeur ; le reste est idempotent.
+      if (e.event === 'SCORE_UPDATED' && e.scores) {
+        if (e.player_id === me) return; // écho de mon propre delta
+        inbound.current = true;
+        setGame(g => ({
+          ...g,
+          points: players.map((n, i) => e.scores[n] ?? g.points[i]),
+          marks: e.detail?.kind === 'cricket' && e.detail.marks ? e.detail.marks : g.marks,
+        }));
+      } else if (e.event === 'TURN_CHANGED' && e.player) {
+        const idx = players.indexOf(e.player);
+        if (idx !== -1) {
+          inbound.current = true;
+          setGame(g => ({ ...g, currentPlayer: idx }));
+        }
+        setDartsUsed(0);
+        setMultiplier(1);
+        setPhase('playing');
+        setHistory([]); // un tour confirmé est déjà chez l'adversaire
+      } else if (e.event === 'MATCH_FINISHED') {
+        const idx = players.indexOf(e.winner);
+        if (idx !== -1) {
+          inbound.current = true;
+          setGame(g => ({ ...g, winner: idx }));
+        } else {
+          setRemoteAborted(true);
+        }
+        setPhase('finished');
+      } else if (e.event === 'STATE' && e.match) {
+        // Reconnexion en pleine partie : le snapshot serveur fait foi
+        // (points + tableau des marques via detail + tour).
+        const m = e.match;
+        inbound.current = true;
+        setGame(g => ({
+          ...g,
+          points: players.map((n, i) => m.scores?.[n] ?? g.points[i]),
+          marks: m.detail?.kind === 'cricket' && m.detail.marks ? m.detail.marks : g.marks,
+          currentPlayer: Math.max(players.indexOf(m.turn_player), 0),
+        }));
+        if (m.finished) setPhase('finished');
+      }
+    },
+  });
+  const [focusMode, setFocusMode] = useState(false);
+  function toggleFocus() {
+    setFocusMode(f => {
+      emit({ event: 'DND', enabled: !f });
+      return !f;
+    });
+  }
 
   const player = game.currentPlayer;
-  const labels = isSC ? SC_LABELS : CRICKET_LABELS;
   const isAPK = view === 'apk';
+  // Handover (13.2): hors de mon tour, la saisie est verrouillée.
+  const myTurn = !remote || players[player] === me;
+
+  // Une synchro complète par évolution d'état : points + tableau des marques
+  // (le spectateur suit l'avancée du Cricket cible par cible) — couvre tous
+  // les chemins de saisie ET les undo sans instrumenter chaque handler.
+  useEffect(() => {
+    if (!remote && phase !== 'finished') {
+      saveResume(isSC ? '/super-cricket' : '/cricket', players, { game, dartsUsed, phase , nav: state });
+    }
+    if (inbound.current) return; // delta adverse : ne pas le renvoyer
+    emit({
+      event: 'SCORE_UPDATED',
+      scores: Object.fromEntries(players.map((n, i) => [n, game.points[i]])),
+      detail: { kind: 'cricket', labels, marks: game.marks },
+    });
+  }, [game]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (inbound.current) return;
+    emit({ event: 'TURN_CHANGED', player: players[game.currentPlayer] });
+  }, [game.currentPlayer]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Relâche le drapeau une fois les émetteurs ci-dessus passés.
+  useEffect(() => {
+    inbound.current = false;
+  }, [game]);
 
   function switchView(v) {
     setView(v);
@@ -130,9 +247,12 @@ export default function CricketGame() {
     setHistory(h => [...h, { game, dartsUsed, phase }]);
   }
 
-  // Undo traverses confirmed turns too — history is only cleared by leaving the screen.
+  // Undo traverses confirmed turns too — history is only cleared by leaving
+  // the screen. Remote: l'historique est vidé aux frontières de tour, l'undo
+  // reste donc borné à mon tour en cours (le re-broadcast via l'effect
+  // SCORE_UPDATED auto-corrige l'écran adverse).
   function undo() {
-    if (!history.length) return;
+    if (!history.length || !myTurn) return;
     const prev = history[history.length - 1];
     setGame(prev.game);
     setDartsUsed(prev.dartsUsed);
@@ -144,11 +264,13 @@ export default function CricketGame() {
 
   function finishIfWon(next, mode) {
     if (next.winner === null) return false;
+    emit({ event: 'MATCH_FINISHED', winner: players[next.winner] });
     postGame({
       mode, variant: variantLabel,
       players, scores: players.map((_, i) => next.points[i]),
       winner: players[next.winner],
       startedAt: startedAt.current,
+      isCasual,
     });
     setPhase('finished');
     return true;
@@ -157,7 +279,7 @@ export default function CricketGame() {
   // ── APK mode: tap directly on board cell ────────────────────────────────────────────
 
   function tapCell(tIdx) {
-    if (phase !== 'playing') return;
+    if (phase !== 'playing' || !myTurn) return;
     // APK (table view): unlimited clicks — no 3-dart limit
     if (!isAPK && dartsUsed >= 3) return;
 
@@ -192,6 +314,7 @@ export default function CricketGame() {
   // ── SC scoring dialogs: DOUBLE/TRIPLE/BED points once the target is closed ──
 
   function applySpecialScoring(targetIdx, pts) {
+    if (!myTurn) return;
     pushHistory();
     const next = addSpecialScoring(game, player, targetIdx, pts);
     setGame(next);
@@ -217,7 +340,7 @@ export default function CricketGame() {
   }
 
   function tapMissAPK() {
-    if (phase !== 'playing') return;
+    if (phase !== 'playing' || !myTurn) return;
     if (!isAPK && dartsUsed >= 3) return;
     pushHistory();
     const used = dartsUsed + 1;
@@ -228,7 +351,7 @@ export default function CricketGame() {
   // ── Classic mode: multiplier + target buttons ──────────────────────────────
 
   function tapTarget(tIdx) {
-    if (dartsUsed >= 3 || phase !== 'playing') return;
+    if (dartsUsed >= 3 || phase !== 'playing' || !myTurn) return;
     pushHistory();
     let next = game;
     if (isSC) {
@@ -253,7 +376,7 @@ export default function CricketGame() {
   }
 
   function tapMiss() {
-    if (dartsUsed >= 3 || phase !== 'playing') return;
+    if (dartsUsed >= 3 || phase !== 'playing' || !myTurn) return;
     pushHistory();
     setMultiplier(1);
     const used = dartsUsed + 1;
@@ -264,7 +387,11 @@ export default function CricketGame() {
   // ── Shared ────────────────────────────────────────────────────────────────────────────
 
   function confirmTurn() {
-    pushHistory();
+    if (!myTurn) return;
+    // Remote : un tour confirmé est déjà chez l'adversaire — l'undo ne doit
+    // pas franchir la frontière du tour (13.2).
+    if (remote) setHistory([]);
+    else pushHistory();
     setGame(g => isSC ? scNext(g) : nextPlayer(g));
     setDartsUsed(0);
     setMultiplier(1);
@@ -278,16 +405,20 @@ export default function CricketGame() {
       .sort((a, b) => variant === 'cutthroat' ? a.pts - b.pts : b.pts - a.pts);
     return (
       <div className="cg cg--finished">
+        {!remoteAborted && (
+          <VictoryOverlay winner={ranked[0]?.name} losers={ranked.slice(1).map(r => r.name)} />
+        )}
         <p className="cg__eyebrow">FIN DE PARTIE</p>
         <div className="cg__podium">
           {ranked.map((r, rank) => (
             <div key={r.name} className={`cg__podium-row${rank === 0 ? ' cg__podium-row--first' : ''}`}>
               <span className="cg__podium-rank">#{rank + 1}</span>
-              <span className="cg__podium-name">{r.name}</span>
+              <span className="cg__podium-name">{censorName(r.name)}</span>
               <span className="cg__podium-pts">{r.pts} pts</span>
             </div>
           ))}
         </div>
+        <Tribunes liveId={liveId} />
         <div className="cg__fin-actions">
           <button className="cg__btn cg__btn--secondary"
             onClick={() => navigate('/setup', { state: { mode: isSC ? 'superCricket' : 'cricket', variant } })}>
@@ -303,7 +434,11 @@ export default function CricketGame() {
     <div className={`cg${isSC ? ' cg--sc' : ''}`}>
       <ExitConfirmModal
         open={showExit}
-        onConfirm={() => navigate('/')}
+        onConfirm={() => {
+          emit({ event: 'MATCH_FINISHED', aborted: true });
+          clearResume();
+          navigate('/');
+        }}
         onCancel={() => setShowExit(false)}
       />
 
@@ -325,9 +460,32 @@ export default function CricketGame() {
         />
       )}
 
+      <EmoteSplash emote={focusMode ? null : emote} />
+      <ChatOverlay message={focusMode ? null : chatMessage} />
+
+      {/* Verrouillage hors tour (13.2) — bandeau fin plutôt qu'un overlay :
+          on regarde les marques adverses tomber en direct. */}
+      {remote && !myTurn && (
+        <div className="cg__remote-banner">
+          <span className="cg__remote-title">Au tour de {censorName(players[player])}…</span>
+          <span className="cg__remote-sub">
+            {oppLeft ? '⚠️ Déconnecté — il peut revenir avec le même lien' : 'saisie verrouillée'}
+          </span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="cg__header">
         <button className="cg__back" onClick={() => setShowExit(true)}>&larr;</button>
+        {liveId && (
+          <button
+            className="cg__back"
+            title={focusMode ? 'Emotes bloquées (Mode Focus)' : 'Bloquer les emotes des gradins'}
+            onClick={toggleFocus}
+          >
+            {focusMode ? '🔕' : '🔔'}
+          </button>
+        )}
         <div className="cg__title-wrap">
           <span className="cg__title">{isSC ? 'SUPER CRICKET' : 'CRICKET'}</span>
           {variant === 'cutthroat' && <span className="cg__title-sub">CUT THROAT</span>}
@@ -355,7 +513,7 @@ export default function CricketGame() {
 
       {/* Current player */}
       <div className="cg__player">
-        <span className="cg__player-name">{players[player]}</span>
+        <span className="cg__player-name">{censorName(players[player])}</span>
         <span className="cg__player-pts">{game.points[player]} pts</span>
       </div>
 
@@ -367,7 +525,7 @@ export default function CricketGame() {
               <th className="cg__th-lbl" />
               {players.map((name, i) => (
                 <th key={name} className={`cg__th${i === player ? ' cg__th--active' : ''}`}>
-                  {name}
+                  {censorName(name)}
                 </th>
               ))}
             </tr>
@@ -378,7 +536,7 @@ export default function CricketGame() {
                 ? players.every((_, p) => game.marks[p][tIdx] >= 3)
                 : isGloballyClosed(game, tIdx);
               // APK mode: no dartsUsed limit — unlimited clicks
-              const canTap = isAPK && phase === 'playing' && !globClosed;
+              const canTap = isAPK && phase === 'playing' && !globClosed && myTurn;
               const isSpecial = isSC && tIdx >= 7;
               return (
                 <Fragment key={lbl}>
@@ -456,7 +614,7 @@ export default function CricketGame() {
         {/* SUIVANT — APK: always visible while playing; Classic: only after 3 darts */}
         {(isAPK ? phase === 'playing' : phase === 'turn-done') && (
           <div className="cg__confirm">
-            <button className="cg__btn cg__btn--primary cg__btn--wide" onClick={confirmTurn}>
+            <button className="cg__btn cg__btn--primary cg__btn--wide" onClick={confirmTurn} disabled={!myTurn}>
               SUIVANT &rarr;
             </button>
           </div>
@@ -482,7 +640,7 @@ export default function CricketGame() {
                   key={lbl}
                   className="cg__tgt"
                   onClick={() => tapTarget(tIdx)}
-                  disabled={dartsUsed >= 3}
+                  disabled={dartsUsed >= 3 || !myTurn}
                 >
                   {lbl}
                 </button>
@@ -490,7 +648,7 @@ export default function CricketGame() {
               <button
                 className="cg__tgt cg__tgt--miss"
                 onClick={tapMiss}
-                disabled={dartsUsed >= 3}
+                disabled={dartsUsed >= 3 || !myTurn}
               >
                 MISS
               </button>

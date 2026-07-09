@@ -206,6 +206,9 @@ function LeagueCard({
   const [copied, setCopied] = useState(false);
   const [managing, setManaging] = useState(false);
 
+  // Les anciens membres (ghosts) ne sont pas « ajoutables » ici : ils ont
+  // leur propre section « Réintégrer » dans la modal — le backend réactive
+  // leur ligne via join().
   const memberNames = new Set(league.members.map(m => m.name));
   const addable = (knownPlayers ?? []).filter(p => !memberNames.has(p));
 
@@ -245,42 +248,21 @@ function LeagueCard({
             {roleBadge(m.role)}
             {m.display_name || m.name}
             {m.id === me.id && <em className="leagues__member-you"> · toi</em>}
-            {isOwner && !isTaverne && m.id !== me.id && managing && m.is_active !== false && (
-              <>
-                <button
-                  type="button"
-                  className="leagues__member-promote"
-                  title={m.role === 'admin' ? 'Rétrograder en membre' : 'Promouvoir admin'}
-                  onClick={() => onSetRole(m.id, m.role === 'admin' ? 'member' : 'admin')}
-                >
-                  {m.role === 'admin' ? '▽' : '△'}
-                </button>
-                <button
-                  type="button"
-                  className="leagues__member-remove"
-                  title="Retirer de la ligue"
-                  onClick={() => onRemoveMember(m.id)}
-                >
-                  ×
-                </button>
-              </>
-            )}
           </span>
         ))}
       </div>
 
-      {isAdmin && !isTaverne && managing && (
-        addable.length > 0 ? (
-          <div className="leagues__members leagues__members--add">
-            {addable.map(p => (
-              <button key={p} type="button" className="leagues__chip" onClick={() => onAddMember(p)}>
-                + {p}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="leagues__empty">Tous les joueurs connus sont déjà dans la ligue.</p>
-        )
+      {managing && (
+        <ManageMembersModal
+          league={league}
+          me={me}
+          myRole={myRole}
+          addable={addable}
+          onAddMember={onAddMember}
+          onRemoveMember={onRemoveMember}
+          onSetRole={onSetRole}
+          onClose={() => setManaging(false)}
+        />
       )}
 
       {isAdmin && !isTaverne && league.privacy_level === 'APPLICATION' && (
@@ -308,8 +290,8 @@ function LeagueCard({
         </button>
         {isOwner && !isTaverne ? (
           <>
-            <button className="leagues__btn" onClick={() => setManaging(m => !m)}>
-              {managing ? 'Fermer' : 'Gérer les joueurs'}
+            <button className="leagues__btn" onClick={() => setManaging(true)}>
+              Gérer les joueurs
             </button>
             <button className="leagues__btn" onClick={onRename}>Renommer</button>
             {confirmDelete ? (
@@ -324,13 +306,174 @@ function LeagueCard({
         ) : (
           <>
             {isAdmin && !isTaverne && (
-              <button className="leagues__btn" onClick={() => setManaging(m => !m)}>
-                {managing ? 'Fermer' : 'Gérer les joueurs'}
+              <button className="leagues__btn" onClick={() => setManaging(true)}>
+                Gérer les joueurs
               </button>
             )}
             <button className="leagues__btn leagues__btn--delete" onClick={onLeave}>Quitter</button>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Modal « Gérer les joueurs » : membres actifs (retrait avec confirmation,
+// promotion), anciens membres réintégrables (le backend réactive leur ligne
+// via join()), et ajout par recherche. Les droits suivent le backend : un
+// admin ajoute/retire les membres simples, seul le owner promeut/rétrograde
+// et retire un admin.
+function ManageMembersModal({
+  league, me, myRole, addable,
+  onAddMember, onRemoveMember, onSetRole, onClose,
+}) {
+  const isOwner = myRole === 'owner';
+  const [confirmRemove, setConfirmRemove] = useState(null); // player id
+  const [search, setSearch] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const activeMembers = league.members.filter(m => m.is_active !== false);
+  const ghosts = league.members.filter(m => m.is_active === false);
+  const query = search.trim().toLowerCase();
+  const results = query ? addable.filter(p => p.toLowerCase().includes(query)) : addable;
+
+  const canRemove = (m) =>
+    m.id !== me.id && m.id !== league.owner_id && (isOwner || m.role !== 'admin');
+
+  async function act(fn) {
+    setBusy(true);
+    try { await fn(); } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="leagues__overlay" onClick={onClose}>
+      <div className="leagues__form leagues__manage" onClick={e => e.stopPropagation()}>
+        <h2 className="leagues__form-title">Gérer les joueurs</h2>
+
+        <h3 className="leagues__manage-h">Membres · {activeMembers.length}</h3>
+        <div className="leagues__manage-list">
+          {activeMembers.map(m => (
+            <div key={m.id} className="leagues__mrow">
+              <span className="leagues__mrow-id">
+                {m.avatar_url && <img className="leagues__mrow-avatar" src={m.avatar_url} alt="" />}
+                <span className="leagues__mrow-name">
+                  {roleBadge(m.role)}
+                  {m.display_name || m.name}
+                  {m.id === me.id && <em className="leagues__member-you"> · toi</em>}
+                </span>
+              </span>
+              <span className="leagues__mrow-actions">
+                {confirmRemove === m.id ? (
+                  <>
+                    <span className="leagues__mrow-hint">Retirer ? L'historique et l'Elo sont conservés.</span>
+                    <button
+                      type="button"
+                      className="leagues__btn leagues__btn--delete"
+                      disabled={busy}
+                      onClick={() => act(async () => {
+                        await onRemoveMember(m.id);
+                        setConfirmRemove(null);
+                      })}
+                    >
+                      Confirmer
+                    </button>
+                    <button type="button" className="leagues__btn" onClick={() => setConfirmRemove(null)}>
+                      Annuler
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {isOwner && m.id !== league.owner_id && m.id !== me.id && (
+                      <button
+                        type="button"
+                        className="leagues__btn"
+                        disabled={busy}
+                        onClick={() => act(() => onSetRole(m.id, m.role === 'admin' ? 'member' : 'admin'))}
+                      >
+                        {m.role === 'admin' ? 'Rétrograder' : 'Promouvoir admin'}
+                      </button>
+                    )}
+                    {canRemove(m) && (
+                      <button
+                        type="button"
+                        className="leagues__btn leagues__btn--delete"
+                        onClick={() => setConfirmRemove(m.id)}
+                      >
+                        Retirer
+                      </button>
+                    )}
+                  </>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {ghosts.length > 0 && (
+          <>
+            <h3 className="leagues__manage-h">Anciens membres · {ghosts.length}</h3>
+            <div className="leagues__manage-list">
+              {ghosts.map(m => (
+                <div key={m.id} className="leagues__mrow leagues__mrow--ghost">
+                  <span className="leagues__mrow-id">
+                    {m.avatar_url && <img className="leagues__mrow-avatar" src={m.avatar_url} alt="" />}
+                    <span className="leagues__mrow-name">{m.display_name || m.name}</span>
+                  </span>
+                  <span className="leagues__mrow-actions">
+                    <button
+                      type="button"
+                      className="leagues__btn leagues__btn--primary"
+                      disabled={busy}
+                      onClick={() => act(() => onAddMember(m.name))}
+                    >
+                      Réintégrer
+                    </button>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        <h3 className="leagues__manage-h">Ajouter un joueur</h3>
+        {addable.length > 0 ? (
+          <>
+            <input
+              className="leagues__input"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Rechercher un joueur…"
+            />
+            <div className="leagues__manage-list leagues__manage-list--scroll">
+              {results.map(p => (
+                <div key={p} className="leagues__mrow">
+                  <span className="leagues__mrow-id">
+                    <span className="leagues__mrow-name">{p}</span>
+                  </span>
+                  <span className="leagues__mrow-actions">
+                    <button
+                      type="button"
+                      className="leagues__btn leagues__btn--primary"
+                      disabled={busy}
+                      onClick={() => act(() => onAddMember(p))}
+                    >
+                      + Ajouter
+                    </button>
+                  </span>
+                </div>
+              ))}
+              {results.length === 0 && (
+                <p className="leagues__empty">Aucun joueur trouvé pour « {search.trim()} ».</p>
+              )}
+            </div>
+          </>
+        ) : (
+          <p className="leagues__empty">Tous les joueurs connus sont déjà membres.</p>
+        )}
+
+        <div className="leagues__form-actions">
+          <button type="button" className="leagues__btn" onClick={onClose}>Fermer</button>
+        </div>
       </div>
     </div>
   );

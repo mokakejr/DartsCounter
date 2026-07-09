@@ -49,9 +49,13 @@ export default function Standings({ ranked, profiles = {} }) {
   const elo = eloByFilter[cacheKey] || {};
 
   const { rankedRows, unrankedRows } = useMemo(() => {
+    // Une ligue active ne classe que ses membres actifs : les adversaires
+    // hors ligue comptent dans les stats des membres mais n'ont pas de ligne.
+    const memberSet = activeLeague?.players?.length ? new Set(activeLeague.players) : null;
+    const scoped = memberSet ? ranked.filter(s => memberSet.has(s.name)) : ranked;
     const base = filter === 'Global'
-      ? ranked
-      : ranked
+      ? scoped
+      : scoped
           .map(s => ({ ...s, _wins: s.modeWins[filter] || 0, _games: s.modeGames[filter] || 0 }))
           .filter(s => s._games > 0);
 
@@ -73,7 +77,7 @@ export default function Standings({ ranked, profiles = {} }) {
         .filter(s => gamesOf(s) < minRankedGames)
         .sort((a, b) => gamesOf(b) - gamesOf(a)),
     };
-  }, [ranked, filter, elo, minRankedGames]);
+  }, [ranked, filter, elo, minRankedGames, activeLeague]);
 
   return (
     <section className="standings shell" id="classement">

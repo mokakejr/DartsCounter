@@ -50,6 +50,17 @@ def normalize_key(value: str | None) -> str:
     return "".join(ch for ch in (value or "").lower() if ch.isalnum())
 
 
+def lower_is_better_for(
+    mode: str | None, variant: str | None, score_direction: dict[tuple[str, str], bool]
+) -> bool:
+    """Resolve the score direction for a (mode, variant) combo — a
+    variant=NULL row (normalized to "") acts as the mode-wide fallback,
+    and anything unknown defaults to higher-is-better."""
+    mode_key = normalize_key(mode)
+    variant_key = normalize_key(variant)
+    return score_direction.get((mode_key, variant_key), score_direction.get((mode_key, ""), False))
+
+
 @dataclass(frozen=True)
 class EloUpdate:
     game_id: object
@@ -152,11 +163,7 @@ def recompute_elo(
             continue
 
         mode = game["mode"]
-        mode_key = normalize_key(mode)
-        variant_key = normalize_key(game.get("variant"))
-        lower_is_better = score_direction.get(
-            (mode_key, variant_key), score_direction.get((mode_key, ""), False)
-        )
+        lower_is_better = lower_is_better_for(mode, game.get("variant"), score_direction)
 
         score_by_player = dict(zip(players, scores, strict=True))
         perf = {

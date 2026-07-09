@@ -42,6 +42,57 @@ async def test_game_finished_notification_includes_elo_delta(client, fake_httpx)
     assert "(-" in score_lines
 
 
+async def test_game_finished_ranks_by_score_desc_not_submission_order(client, fake_httpx):
+    await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
+
+    # Bob (winner, 300) submitted last, Carol (100) before Dave (200): the
+    # podium must come out Bob, Dave, Carol regardless of payload order.
+    resp = await client.post("/games", json={
+        **GAME,
+        "players": ["Carol", "Dave", "Bob"],
+        "scores": [100, 200, 300],
+        "winner": "Bob",
+    })
+    assert resp.status_code == 201
+
+    _, body = fake_httpx.calls[0]
+    score_lines = body["cardsV2"][0]["card"]["sections"][0]["widgets"][0]["textParagraph"]["text"]
+    lines = score_lines.split("\n")
+    assert "Bob" in lines[0] and lines[0].startswith("🥇")
+    assert "Dave" in lines[1] and lines[1].startswith("🥈")
+    assert "Carol" in lines[2] and lines[2].startswith("🥉")
+
+
+async def test_game_finished_cutthroat_ranks_by_score_asc(client, fake_httpx):
+    from app.core.db import async_session
+    from app.services.elo_config import create_score_direction
+
+    # Tests build the schema with create_all, not Alembic, so the migration
+    # that seeds Cricket/CutThroat -> lower_is_better is not applied here.
+    async with async_session() as session:
+        await create_score_direction(session, "Cricket", "Cut Throat", True)
+
+    await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
+
+    # Cut Throat: lowest score wins — Stevy (200) must rank 3rd, behind
+    # Léo (150), even though 200 would be 2nd in a normal game.
+    resp = await client.post("/games", json={
+        **GAME,
+        "variant": "CutThroat",
+        "players": ["Théo", "Stevy", "Léo"],
+        "scores": [50, 200, 150],
+        "winner": "Théo",
+    })
+    assert resp.status_code == 201
+
+    _, body = fake_httpx.calls[0]
+    score_lines = body["cardsV2"][0]["card"]["sections"][0]["widgets"][0]["textParagraph"]["text"]
+    lines = score_lines.split("\n")
+    assert "Théo" in lines[0] and lines[0].startswith("🥇")
+    assert "Léo" in lines[1] and lines[1].startswith("🥈")
+    assert "Stevy" in lines[2] and lines[2].startswith("🥉")
+
+
 async def test_idempotent_retry_does_not_renotify(client, fake_httpx):
     await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
     payload = {**GAME, "id": "22222222-2222-2222-2222-222222222222"}

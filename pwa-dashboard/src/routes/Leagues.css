@@ -73,11 +73,6 @@
   gap: 8px;
   margin-bottom: 14px;
 }
-.leagues__members--add {
-  padding-top: 10px;
-  border-top: 1px dashed var(--border);
-}
-
 .leagues__member {
   display: inline-flex;
   align-items: center;
@@ -95,16 +90,6 @@
   font-size: 12px;
   color: var(--primary);
 }
-.leagues__member-remove {
-  background: none;
-  border: none;
-  color: #e55;
-  font-size: 15px;
-  cursor: pointer;
-  padding: 0 2px;
-  line-height: 1;
-}
-
 /* ── Invite code ───────────────────────────────────────── */
 .leagues__code-row {
   display: flex;
@@ -315,16 +300,84 @@
   opacity: 0.4;
   filter: grayscale(1);
 }
-.leagues__member-promote {
-  background: none;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 12px;
-  padding: 0 2px;
-}
-.leagues__member-promote:hover { color: #fff; }
 .leagues__step { color: var(--muted); font-size: 0.7em; }
+
+/* ── Modal « Gérer les joueurs » ───────────────────────── */
+.leagues__manage {
+  max-height: min(80svh, 720px);
+  overflow-y: auto;
+}
+
+.leagues__manage-h {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--border);
+}
+
+.leagues__manage-list {
+  display: flex;
+  flex-direction: column;
+}
+.leagues__manage-list--scroll {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.leagues__mrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: 48px;
+  padding: 6px 0;
+}
+.leagues__mrow + .leagues__mrow {
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+.leagues__mrow--ghost .leagues__mrow-id {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
+.leagues__mrow-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.leagues__mrow-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.leagues__mrow-name {
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leagues__mrow-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.leagues__mrow-actions .leagues__btn {
+  min-height: 40px;
+}
+.leagues__mrow-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
 
 .leagues__icon-grid {
   display: grid;

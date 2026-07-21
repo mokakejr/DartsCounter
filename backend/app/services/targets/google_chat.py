@@ -41,6 +41,9 @@ def _game_finished_body(data: dict) -> dict:
         if winner
         else f"🤝 Égalité en {label} !"
     )
+    subtitle = f"⏱ {duration}"
+    if data.get("status") == "PENDING_REVIEW":
+        subtitle += " · ⚖️ En attente d'homologation"
 
     # Scores section — one row per player, ranked by position order
     players = data.get("players", [])
@@ -93,7 +96,7 @@ def _game_finished_body(data: dict) -> dict:
             "card": {
                 "header": {
                     "title": title,
-                    "subtitle": f"⏱ {duration}",
+                    "subtitle": subtitle,
                     "imageUrl": TROPHY_IMG,
                     "imageType": "CIRCLE",
                 },

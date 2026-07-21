@@ -4,24 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_db
 from app.schemas.webhook import WebhookConfigIn, WebhookConfigRead, WebhookTestIn
 from app.services import notifications, webhooks as webhooks_service
-from app.services.targets.base import GameEvent
+from app.services.notifications import TEST_EVENT
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
-
-_TEST_EVENT = GameEvent(
-    type="game_finished",
-    data={
-        "mode": "Cricket",
-        "players": ["Alice", "Bob"],
-        "scores": [301, 250],
-        "winner": "Alice",
-        "duration": 125,
-        "elo": {
-            "Alice": {"before": 10182, "after": 10200, "delta": 18},
-            "Bob": {"before": 9868, "after": 9850, "delta": -18},
-        },
-    },
-)
 
 
 @router.get("", response_model=list[WebhookConfigRead])
@@ -42,7 +27,7 @@ async def test_webhook(payload: WebhookTestIn, session: AsyncSession = Depends(g
     if target is None:
         raise HTTPException(404, f"No URL configured for target '{payload.target}'")
     try:
-        await target.send(_TEST_EVENT)
+        await target.send(TEST_EVENT)
     except Exception as exc:
         raise HTTPException(502, f"Failed to send test notification: {exc}") from exc
     return {"status": "sent"}

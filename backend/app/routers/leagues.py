@@ -15,11 +15,13 @@ from app.schemas.league import (
     LeaguePublicRead,
     LeagueRead,
     LeagueUpdate,
+    LeagueWebhookUpdate,
     MemberAdd,
     MemberRoleUpdate,
     OwnershipTransfer,
 )
 from app.services import leagues as leagues_service
+from app.services import notifications as notifications_service
 from app.services import players as players_service
 
 router = APIRouter(prefix="/leagues", tags=["leagues"])
@@ -292,6 +294,42 @@ async def update_league(
         privacy_level=payload.privacy_level,
     )
     return leagues_service.league_to_read(league)
+
+
+@router.patch("/{league_id}/webhook", response_model=LeagueRead)
+async def update_league_webhook(
+    league_id: uuid.UUID,
+    payload: LeagueWebhookUpdate,
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> LeagueRead:
+    """Configure (ou efface, avec null) le webhook d'annonce de la ligue.
+    Endpoint dédié : le PATCH générique ignore les champs None, ce qui
+    rendrait l'effacement impossible."""
+    league = await _get_league_or_404(session, league_id)
+    _require_role(league, player, "admin")
+    league.webhook_url = payload.webhook_url
+    await session.commit()
+    return leagues_service.league_to_read(league)
+
+
+@router.post("/{league_id}/webhook/test", status_code=202)
+async def test_league_webhook(
+    league_id: uuid.UUID,
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    league = await _get_league_or_404(session, league_id)
+    _require_role(league, player, "admin")
+    if not league.webhook_url:
+        raise HTTPException(404, "No webhook URL configured for this league")
+    try:
+        await notifications_service.target_for_url(league.webhook_url).send(
+            notifications_service.TEST_EVENT
+        )
+    except Exception as exc:
+        raise HTTPException(502, f"Failed to send test notification: {exc}") from exc
+    return {"status": "sent"}
 
 
 @router.delete("/{league_id}", status_code=204)

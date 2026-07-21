@@ -59,6 +59,9 @@ class League(Base):
         UUID(as_uuid=True), ForeignKey("players.id", ondelete="CASCADE"), nullable=True
     )
     invite_code: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    # Google Chat/Discord webhook where this league's games are announced —
+    # the target kind is inferred from the URL (see notifications._target_for_url).
+    webhook_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     memberships: Mapped[list[LeagueMember]] = relationship(cascade="all, delete-orphan")

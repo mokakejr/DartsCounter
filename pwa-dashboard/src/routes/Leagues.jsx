@@ -17,7 +17,7 @@ export default function Leagues({ knownPlayers }) {
   const {
     leagues, activeLeague, activateLeague,
     createLeague, joinLeague, joinDirect, renameLeague, deleteLeague,
-    addMember, removeMember, setRole,
+    addMember, removeMember, setRole, setWebhook,
   } = useLeague();
   const [searchParams, setSearchParams] = useSearchParams();
   const [creating, setCreating] = useState(false);
@@ -125,6 +125,7 @@ export default function Leagues({ knownPlayers }) {
             onAddMember={(name) => run(() => addMember(league.id, name))}
             onRemoveMember={(playerId) => run(() => removeMember(league.id, playerId))}
             onSetRole={(playerId, role) => run(() => setRole(league.id, playerId, role))}
+            onSaveWebhook={(url) => run(() => setWebhook(league.id, url))}
             confirmDelete={confirmDelete === league.id}
             onAskDelete={() => setConfirmDelete(league.id)}
             onCancelDelete={() => setConfirmDelete(null)}
@@ -195,7 +196,7 @@ function roleBadge(role) {
 
 function LeagueCard({
   league, me, token, active, knownPlayers,
-  onActivate, onRename, onAddMember, onRemoveMember, onSetRole,
+  onActivate, onRename, onAddMember, onRemoveMember, onSetRole, onSaveWebhook,
   confirmDelete, onAskDelete, onCancelDelete, onDelete, onLeave,
 }) {
   const myMembership = league.members.find(m => m.id === me.id);
@@ -279,6 +280,10 @@ function LeagueCard({
             {copied ? 'Copié !' : 'Copier'}
           </button>
         </div>
+      )}
+
+      {isAdmin && !isTaverne && (
+        <WebhookSettings league={league} token={token} onSave={onSaveWebhook} />
       )}
 
       <div className="leagues__card-actions">
@@ -475,6 +480,59 @@ function ManageMembersModal({
           <button type="button" className="leagues__btn" onClick={onClose}>Fermer</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Webhook d'annonce de la ligue : chaque partie d'un membre actif est postée
+// sur cette URL (Google Chat ou Discord, détecté côté backend). Admin/owner
+// uniquement — la Taverne n'a pas de webhook.
+function WebhookSettings({ league, token, onSave }) {
+  const [url, setUrl] = useState(league.webhook_url ?? '');
+  const [status, setStatus] = useState(null); // 'saved' | 'tested' | 'error' | 'invalid'
+  const dirty = url.trim() !== (league.webhook_url ?? '');
+
+  async function save() {
+    const trimmed = url.trim();
+    if (trimmed && !trimmed.startsWith('https://')) {
+      setStatus('invalid');
+      return;
+    }
+    setStatus((await onSave(trimmed || null)) ? 'saved' : 'error');
+  }
+
+  async function test() {
+    try {
+      await api.testLeagueWebhook(token, league.id);
+      setStatus('tested');
+    } catch {
+      setStatus('error');
+    }
+  }
+
+  return (
+    <div className="leagues__webhook">
+      <span className="leagues__code-label">Webhook d'annonce (Google Chat / Discord)</span>
+      <div className="leagues__webhook-row">
+        <input
+          className="leagues__input leagues__webhook-input"
+          type="url"
+          value={url}
+          onChange={e => { setUrl(e.target.value); setStatus(null); }}
+          placeholder="https://chat.googleapis.com/v1/spaces/…"
+          maxLength={500}
+        />
+        <button type="button" className="leagues__btn leagues__btn--primary" disabled={!dirty} onClick={save}>
+          Enregistrer
+        </button>
+        <button type="button" className="leagues__btn" disabled={!league.webhook_url || dirty} onClick={test}>
+          Tester
+        </button>
+      </div>
+      {status === 'saved' && <p className="leagues__webhook-status">Webhook enregistré ✓</p>}
+      {status === 'tested' && <p className="leagues__webhook-status">Message de test envoyé ✓ — vérifie le salon.</p>}
+      {status === 'invalid' && <p className="leagues__error">L'URL doit commencer par https://</p>}
+      {status === 'error' && <p className="leagues__error">Échec — vérifie l'URL du webhook.</p>}
     </div>
   );
 }

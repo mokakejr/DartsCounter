@@ -147,3 +147,66 @@ async def test_all_endpoints_require_auth(client):
     assert (await client.post("/leagues", json={"name": "X"})).status_code == 401
     assert (await client.get("/leagues/mine")).status_code == 401
     assert (await client.post("/leagues/join", json={"code": "ABC234"})).status_code == 401
+
+
+# ─── Webhook de ligue ────────────────────────────────────────────────────────
+
+async def test_league_webhook_permissions_and_clear(client):
+    alice = await _signup(client, "Alice")
+    bob = await _signup(client, "Bob")
+    league = await _create_league(client, alice)
+    await client.post("/leagues/join", json={"code": league["invite_code"]}, headers=bob)
+
+    url = f"/leagues/{league['id']}/webhook"
+
+    # Simple membre : refusé.
+    resp = await client.patch(url, json={"webhook_url": "https://chat.example/x"}, headers=bob)
+    assert resp.status_code == 403
+
+    # Owner : accepté et visible dans LeagueRead.
+    resp = await client.patch(url, json={"webhook_url": "https://chat.example/x"}, headers=alice)
+    assert resp.status_code == 200
+    assert resp.json()["webhook_url"] == "https://chat.example/x"
+
+    # Membre promu admin : accepté.
+    bob_id = next(m["id"] for m in resp.json()["members"] if m["name"] == "Bob")
+    await client.patch(f"/leagues/{league['id']}/members/{bob_id}/role", json={"role": "admin"}, headers=alice)
+    resp = await client.patch(url, json={"webhook_url": "https://chat.example/y"}, headers=bob)
+    assert resp.status_code == 200
+
+    # http:// refusé.
+    resp = await client.patch(url, json={"webhook_url": "http://insecure.example/x"}, headers=alice)
+    assert resp.status_code == 422
+
+    # null efface.
+    resp = await client.patch(url, json={"webhook_url": None}, headers=alice)
+    assert resp.status_code == 200
+    assert resp.json()["webhook_url"] is None
+
+
+async def test_league_webhook_test_endpoint(client, fake_httpx):
+    alice = await _signup(client, "Alice")
+    bob = await _signup(client, "Bob")
+    league = await _create_league(client, alice)
+    await client.post("/leagues/join", json={"code": league["invite_code"]}, headers=bob)
+
+    test_url = f"/leagues/{league['id']}/webhook/test"
+
+    # Pas encore configuré → 404.
+    resp = await client.post(test_url, headers=alice)
+    assert resp.status_code == 404
+
+    await client.patch(
+        f"/leagues/{league['id']}/webhook",
+        json={"webhook_url": "https://chat.example/x"},
+        headers=alice,
+    )
+
+    # Simple membre → 403.
+    resp = await client.post(test_url, headers=bob)
+    assert resp.status_code == 403
+
+    # Admin → 202 et la carte de test part sur l'URL de la ligue.
+    resp = await client.post(test_url, headers=alice)
+    assert resp.status_code == 202
+    assert [u for u, _ in fake_httpx.calls] == ["https://chat.example/x"]

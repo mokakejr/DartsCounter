@@ -57,6 +57,10 @@ async def update_settings(session: AsyncSession, updates: dict) -> EloSettings:
         await session.rollback()
         raise InvalidSettingsError("k_thresholds must have exactly one fewer entry than k_factors")
     await session.commit()
+    # updated_at est régénéré côté serveur (onupdate=func.now()) : l'attribut
+    # est expiré après l'UPDATE et sa lecture hors contexte async planterait
+    # (MissingGreenlet) — on le recharge explicitement.
+    await session.refresh(row)
     return row
 
 

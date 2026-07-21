@@ -108,7 +108,7 @@ async def generate_events_for_game(
     if game.winner is None or game.winner not in players_by_name:
         return 0
     winner = players_by_name[game.winner]
-    losers = [p for p in game.players if p.name != game.winner]
+    losers = [p.name for p in game.players if p.name != game.winner]
     day = paris_date(game.date)
 
     leagues = await _leagues_of_players(session, [winner.id])

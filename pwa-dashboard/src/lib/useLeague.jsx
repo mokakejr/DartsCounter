@@ -91,12 +91,17 @@ export function LeagueProvider({ children }) {
     await refresh();
   }, [auth.token, refresh]);
 
+  const setWebhook = useCallback(async (id, url) => {
+    await api.setLeagueWebhook(auth.token, id, url);
+    await refresh();
+  }, [auth.token, refresh]);
+
   return (
     <LeagueContext.Provider
       value={{
         leagues, activeLeague, ready, refresh,
         activateLeague, createLeague, joinLeague, joinDirect, renameLeague, deleteLeague,
-        addMember, removeMember, setRole,
+        addMember, removeMember, setRole, setWebhook,
       }}
     >
       {children}

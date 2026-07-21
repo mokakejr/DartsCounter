@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 PrivacyLevel = Literal["PUBLIC", "PRIVATE_CODE", "APPLICATION"]
 MemberRole = Literal["admin", "member"]
@@ -25,6 +25,7 @@ class LeagueRead(BaseModel):
     privacy_level: str = "PRIVATE_CODE"
     owner_id: uuid.UUID | None = None
     invite_code: str
+    webhook_url: str | None = None
     created_at: datetime
     members: list[LeagueMemberRead]
 
@@ -52,6 +53,19 @@ class LeagueUpdate(BaseModel):
     motto: str | None = Field(default=None, max_length=80)
     icon: str | None = Field(default=None, max_length=40)
     privacy_level: PrivacyLevel | None = None
+
+
+class LeagueWebhookUpdate(BaseModel):
+    """None efface le webhook de la ligue."""
+
+    webhook_url: str | None = Field(default=None, max_length=500)
+
+    @field_validator("webhook_url")
+    @classmethod
+    def _https_only(cls, v: str | None) -> str | None:
+        if v is not None and not v.startswith("https://"):
+            raise ValueError("webhook_url must start with https://")
+        return v
 
 
 class LeagueJoin(BaseModel):

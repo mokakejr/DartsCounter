@@ -50,6 +50,10 @@ def _game_finished_body(data: dict) -> dict:
             {"name": "⏱ Durée", "value": fmt_duration(data.get("duration", 0)), "inline": True},
         ],
     }
+    if data.get("status") == "PENDING_REVIEW":
+        main_embed["fields"].append(
+            {"name": "⚖️ Statut", "value": "En attente d'homologation", "inline": True}
+        )
 
     # Trophy embed — only when at least one player unlocked something
     trophies: dict[str, list[dict]] = data.get("trophies") or {}

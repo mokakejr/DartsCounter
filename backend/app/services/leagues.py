@@ -53,6 +53,7 @@ def league_to_read(league: League) -> LeagueRead:
         privacy_level=league.privacy_level,
         owner_id=league.owner_id,
         invite_code=league.invite_code,
+        webhook_url=league.webhook_url,
         created_at=league.created_at,
         members=[
             LeagueMemberRead(

@@ -80,3 +80,11 @@ export function provokeEvent(token, leagueId, eventId) {
 export function fetchPantheon(token, leagueId) {
   return apiGet(`/leagues/${leagueId}/pantheon`, {}, token);
 }
+
+export function setLeagueWebhook(token, leagueId, webhookUrl) {
+  return apiPatch(`/leagues/${leagueId}/webhook`, { webhook_url: webhookUrl }, token);
+}
+
+export function testLeagueWebhook(token, leagueId) {
+  return apiPost(`/leagues/${leagueId}/webhook/test`, {}, token);
+}

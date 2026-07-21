@@ -22,7 +22,8 @@ async def get_settings_row(session: AsyncSession) -> EloSettings:
     return row
 
 
-def to_engine_config(row: EloSettings) -> EloConfig:
+async def get_engine_config(session: AsyncSession) -> EloConfig:
+    row = await get_settings_row(session)
     return EloConfig(
         starting_rating=row.starting_rating,
         convergence=row.convergence,
@@ -34,10 +35,6 @@ def to_engine_config(row: EloSettings) -> EloConfig:
         rank_tier_value=row.rank_tier_value,
         champion_multiplier=row.champion_multiplier,
     )
-
-
-async def get_engine_config(session: AsyncSession) -> EloConfig:
-    return to_engine_config(await get_settings_row(session))
 
 
 class InvalidSettingsError(Exception):
@@ -102,7 +99,3 @@ async def get_score_direction_map(session: AsyncSession) -> dict[tuple[str, str]
     of that mode."""
     rows = await list_score_directions(session)
     return {(row.mode_key, row.variant_key): row.lower_is_better for row in rows}
-
-
-def normalize(value: str | None) -> str:
-    return normalize_key(value)

@@ -10,6 +10,8 @@ from app.models.elo import GLOBAL_SCOPE
 from app.schemas.game import GameRead
 from app.services import achievements as achievements_service
 from app.services import games as games_service
+from app.services.elo import lower_is_better_for
+from app.services.elo_config import get_score_direction_map
 from app.services.targets.base import GameEvent, NotificationTarget
 from app.services.targets.discord import DiscordTarget
 from app.services.targets.google_chat import GoogleChatTarget
@@ -90,7 +92,16 @@ async def dispatch_game_finished(game: GameRead) -> None:
         except Exception:
             logger.exception("League feed event generation failed for game %s", game.id)
 
-        players_sorted = sorted(game.players, key=lambda p: p.position)
+        # Stored positions only distinguish winner (1) from the rest (2), so
+        # rank the podium here: winner first — even when their score isn't
+        # the extremum (e.g. Cricket closed on points) — then the others by
+        # score, ascending for lower-is-better variants (Cut Throat).
+        score_direction = await get_score_direction_map(session)
+        lower_is_better = lower_is_better_for(game.mode, game.variant, score_direction)
+        players_sorted = sorted(
+            game.players,
+            key=lambda p: (p.name != game.winner, p.score if lower_is_better else -p.score),
+        )
         event = GameEvent(
             type="game_finished",
             data={

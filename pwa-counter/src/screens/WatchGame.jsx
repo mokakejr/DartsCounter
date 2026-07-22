@@ -5,7 +5,7 @@ import SvgBoard from '../components/SvgBoard.jsx';
 import EmoteSplash from '../components/EmoteSplash.jsx';
 import { connectLive } from '../live.js';
 import { censorName } from '../censor.js';
-import { reduced } from '../juice.js';
+import { reduced, shake } from '../juice.js';
 import { SECTORS, sectorMidAngle } from '../modes/board.js';
 import { computeMatchPoint } from '../watch/matchPoint.js';
 import './WatchGame.css';
@@ -77,6 +77,12 @@ export default function WatchGame() {
   const [turnDarts, setTurnDarts] = useState([]); // marqueurs du tour en cours
   const [messages, setMessages] = useState([]); // chat éphémère
   const [emote, setEmote] = useState(null); // dernière emote reçue (splash)
+  // Jauge de Hype : chaque EMOTE reçue la remplit, elle retombe toute seule.
+  // CROWD_HYPE (agrégat serveur) déclenche le délire — sauf juste après un
+  // MISS (la foule balançait des tomates : célébrer serait ridicule).
+  const [hype, setHype] = useState(0);
+  const [hypeBurst, setHypeBurst] = useState(null);
+  const lastMissAt = useRef(0);
   const [chatOpen, setChatOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const connRef = useRef(null);
@@ -221,6 +227,7 @@ export default function WatchGame() {
             setTurnDarts(prev => [...prev.slice(-2), { ...d, key: Date.now() }]);
             trackTriple(e.player_id, e.score_hit);
             if (d.ring !== 'MISS') flashSector(d.value, e.score_hit?.multiplier ?? 1);
+            else lastMissAt.current = Date.now();
             break;
           }
           case 'TURN_CHANGED':
@@ -265,6 +272,13 @@ export default function WatchGame() {
           case 'EMOTE':
             // Les gradins voient aussi voler les emotes (pas que les joueurs).
             setEmote({ ...e, key: `${Date.now()}-${Math.random()}` });
+            setHype(h => Math.min(1, h + 0.13));
+            break;
+          case 'CROWD_HYPE':
+            // Anti-ridicule : pas de célébration dans la foulée d'un raté.
+            if (Date.now() - lastMissAt.current < 1500) break;
+            setHypeBurst(Date.now());
+            shake();
             break;
           default:
         }
@@ -278,6 +292,14 @@ export default function WatchGame() {
       clearTimeout(rgbTimer.current);
     };
   }, [matchId, name]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // La jauge de hype retombe toute seule (vide en ~4 s sans nouvelle emote).
+  const hypeActive = !!match && !match.finished;
+  useEffect(() => {
+    if (!hypeActive) return undefined;
+    const t = setInterval(() => setHype(h => (h > 0.005 ? h * 0.88 : 0)), 500);
+    return () => clearInterval(t);
+  }, [hypeActive]);
 
   function sendEmote(emote) {
     const now = Date.now();
@@ -408,6 +430,21 @@ export default function WatchGame() {
           💬
         </button>
       </div>
+
+      {/* Jauge de Hype : information (reste visible même animations réduites). */}
+      {hype > 0 && (
+        <div className="watch__hype" aria-hidden>
+          <div className="watch__hype-fill" style={{ transform: `scaleY(${hype})` }} />
+        </div>
+      )}
+      {hypeBurst && (
+        <div
+          key={hypeBurst}
+          className="watch__hype-sweep"
+          aria-hidden
+          onAnimationEnd={() => setHypeBurst(null)}
+        />
+      )}
 
       <EmoteSplash emote={emote} />
 

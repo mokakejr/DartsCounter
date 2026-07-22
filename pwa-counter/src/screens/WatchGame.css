@@ -216,6 +216,50 @@
   cursor: pointer;
 }
 
+/* ── Jauge de Hype (agrégat des emotes, décroissance côté client) ── */
+.watch__hype {
+  position: fixed;
+  right: 6px;
+  top: 20%;
+  bottom: 25%;
+  width: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  z-index: 15;
+}
+.watch__hype-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  background: linear-gradient(to top, #e61e2a, #ffd23c);
+  transform-origin: bottom;
+  transition: transform 300ms linear;
+}
+
+/* La foule est en délire : balayage lumineux plein écran (sous chat/scores). */
+.watch__hype-sweep {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 15;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 210, 60, 0.22) 46%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 210, 60, 0.22) 54%,
+    transparent 70%
+  );
+  background-size: 300% 100%;
+  animation: watch-hype-sweep 0.6s ease-out both;
+}
+@keyframes watch-hype-sweep {
+  0% { background-position: 120% 0; opacity: 1; }
+  100% { background-position: -60% 0; opacity: 0; }
+}
+[data-reduce-animations] .watch__hype-sweep { display: none; }
+
 /* ── L'Ame de la Cible : shake d'impact gradué (1=simple, 3=triple) ── */
 .watch__board--shake-1 {
   animation: boardShake 0.15s cubic-bezier(.36,.07,.19,.97) both;

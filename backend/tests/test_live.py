@@ -293,3 +293,47 @@ def test_crowd_hype_broadcast_over_ws(monkeypatch):
             hype = bob.receive_json()
             assert hype["event"] == "CROWD_HYPE"
             assert hype["count"] >= 2
+
+
+# --- Prono d'avant-match (Tale of the Tape) ---------------------------------
+
+
+def test_prematch_vote_flow():
+    with TestClient(app) as client:
+        match = _create(client, remote=True)  # remote : pas encore démarré
+        mid = match["id"]
+        with client.websocket_connect(f"/ws/live/{mid}?role=spectator&name=Bob") as bob, \
+             client.websocket_connect(f"/ws/live/{mid}?role=spectator&name=Carl") as carl:
+            assert bob.receive_json()["event"] == "STATE"
+            assert carl.receive_json()["event"] == "STATE"
+
+            bob.send_json({"event": "VOTE", "player": "Leo"})
+            assert bob.receive_json()["counts"] == {"Leo": 1}
+            assert carl.receive_json()["counts"] == {"Leo": 1}
+
+            # Re-voter change son camp (last-write-wins), ne double pas.
+            bob.send_json({"event": "VOTE", "player": "Theo"})
+            assert carl.receive_json()["counts"] == {"Theo": 1}
+            bob.receive_json()
+
+            # Joueur inconnu : silencieusement ignoré.
+            carl.send_json({"event": "VOTE", "player": "Zorro"})
+            carl.send_json({"event": "VOTE", "player": "Leo"})
+            assert carl.receive_json()["counts"] == {"Theo": 1, "Leo": 1}
+            bob.receive_json()
+
+            # Retardataire : le STATE porte les agrégats (jamais qui a voté).
+            with client.websocket_connect(f"/ws/live/{mid}?role=spectator&name=Dave") as dave:
+                assert dave.receive_json()["match"]["votes"] == {"Theo": 1, "Leo": 1}
+
+            # Première fléchette lancée : les paris sont clos.
+            client.post(f"/live/matches/{mid}/ready", json={"name": "Leo"})
+            client.post(f"/live/matches/{mid}/ready", json={"name": "Theo"})
+            for _ in range(3):  # READY x2 + MATCH_STARTED
+                bob.receive_json()
+                carl.receive_json()
+            bob.send_json({"event": "VOTE", "player": "Leo"})
+            bob.send_json({"event": "EMOTE", "emote": "👏"})
+            # Le VOTE tardif n'a rien émis : la frame suivante est l'EMOTE.
+            assert bob.receive_json()["event"] == "EMOTE"
+        assert client.get(f"/live/matches/{mid}").json()["votes"] == {"Theo": 1, "Leo": 1}

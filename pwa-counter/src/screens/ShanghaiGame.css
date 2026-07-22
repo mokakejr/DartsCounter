@@ -9,7 +9,7 @@
   flex-direction: column;
   align-items: center;
   background: var(--bg);
-  padding: 0 20px max(24px, env(safe-area-inset-bottom));
+  padding: 0 20px max(16px, env(safe-area-inset-bottom));
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
@@ -89,7 +89,7 @@
   flex-shrink: 0;
 }
 .sg__player-name {
-  font-size: 26px;
+  font-size: clamp(20px, 3svh, 26px);
   font-weight: 700;
   color: var(--text);
 }
@@ -106,8 +106,8 @@
   flex-shrink: 0;
 }
 .sg__dart {
-  width: 48px;
-  height: 48px;
+  width: clamp(38px, 6.5svh, 48px);
+  height: clamp(38px, 6.5svh, 48px);
   border-radius: 50%;
   border: 2px solid var(--border);
   display: grid;
@@ -130,7 +130,7 @@
 
 /* ── Turn score preview ─────────────────────────────── */
 .sg__turn-pts {
-  height: 22px;
+  height: clamp(18px, 3svh, 22px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -159,7 +159,7 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 10px 8px;
+  padding: clamp(6px, 1.4svh, 10px) 8px;
   border-radius: 12px;
   border: 2px solid var(--border);
   background: var(--surface);
@@ -195,24 +195,25 @@
 /* ── Action area (fixed height — prevents layout shift on 3rd dart) ── */
 .sg__action {
   width: 100%;
-  min-height: 90px;
+  min-height: clamp(68px, 12svh, 90px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: clamp(4px, 1svh, 8px);
   margin-bottom: 6px;
   flex-shrink: 0;
 }
 .sg__confirm-pts {
-  font-size: 36px;
+  font-size: clamp(22px, 4.5svh, 36px);
+  line-height: 1;
   font-weight: 700;
   color: var(--win);
 }
 
 /* ── Buttons ────────────────────────────────────────── */
 .sg__btn {
-  padding: 14px 28px;
+  padding: clamp(10px, 1.8svh, 14px) 28px;
   border-radius: 10px;
   border: none;
   font-family: var(--font-display);
@@ -233,7 +234,7 @@
 /* ── Undo ───────────────────────────────────────────── */
 .sg__undo {
   width: 100%;
-  height: 42px;
+  height: clamp(36px, 5.5svh, 42px);
   flex-shrink: 0;
   background: var(--surface);
   border: 1px solid #333333;
@@ -253,7 +254,7 @@
   color: #333333;
   cursor: not-allowed;
 }
-.sg__undo-placeholder { height: 48px; margin-bottom: 0; flex-shrink: 0; }
+.sg__undo-placeholder { height: clamp(42px, 6svh, 48px); margin-bottom: 0; flex-shrink: 0; }
 
 /* ── Score table ────────────────────────────────────── */
 /* Seule zone qui scrolle (comme .cg__board-wrap) : header/board/zones/
@@ -394,7 +395,7 @@
 /* Bornée par la hauteur d'écran (comme le 51, FiftyOneGame.css:18) pour que
    le reste (zones, SUIVANT, scores) reste visible sans scroller sur un
    téléphone standard. */
-.sg__board .svgboard { width: min(62vw, 26svh, 280px); }
+.sg__board .svgboard { width: min(62vw, 25svh, 280px); }
 
 /* ── Verrouillage hors tour (Epic 13.2) — même pattern que le 51 ─────── */
 .sg__remote-overlay {

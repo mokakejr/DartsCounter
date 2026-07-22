@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import confetti from 'canvas-confetti';
 import SvgBoard from '../components/SvgBoard.jsx';
+import EmoteSplash from '../components/EmoteSplash.jsx';
 import { connectLive } from '../live.js';
 import { censorName } from '../censor.js';
+import { reduced } from '../juice.js';
+import { SECTORS, sectorMidAngle } from '../modes/board.js';
 import './WatchGame.css';
 
 // Barre d'interaction des gradins (Epic 12.2).
@@ -71,6 +75,7 @@ export default function WatchGame() {
   const [gone, setGone] = useState(false);
   const [turnDarts, setTurnDarts] = useState([]); // marqueurs du tour en cours
   const [messages, setMessages] = useState([]); // chat éphémère
+  const [emote, setEmote] = useState(null); // dernière emote reçue (splash)
   const [chatOpen, setChatOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const connRef = useRef(null);
@@ -100,14 +105,85 @@ export default function WatchGame() {
     return null;
   }
 
-  const [boardShake, setBoardShake] = useState(false);
+  // Intensité 0-3 (multiplier du DART_THROWN) : un triple secoue plus fort
+  // qu'un simple. Le chemin cricket (diff de marques) reste à 1 — l'anneau
+  // exact n'est pas connu.
+  const [boardShake, setBoardShake] = useState(0);
 
-  function flashSector(value) {
+  function flashSector(value, intensity = 1) {
     setFlashTarget(value);
-    setBoardShake(true);
+    setBoardShake(intensity);
     clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setFlashTarget(null), 900);
-    setTimeout(() => setBoardShake(false), 200);
+    setTimeout(() => setBoardShake(0), 120 + intensity * 80);
+  }
+
+  // Pop de score proportionnel : la clé force le remount => l'animation
+  // redémarre, --pop-scale module l'amplitude (un +3 frémit, un +60 claque).
+  const prevScores = useRef({});
+  const [pops, setPops] = useState({});
+
+  function popScores(next) {
+    const newPops = {};
+    for (const [p, score] of Object.entries(next)) {
+      const delta = score - (prevScores.current[p] ?? 0);
+      // delta<0 = undo (cricket ré-émet tout l'état) : pas de célébration.
+      if (delta > 0) newPops[p] = { delta, key: `${p}-${Date.now()}` };
+      prevScores.current[p] = score;
+    }
+    if (Object.keys(newPops).length) setPops(prev => ({ ...prev, ...newPops }));
+  }
+
+  // « On fire » : 3 triples consécutifs du même joueur (couvre aussi les
+  // 3 triples dans le tour) => aberration chromatique + gerbe de particules.
+  const tripleStreak = useRef({});
+  const [hotPlayer, setHotPlayer] = useState(null);
+  const [boardRgb, setBoardRgb] = useState(false);
+  const rgbTimer = useRef(null);
+  const boardRef = useRef(null);
+
+  function fireOnFire(zone) {
+    if (reduced()) return;
+    setBoardRgb(true);
+    clearTimeout(rgbTimer.current);
+    rgbTimer.current = setTimeout(() => setBoardRgb(false), 320);
+    const rect = boardRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    // Origine des particules : le secteur touché (bull => centre).
+    let dx = 0;
+    let dy = 0;
+    const idx = SECTORS.indexOf(zone);
+    if (idx >= 0) {
+      const rad = (sectorMidAngle(idx) * Math.PI) / 180; // 0° = haut, horaire
+      const r = rect.width * 0.38;
+      dx = Math.sin(rad) * r;
+      dy = -Math.cos(rad) * r;
+    }
+    confetti({
+      particleCount: 60,
+      spread: 55,
+      startVelocity: 25,
+      origin: {
+        x: (rect.left + rect.width / 2 + dx) / window.innerWidth,
+        y: (rect.top + rect.height / 2 + dy) / window.innerHeight,
+      },
+      colors: ['#ffd23c', '#e61e2a', '#fff'],
+    });
+  }
+
+  function trackTriple(playerId, scoreHit) {
+    if ((scoreHit?.multiplier ?? 0) === 3) {
+      const streak = (tripleStreak.current[playerId] ?? 0) + 1;
+      tripleStreak.current[playerId] = streak;
+      if (streak >= 2) setHotPlayer(playerId);
+      if (streak >= 3) {
+        tripleStreak.current[playerId] = 0; // un 4ᵉ triple relance un combo
+        fireOnFire(scoreHit.zone);
+      }
+    } else {
+      tripleStreak.current[playerId] = 0;
+      setHotPlayer(h => (h === playerId ? null : h));
+    }
   }
   // Identité connue -> direct aux gradins ; sinon on la demande d'abord
   // (avec bypass anonyme) — le chat signera de ce nom.
@@ -133,12 +209,17 @@ export default function WatchGame() {
           case 'STATE':
             setMatch(e.match);
             prevMarks.current = e.match?.detail?.marks ?? null;
+            // Reconnexion : repartir du snapshot, sans pop géant ni streak fantôme.
+            prevScores.current = { ...(e.match?.scores ?? {}) };
+            tripleStreak.current = {};
+            setHotPlayer(null);
             break;
           case 'DART_THROWN': {
             setMatch(m => m && { ...m, turn_player: e.player_id, dart_index: e.dart_index });
             const d = hitFromDelta(e.score_hit);
             setTurnDarts(prev => [...prev.slice(-2), { ...d, key: Date.now() }]);
-            if (d.ring !== 'MISS') flashSector(d.value);
+            trackTriple(e.player_id, e.score_hit);
+            if (d.ring !== 'MISS') flashSector(d.value, e.score_hit?.multiplier ?? 1);
             break;
           }
           case 'TURN_CHANGED':
@@ -153,12 +234,15 @@ export default function WatchGame() {
               zone = cricketZoneFromDiff(e.detail);
               if (zone != null) flashSector(zone);
             }
-            const apply = () => setMatch(m => m && {
-              ...m,
-              scores: { ...m.scores, ...e.scores },
-              round: e.round ?? m.round,
-              detail: e.detail ?? m.detail,
-            });
+            const apply = () => {
+              popScores(e.scores ?? {});
+              setMatch(m => m && {
+                ...m,
+                scores: { ...m.scores, ...e.scores },
+                round: e.round ?? m.round,
+                detail: e.detail ?? m.detail,
+              });
+            };
             // Impact d'abord, chiffres 300 ms plus tard : l'attente cree
             // l'anticipation (Epic "L'Ame de la Cible").
             if (zone != null) setTimeout(apply, 300);
@@ -177,6 +261,10 @@ export default function WatchGame() {
             setTimeout(() => setMessages(prev => prev.filter(msg => msg.id !== id)), CHAT_FADE_MS);
             break;
           }
+          case 'EMOTE':
+            // Les gradins voient aussi voler les emotes (pas que les joueurs).
+            setEmote({ ...e, key: `${Date.now()}-${Math.random()}` });
+            break;
           default:
         }
       },
@@ -186,6 +274,7 @@ export default function WatchGame() {
       conn.close();
       connRef.current = null;
       clearTimeout(flashTimer.current);
+      clearTimeout(rgbTimer.current);
     };
   }, [matchId, name]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -259,11 +348,14 @@ export default function WatchGame() {
         {match.finished
           ? (match.winner ? `🏆 ${censorName(match.winner)} remporte le match !` : 'Match terminé.')
           : match.turn_player
-            ? `${censorName(match.turn_player)} prépare sa ${(match.dart_index ?? 0) + 1}ᵉ fléchette…`
+            ? `${hotPlayer === match.turn_player ? '🔥 ' : ''}${censorName(match.turn_player)} prépare sa ${(match.dart_index ?? 0) + 1}ᵉ fléchette…`
             : 'En attente du premier lancer…'}
       </div>
 
-      <div className={boardShake ? 'watch__board watch__board--shake' : 'watch__board'}>
+      <div
+        ref={boardRef}
+        className={`watch__board${boardShake ? ` watch__board--shake-${boardShake}` : ''}${boardRgb ? ' watch__board--rgb' : ''}`}
+      >
         <SvgBoard interactive={false} darts={turnDarts} highlightTarget={flashTarget} />
       </div>
 
@@ -276,7 +368,13 @@ export default function WatchGame() {
         {scores.map(({ name: p, score }) => (
           <div key={p} className={`watch__score-row${p === match.turn_player ? ' watch__score-row--active' : ''}`}>
             <span>{censorName(p)}</span>
-            <b>{score}</b>
+            <b
+              key={pops[p]?.key ?? 'score'}
+              className={pops[p] ? 'watch__score-val watch__score-val--pop' : 'watch__score-val'}
+              style={pops[p] ? { '--pop-scale': Math.min(1.15 + pops[p].delta * 0.006, 1.6) } : undefined}
+            >
+              {score}
+            </b>
           </div>
         ))}
       </div>
@@ -300,6 +398,8 @@ export default function WatchGame() {
           💬
         </button>
       </div>
+
+      <EmoteSplash emote={emote} />
 
       {chatOpen && (
         <form className="watch__input-row" onSubmit={sendChat}>

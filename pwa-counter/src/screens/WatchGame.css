@@ -197,13 +197,64 @@
   cursor: pointer;
 }
 
-/* ── L'Ame de la Cible : shake d'impact ────────────────── */
-.watch__board--shake {
+/* ── L'Ame de la Cible : shake d'impact gradué (1=simple, 3=triple) ── */
+.watch__board--shake-1 {
   animation: boardShake 0.15s cubic-bezier(.36,.07,.19,.97) both;
+}
+.watch__board--shake-2 {
+  animation: boardShake2 0.25s cubic-bezier(.36,.07,.19,.97) both;
+}
+.watch__board--shake-3 {
+  animation: boardShake3 0.3s cubic-bezier(.36,.07,.19,.97) both;
 }
 @keyframes boardShake {
   25% { transform: translate(2px, 1px) rotate(0.5deg); }
   50% { transform: translate(-1px, -2px) rotate(-0.5deg); }
   75% { transform: translate(-3px, 0) rotate(0.5deg); }
 }
-[data-reduce-animations] .watch__board--shake { animation: none; }
+@keyframes boardShake2 {
+  20% { transform: translate(4px, 2px) rotate(0.6deg); }
+  45% { transform: translate(-3px, -4px) rotate(-0.6deg); }
+  70% { transform: translate(-4px, 1px) rotate(0.6deg); }
+  90% { transform: translate(2px, -1px); }
+}
+@keyframes boardShake3 {
+  15% { transform: translate(6px, 3px) rotate(1deg); }
+  35% { transform: translate(-5px, -6px) rotate(-1deg); }
+  55% { transform: translate(-6px, 2px) rotate(1deg); }
+  75% { transform: translate(4px, -3px) rotate(-0.7deg); }
+  90% { transform: translate(-2px, 1px); }
+}
+[data-reduce-animations] .watch__board--shake-1,
+[data-reduce-animations] .watch__board--shake-2,
+[data-reduce-animations] .watch__board--shake-3 { animation: none; }
+
+/* ── On fire : aberration chromatique ~300ms sur toute la cible ── */
+.watch__board--rgb {
+  animation: watch-rgb-split 0.3s ease-out both;
+}
+@keyframes watch-rgb-split {
+  0% {
+    filter: drop-shadow(2.5px 0 rgba(255, 0, 60, 0.8))
+      drop-shadow(-2.5px 0 rgba(0, 220, 255, 0.8));
+  }
+  70% {
+    filter: drop-shadow(1.2px 0 rgba(255, 0, 60, 0.5))
+      drop-shadow(-1.2px 0 rgba(0, 220, 255, 0.5));
+  }
+  100% { filter: none; }
+}
+[data-reduce-animations] .watch__board--rgb { animation: none; }
+
+/* ── Pop de score proportionnel (--pop-scale posé en inline) ── */
+.watch__score-val { display: inline-block; }
+.watch__score-val--pop {
+  animation: watch-score-pop 0.45s cubic-bezier(.22,1.4,.36,1) both;
+  transform-origin: right center;
+}
+@keyframes watch-score-pop {
+  0% { transform: scale(var(--pop-scale, 1.2)); color: #ffd23c; }
+  60% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+[data-reduce-animations] .watch__score-val--pop { animation: none; }

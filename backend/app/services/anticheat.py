@@ -8,11 +8,10 @@ frozen (PENDING_REVIEW) before it touches Elo — the league tribunal
 import statistics
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Game, GamePlayer, Player
-from app.models.elo import modes_in_family, elo_scope_for
 from app.models.game import STATUS_COMPLETED
 from app.services.elo import normalize_key
 
@@ -52,19 +51,33 @@ async def recent_scores(
     session: AsyncSession,
     player_id: uuid.UUID,
     mode: str,
+    variant: str | None,
     exclude_game_id: uuid.UUID | None = None,
     limit: int = WINDOW,
 ) -> list[float]:
     """History window. `exclude_game_id` MUST name the game under scrutiny:
     it is already flushed to the session when this runs, and an outlier
     inside its own sample caps the reachable z-score at (n-1)/sqrt(n) —
-    below the 3.0 threshold for any window under 11 games."""
+    below the 3.0 threshold for any window under 11 games.
+
+    Only the exact same ruleset (literal mode + variant) is comparable on
+    absolute score: the Shanghai Elo family shares one rating scope but not
+    one scale (classic targets 1-7 ≈ 40-80 pts, Random/Crazy targets drawn
+    from 1-20+bull ≈ 3x that), and Cricket variants even flip direction
+    (Cut Throat is lower-is-better). Pooling them froze perfectly normal
+    games as "aberrant"."""
+    # Same normalization as normalize_key ('Cut Throat' == 'CutThroat'),
+    # done in SQL so the LIMIT applies to matching games only.
+    variant_key_sql = func.regexp_replace(
+        func.lower(func.coalesce(Game.variant, "")), "[^a-z0-9]", "", "g"
+    )
     stmt = (
         select(GamePlayer.score)
         .join(Game, Game.id == GamePlayer.game_id)
         .where(
             GamePlayer.player_id == player_id,
-            Game.mode.in_(modes_in_family(elo_scope_for(mode))),
+            Game.mode == mode,
+            variant_key_sql == normalize_key(variant),
             Game.is_casual.is_(False),
             Game.status == STATUS_COMPLETED,
         )
@@ -86,14 +99,14 @@ async def detect_outlier(
     game_id: uuid.UUID | None = None,
 ) -> bool:
     """True if any player's score in this game is a statistical outlier
-    against their own recent history in the same mode family."""
+    against their own recent history in the same mode + variant."""
     mode_key = normalize_key(mode)
     variant_key = normalize_key(variant)
     lower_is_better = score_direction.get(
         (mode_key, variant_key), score_direction.get((mode_key, ""), False)
     )
     for name, player in players_by_name.items():
-        history = await recent_scores(session, player.id, mode, exclude_game_id=game_id)
+        history = await recent_scores(session, player.id, mode, variant, exclude_game_id=game_id)
         if is_outlier(float(scores_by_name[name]), history, lower_is_better):
             return True
     return False

@@ -52,6 +52,24 @@ async def _post_game(client, scores, date, mode="Shanghai"):
     return resp.json()
 
 
+async def test_other_shanghai_variants_never_pollute_the_history(client):
+    """Régression : un ShanghaiCrazy (cibles tirées dans 1-20+bull, ~3x le
+    score d'un Shanghai classique cibles 1-7) était gelé « en attente
+    d'homologation » dès la première partie, jugé contre l'historique
+    classique de la famille Elo. Les échelles ne sont comparables qu'à
+    ruleset identique (mode littéral + variante)."""
+    for i in range(10):
+        await _post_game(client, [40 + (i % 3), 38], f"2026-01-{i + 1:02d}T10:00:00Z")
+
+    crazy = await _post_game(client, [280, 190], "2026-02-01T10:00:00Z", mode="ShanghaiCrazy")
+    assert crazy["status"] == "COMPLETED"
+
+    # Et le classement (Elo/stats) prend bien la partie en compte.
+    board = (await client.get("/stats/leaderboard")).json()
+    alice = next(r for r in board if r["name"] == "Alice")
+    assert alice["games"] == 11
+
+
 async def test_aberrant_game_is_frozen_and_skips_elo(client):
     # Build a stable 10-game history around ~40 points.
     for i in range(10):

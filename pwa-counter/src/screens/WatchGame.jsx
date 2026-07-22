@@ -7,6 +7,7 @@ import { connectLive } from '../live.js';
 import { censorName } from '../censor.js';
 import { reduced } from '../juice.js';
 import { SECTORS, sectorMidAngle } from '../modes/board.js';
+import { computeMatchPoint } from '../watch/matchPoint.js';
 import './WatchGame.css';
 
 // Barre d'interaction des gradins (Epic 12.2).
@@ -334,9 +335,11 @@ export default function WatchGame() {
   }
 
   const scores = match.players.map(p => ({ name: p, score: match.scores?.[p] ?? 0 }));
+  // Balle de match : recompute stateless à chaque render (undo/reconnexion safe).
+  const matchPoint = computeMatchPoint(match, censorName);
 
   return (
-    <div className="watch">
+    <div className={matchPoint ? 'watch watch--matchpoint' : 'watch'}>
       <div className="watch__header">
         <button className="watch__leave" onClick={() => navigate('/')}>←</button>
         <span className="watch__live">
@@ -344,19 +347,26 @@ export default function WatchGame() {
         </span>
       </div>
 
-      <div className="watch__status">
+      <div className={matchPoint ? 'watch__status watch__status--mp' : 'watch__status'}>
         {match.finished
           ? (match.winner ? `🏆 ${censorName(match.winner)} remporte le match !` : 'Match terminé.')
-          : match.turn_player
-            ? `${hotPlayer === match.turn_player ? '🔥 ' : ''}${censorName(match.turn_player)} prépare sa ${(match.dart_index ?? 0) + 1}ᵉ fléchette…`
-            : 'En attente du premier lancer…'}
+          : matchPoint
+            ? matchPoint.label
+            : match.turn_player
+              ? `${hotPlayer === match.turn_player ? '🔥 ' : ''}${censorName(match.turn_player)} prépare sa ${(match.dart_index ?? 0) + 1}ᵉ fléchette…`
+              : 'En attente du premier lancer…'}
       </div>
 
       <div
         ref={boardRef}
         className={`watch__board${boardShake ? ` watch__board--shake-${boardShake}` : ''}${boardRgb ? ' watch__board--rgb' : ''}`}
       >
-        <SvgBoard interactive={false} darts={turnDarts} highlightTarget={flashTarget} />
+        <SvgBoard
+          interactive={false}
+          darts={turnDarts}
+          highlightTarget={flashTarget}
+          matchPointTarget={matchPoint?.zone ?? null}
+        />
       </div>
 
       {/* Cricket : l'avancée cible par cible, pas juste les points. */}

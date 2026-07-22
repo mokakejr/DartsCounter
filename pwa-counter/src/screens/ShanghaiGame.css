@@ -1,14 +1,20 @@
 /* ── Game shell ─────────────────────────────────────── */
 .sg {
+  /* Même remède que le 51 (af93306) et Cricket (806be40) : hauteur FIXE +
+     overflow-y — si le contenu dépasse (petit iPhone, beaucoup de joueurs),
+     ce conteneur scrolle au lieu de couper le bouton SUIVANT / la liste des
+     scores hors écran. Sur un écran suffisant tout tient : auto ≡ hidden. */
   height: 100svh;
   display: flex;
   flex-direction: column;
   align-items: center;
   background: var(--bg);
-  padding: 0 20px 24px;
+  padding: 0 20px max(24px, env(safe-area-inset-bottom));
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Header ─────────────────────────────────────────── */
@@ -17,7 +23,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 0 8px;
+  padding: 8px 0 4px;
+  flex-shrink: 0;
 }
 .sg__back {
   width: 36px;
@@ -78,7 +85,8 @@
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 }
 .sg__player-name {
   font-size: 26px;
@@ -93,12 +101,13 @@
 /* ── Dart slots ─────────────────────────────────────── */
 .sg__darts {
   display: flex;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
 }
 .sg__dart {
-  width: 62px;
-  height: 62px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: 2px solid var(--border);
   display: grid;
@@ -121,14 +130,15 @@
 
 /* ── Turn score preview ─────────────────────────────── */
 .sg__turn-pts {
-  height: 28px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 15px;
   font-weight: 600;
   color: var(--text);
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 }
 .sg__turn-hint { color: var(--muted); font-weight: 400; font-size: 13px; }
 
@@ -138,7 +148,8 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
 }
 /* No triple bull exists — only MISS/BULL/D-BULL on a bull round. */
 .sg__zones--bull { grid-template-columns: repeat(3, 1fr); }
@@ -148,7 +159,7 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 16px 8px;
+  padding: 10px 8px;
   border-radius: 12px;
   border: 2px solid var(--border);
   background: var(--surface);
@@ -184,13 +195,14 @@
 /* ── Action area (fixed height — prevents layout shift on 3rd dart) ── */
 .sg__action {
   width: 100%;
-  min-height: 110px;
+  min-height: 90px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
 }
 .sg__confirm-pts {
   font-size: 36px;
@@ -221,7 +233,8 @@
 /* ── Undo ───────────────────────────────────────────── */
 .sg__undo {
   width: 100%;
-  height: 48px;
+  height: 42px;
+  flex-shrink: 0;
   background: var(--surface);
   border: 1px solid #333333;
   border-radius: 8px;
@@ -230,7 +243,7 @@
   font-weight: 500;
   color: #888888;
   cursor: pointer;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   transition: color 0.12s, border-color 0.12s;
 }
 .sg__undo:hover:not(:disabled) { color: #B6B6BB; border-color: #555; }
@@ -240,22 +253,27 @@
   color: #333333;
   cursor: not-allowed;
 }
-.sg__undo-placeholder { height: 58px; margin-bottom: 0; }
+.sg__undo-placeholder { height: 48px; margin-bottom: 0; flex-shrink: 0; }
 
 /* ── Score table ────────────────────────────────────── */
+/* Seule zone qui scrolle (comme .cg__board-wrap) : header/board/zones/
+   SUIVANT/annuler restent toujours visibles, seule la liste des scores
+   cède si elle ne tient pas (beaucoup de joueurs / petit écran). */
 .sg__scores {
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: auto;
+  flex: 1;
+  min-height: 40px;
+  overflow-y: auto;
 }
 .sg__score-row {
   display: grid;
   grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -369,10 +387,14 @@
 
 /* ── Cible SVG (Epic 4.3) ──────────────────────────────── */
 .sg__board {
-  margin: 4px auto 8px;
+  margin: 0 auto 4px;
   text-align: center;
+  flex-shrink: 0;
 }
-.sg__board .svgboard { width: min(72vw, 300px); }
+/* Bornée par la hauteur d'écran (comme le 51, FiftyOneGame.css:18) pour que
+   le reste (zones, SUIVANT, scores) reste visible sans scroller sur un
+   téléphone standard. */
+.sg__board .svgboard { width: min(62vw, 26svh, 280px); }
 
 /* ── Verrouillage hors tour (Epic 13.2) — même pattern que le 51 ─────── */
 .sg__remote-overlay {

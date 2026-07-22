@@ -24,11 +24,45 @@ class GoogleChatTarget:
             body = _player_ping_body(event.data)
         elif event.type == "provocation":
             body = _provocation_body(event.data)
+        elif event.type == "live_started":
+            body = _live_started_body(event.data)
         else:
             return
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.post(self.url, json=body)
             resp.raise_for_status()
+
+
+def _live_title(players: list[str]) -> str:
+    """2 joueurs = duel (🆚), 3+ = mêlée nominative."""
+    if len(players) == 2:
+        return f"🔴 LIVE : {players[0]} 🆚 {players[1]}"
+    return f"🔴 LIVE : Mêlée à {len(players)} — {', '.join(players)}"
+
+
+def _live_started_body(data: dict) -> dict:
+    remote = " (à distance)" if data.get("remote") else ""
+    return {
+        "cardsV2": [{
+            "cardId": "live_started",
+            "card": {
+                "header": {
+                    "title": _live_title(data["players"]),
+                    "subtitle": f"La partie de {mode_label(data['mode'])}{remote} va commencer !",
+                    "imageUrl": TROPHY_IMG,
+                    "imageType": "CIRCLE",
+                },
+                "sections": [{
+                    "widgets": [{
+                        "buttonList": {"buttons": [{
+                            "text": "👁️ REJOINDRE LES GRADINS",
+                            "onClick": {"openLink": {"url": data["watch_url"]}},
+                        }]},
+                    }],
+                }],
+            },
+        }],
+    }
 
 
 def _game_finished_body(data: dict) -> dict:

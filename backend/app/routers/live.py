@@ -12,11 +12,22 @@ import time
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 
-from app.services import live
+from app.services import live, notifications
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["live"])
+
+
+def _maybe_announce(match) -> None:
+    """Annonce « 🔴 LIVE » (webhook, lien gradins) — une fois par match, en
+    tâche de fond (la création/ready ne bloque jamais sur le réseau). Les
+    entraînements solo ne sont pas annoncés. Le flag est posé AVANT tout
+    await : REST et WS peuvent courir, une seule annonce partira."""
+    if match.announced or len(match.players) < 2 or not match.started:
+        return
+    match.announced = True
+    asyncio.create_task(notifications.dispatch_live_started(match))
 
 
 class LiveMatchCreate(BaseModel):
@@ -38,6 +49,7 @@ async def create_live_match(payload: LiveMatchCreate) -> dict:
     match = live.create_match(
         payload.mode, payload.players, payload.remote, payload.variant, payload.options
     )
+    _maybe_announce(match)  # match local : live immédiatement
     return live.to_dict(match)
 
 
@@ -66,6 +78,7 @@ async def ready_live_match(match_id: str, payload: ReadyPayload) -> dict:
     # must both broadcast.
     await live.broadcast(match, {"event": "READY", "match_id": match.id, "player_id": payload.name})
     if just_started:
+        _maybe_announce(match)
         await live.broadcast(match, {"event": "MATCH_STARTED", "match_id": match.id})
     return live.to_dict(match)
 
@@ -117,6 +130,7 @@ async def live_room(
                 # actual thrower; fall back to the connection's identity.
                 payload = {**data, "match_id": match.id, "player_id": data.get("player") or name}
                 if etype == "READY" and accepted:
+                    _maybe_announce(match)
                     await live.broadcast(match, {"event": "MATCH_STARTED", "match_id": match.id})
                 elif etype == "DND":
                     pass  # private toggle, nothing to broadcast

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Literal, Protocol
 
-EventType = Literal["game_finished", "weekly_recap", "player_ping", "provocation"]
+EventType = Literal["game_finished", "weekly_recap", "player_ping", "provocation", "live_started"]
 
 
 @dataclass

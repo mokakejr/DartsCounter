@@ -54,6 +54,9 @@ class LiveMatch:
     last_activity: float = field(default_factory=time.time)
     started: bool = False
     finished: bool = False
+    # Annonce webhook « 🔴 LIVE » : une seule par match, jamais ré-émise
+    # (même si un match auto-clôturé ressuscite).
+    announced: bool = False
     # Clôture automatique (inactivité/abandon) — réversible : une reprise du
     # jeu ressuscite le match, contrairement à une vraie fin de partie.
     aborted: bool = False

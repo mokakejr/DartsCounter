@@ -119,6 +119,45 @@ async def _any_league_webhook_configured(session: AsyncSession) -> bool:
     return (await session.execute(stmt)).first() is not None
 
 
+async def dispatch_live_started(match) -> None:
+    """Annonce « 🔴 LIVE » avec lien vers les gradins. Lancé via
+    asyncio.create_task depuis le routeur live (la création du match ne doit
+    JAMAIS attendre le webhook) — ouvre sa propre session, comme
+    dispatch_game_finished. Le try/except englobant est obligatoire : dans
+    une task nue, une exception ne remonterait nulle part."""
+    try:
+        settings = get_settings()
+        event = GameEvent(
+            type="live_started",
+            data={
+                "mode": match.mode,  # déjà un label d'affichage (MODE_LABEL côté front)
+                "players": list(match.players),
+                "remote": match.remote,
+                "watch_url": f"{settings.counter_url.rstrip('/')}/watch/{match.id}",
+            },
+        )
+        async with async_session() as session:
+            # Même précédence de routage que dispatch_game_finished.
+            league_targets = await league_targets_for_players(session, list(match.players))
+            if league_targets:
+                for league_name, target in league_targets.items():
+                    try:
+                        await target.send(event)
+                    except Exception:
+                        logger.exception(
+                            "League webhook %r failed for live match %s", league_name, match.id
+                        )
+            elif not await _any_league_webhook_configured(session):
+                await notify(session, event)
+            else:
+                logger.info(
+                    "Live match %s: no league webhook matched %s — not announced",
+                    match.id, list(match.players),
+                )
+    except Exception:
+        logger.exception("live_started dispatch failed for match %s", match.id)
+
+
 async def dispatch_game_finished(game: GameRead) -> None:
     """Runs as a FastAPI BackgroundTask, after the response is already sent —
     opens its own session since the request's (Depends(get_db)) is closed by

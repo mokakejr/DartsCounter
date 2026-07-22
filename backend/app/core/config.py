@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     # Linked from notification messages ("voir toutes les stats").
     dashboard_url: str = "http://localhost:5174"
 
+    # Linked from the LIVE announce ("rejoindre les gradins") — the counter
+    # PWA, which hosts the /watch/:matchId spectator route.
+    counter_url: str = "http://localhost:5173"
+
     # Fallback webhook URLs used when no DB-configured WebhookTarget exists yet
     # for that target — same env var names as the old GitHub Actions secrets,
     # so a freshly-migrated deployment keeps notifying without extra setup.

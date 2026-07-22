@@ -8,6 +8,17 @@
     <link rel="icon" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>DartsCounter — Marquer</title>
+    <!-- OG statiques (SPA derrière Caddy : pas de rendu par route possible).
+         Le cas d'usage : le lien /watch/:id du webhook « 🔴 LIVE » doit se
+         déplier joliment dans Discord/Chat. Pas d'og:url — il mentirait
+         pour toutes les autres routes. -->
+    <meta property="og:title" content="🎯 DartsCounter — 🔴 LIVE dans les Gradins" />
+    <meta
+      property="og:description"
+      content="Un match de fléchettes est en cours. Rejoins les gradins pour suivre chaque fléchette en direct."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icons/icon-192.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

@@ -21,11 +21,36 @@ class DiscordTarget:
             body = _player_ping_body(event.data)
         elif event.type == "provocation":
             body = _provocation_body(event.data)
+        elif event.type == "live_started":
+            body = _live_started_body(event.data)
         else:
             return
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.post(self.url, json=body)
             resp.raise_for_status()
+
+
+def _live_title(players: list[str]) -> str:
+    """2 joueurs = duel (🆚), 3+ = mêlée nominative."""
+    if len(players) == 2:
+        return f"🔴 LIVE : {players[0]} 🆚 {players[1]}"
+    return f"🔴 LIVE : Mêlée à {len(players)} — {', '.join(players)}"
+
+
+def _live_started_body(data: dict) -> dict:
+    # Un webhook Discord ne peut pas poster de vrais boutons (réservé aux
+    # applications) : l'URL d'embed + un lien markdown font le CTA.
+    watch_url = data["watch_url"]
+    remote = " (à distance)" if data.get("remote") else ""
+    return {"embeds": [{
+        "title": _live_title(data["players"]),
+        "url": watch_url,
+        "description": (
+            f"La partie de **{mode_label(data['mode'])}**{remote} va commencer !\n\n"
+            f"[👁️ REJOINDRE LES GRADINS]({watch_url})"
+        ),
+        "color": COLOR_GAME,
+    }]}
 
 
 def _game_finished_body(data: dict) -> dict:

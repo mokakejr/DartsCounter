@@ -20,7 +20,7 @@ ROLE_SPECTATOR = "spectator"
 
 # Events players may emit / spectators may emit.
 PLAYER_EVENTS = {"DART_THROWN", "TURN_CHANGED", "SCORE_UPDATED", "MATCH_FINISHED", "DND", "READY"}
-SPECTATOR_EVENTS = {"CHAT_MESSAGE", "EMOTE"}
+SPECTATOR_EVENTS = {"CHAT_MESSAGE", "EMOTE", "VOTE"}
 
 CHAT_MAX_LEN = 60
 CHAT_COOLDOWN_SECONDS = 3.0
@@ -72,6 +72,9 @@ class LiveMatch:
     ready: set[str] = field(default_factory=set)
     dnd: set[str] = field(default_factory=set)
     chat: deque = field(default_factory=lambda: deque(maxlen=200))
+    # Prono d'avant-match (Tale of the Tape) : pseudo spectateur -> joueur.
+    # Last-write-wins (re-voter change son camp), seuls les agrégats sortent.
+    votes: dict[str, str] = field(default_factory=dict)
     _last_chat: dict[str, float] = field(default_factory=dict)
     _last_emote: dict[str, float] = field(default_factory=dict)
     # Horodatages des emotes acceptées (fenêtre de hype glissante).
@@ -160,12 +163,14 @@ def to_dict(match: LiveMatch, include_chat: bool = False) -> dict[str, Any]:
         "remote": match.remote,
         "started": match.started,
         "finished": match.finished,
+        "aborted": match.aborted,
         "scores": match.scores,
         "round": match.round,
         "turn_player": match.turn_player,
         "dart_index": match.dart_index,
         "detail": match.detail,
         "ready": sorted(match.ready),
+        "votes": vote_counts(match),
         "connected": sorted(match.player_sockets),
         "spectators": len(match.spectator_sockets),
         "created_at": match.created_at,
@@ -173,6 +178,14 @@ def to_dict(match: LiveMatch, include_chat: bool = False) -> dict[str, Any]:
     if include_chat:
         data["chat"] = list(match.chat)
     return data
+
+
+def vote_counts(match: LiveMatch) -> dict[str, int]:
+    """Agrégats du prono d'avant-match — jamais qui a voté quoi."""
+    counts: dict[str, int] = {}
+    for player in match.votes.values():
+        counts[player] = counts.get(player, 0) + 1
+    return counts
 
 
 def mark_ready(match: LiveMatch, name: str) -> bool:

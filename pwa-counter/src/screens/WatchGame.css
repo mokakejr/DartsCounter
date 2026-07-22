@@ -216,6 +216,181 @@
   cursor: pointer;
 }
 
+/* ── Tale of the Tape : l'avant-match façon sports de combat ── */
+.watch__board--blur {
+  filter: blur(6px) brightness(0.6);
+  transition: filter 0.4s ease;
+}
+.watch__tape {
+  position: relative;
+  max-width: 420px;
+  width: 100%;
+  margin: -40px auto 0; /* remonte sur la cible bluré, effet overlay */
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(10, 10, 14, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-align: center;
+}
+.watch__tape-title {
+  margin: 0;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #ffd23c;
+}
+.watch__tape-sub { margin: 4px 0 12px; color: #9a9aa3; font-size: 13px; }
+.watch__tape-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+.watch__tape-grid--duel { grid-template-columns: 1fr 1fr; gap: 26px; }
+.watch__tape-vs {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 900;
+  font-size: 15px;
+  color: #e61e2a;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+.watch__tape-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.watch__tape-name { font-weight: 800; font-size: 15px; }
+.watch__tape-pct {
+  position: relative;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  font-size: 12px;
+}
+.watch__tape-pct-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #e61e2a, #ffd23c);
+  transition: width 0.4s ease;
+}
+.watch__tape-pct b { position: relative; line-height: 18px; }
+.watch__tape-vote {
+  min-height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.watch__tape-vote--mine { background: #e61e2a; }
+
+/* ── Micro-prédiction (le meta-game du gradin) ── */
+.watch__predict {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 88px;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(10, 10, 14, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.watch__predict-q { font-size: 14px; font-weight: 700; }
+.watch__predict-row { display: flex; gap: 8px; }
+.watch__predict-btn {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.watch__predict-btn:active { transform: scale(1.08); }
+.watch__predict-timer {
+  display: block;
+  height: 3px;
+  width: 100%;
+  border-radius: 2px;
+  background: #ffd23c;
+  transform-origin: left;
+  animation: watch-predict-timer 5s linear both;
+}
+@keyframes watch-predict-timer { to { transform: scaleX(0); } }
+[data-reduce-animations] .watch__predict-timer { animation: none; }
+.watch__predict-chip { font-size: 14px; color: #ffd23c; font-weight: 700; }
+.watch__predict-result { font-size: 15px; font-weight: 900; }
+.watch__predict-result--win { color: #4caf50; }
+.watch__predict-result--lose { color: #9a9aa3; }
+
+/* Halo vert : le prono vient de tomber juste. */
+.watch__board--halo {
+  filter: drop-shadow(0 0 22px rgba(76, 175, 80, 0.7));
+  transition: filter 0.15s ease;
+}
+
+.watch__oracle {
+  align-self: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffd23c;
+  padding-right: 2px;
+}
+
+/* ── Fins de vie : introuvable / abandon ── */
+.watch__gone-title { margin: 0; font-size: 20px; font-weight: 900; color: #fff; }
+.watch__gone-sub { margin: 0; font-size: 14px; text-align: center; }
+.watch__cta {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 22px;
+  border: none;
+  border-radius: 12px;
+  background: #e61e2a;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+}
+.watch__cta--ghost {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.watch__aborted {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(6, 6, 8, 0.9);
+  text-align: center;
+  padding: 24px;
+}
+.watch__aborted-title { margin: 0; font-size: 20px; font-weight: 900; color: #fff; }
+.watch__aborted-sub { margin: 0; color: #9a9aa3; }
+
 /* ── Jauge de Hype (agrégat des emotes, décroissance côté client) ── */
 .watch__hype {
   position: fixed;

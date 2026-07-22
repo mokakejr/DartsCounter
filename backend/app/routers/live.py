@@ -177,6 +177,22 @@ async def live_room(
                             },
                             respect_dnd=True,
                         )
+                elif etype == "VOTE":
+                    # Prono d'avant-match uniquement : une fois la première
+                    # fléchette lancée, les paris sont clos.
+                    player = data.get("player")
+                    if match.started or match.finished or player not in match.players:
+                        continue
+                    match.votes[name] = player
+                    await live.broadcast(
+                        match,
+                        {
+                            "event": "VOTE_UPDATE",
+                            "match_id": match.id,
+                            "counts": live.vote_counts(match),
+                        },
+                        respect_dnd=True,
+                    )
             # Anything else: silently dropped (role segregation, 11.1).
     except WebSocketDisconnect:
         pass

@@ -141,6 +141,9 @@ async def live_room(
                         respect_dnd=True,
                     )
                 elif etype == "EMOTE":
+                    # Drop silencieux : un spammeur n'obtient aucun feedback.
+                    if not live.check_emote(match, name):
+                        continue
                     emote = str(data.get("emote", ""))[:8]
                     # Players in Focus mode (DND) are skipped (12.2).
                     await live.broadcast(
@@ -148,6 +151,18 @@ async def live_room(
                         {"event": "EMOTE", "match_id": match.id, "sender_id": name, "emote": emote},
                         respect_dnd=True,
                     )
+                    # La foule est en délire : agrégat serveur, tout le monde
+                    # rend le même moment (Jauge de Hype).
+                    if live.register_emote(match):
+                        await live.broadcast(
+                            match,
+                            {
+                                "event": "CROWD_HYPE",
+                                "match_id": match.id,
+                                "count": len(match._emote_times),
+                            },
+                            respect_dnd=True,
+                        )
             # Anything else: silently dropped (role segregation, 11.1).
     except WebSocketDisconnect:
         pass

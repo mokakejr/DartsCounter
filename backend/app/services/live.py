@@ -24,6 +24,15 @@ SPECTATOR_EVENTS = {"CHAT_MESSAGE", "EMOTE"}
 
 CHAT_MAX_LEN = 60
 CHAT_COOLDOWN_SECONDS = 3.0
+# Le client throttle déjà à 1 s (WatchGame) : 0.8 s côté serveur ne rejette
+# jamais un client honnête, seulement les scripts qui contournent l'UI.
+EMOTE_COOLDOWN_SECONDS = 0.8
+# La Jauge de Hype : N emotes (tous spectateurs confondus) dans la fenêtre
+# glissante -> la foule est en délire (CROWD_HYPE), avec un refroidissement
+# pour ne pas re-déclencher en boucle sur la même vague.
+HYPE_WINDOW_SECONDS = 10.0
+HYPE_THRESHOLD = 8
+HYPE_COOLDOWN_SECONDS = 30.0
 MATCH_TTL_SECONDS = 2 * 3600  # idle matches (suppression définitive)
 STALE_AFTER_SECONDS = 15 * 60  # sans activité de JEU -> clôturé (réversible)
 FINISHED_TTL_SECONDS = 3600  # keep the chat readable for the Vestiaire (14.3)
@@ -61,6 +70,10 @@ class LiveMatch:
     dnd: set[str] = field(default_factory=set)
     chat: deque = field(default_factory=lambda: deque(maxlen=200))
     _last_chat: dict[str, float] = field(default_factory=dict)
+    _last_emote: dict[str, float] = field(default_factory=dict)
+    # Horodatages des emotes acceptées (fenêtre de hype glissante).
+    _emote_times: deque = field(default_factory=lambda: deque(maxlen=200))
+    _last_hype: float = 0.0
     # name -> socket for players; set of sockets for spectators
     player_sockets: dict[str, WebSocket] = field(default_factory=dict)
     spectator_sockets: set = field(default_factory=set)
@@ -181,6 +194,30 @@ def check_chat(match: LiveMatch, sender: str, message: str) -> str | None:
         return None
     match._last_chat[sender] = now
     return message
+
+
+def check_emote(match: LiveMatch, sender: str) -> bool:
+    """Rate limit strict côté serveur (le throttle client est contournable).
+    NB: les emotes ne touchent PAS last_activity — seule l'activité de jeu
+    maintient un match en vie (contrat de close_stale_matches)."""
+    now = time.time()
+    if now - match._last_emote.get(sender, 0) < EMOTE_COOLDOWN_SECONDS:
+        return False
+    match._last_emote[sender] = now
+    return True
+
+
+def register_emote(match: LiveMatch) -> bool:
+    """Enregistre une emote acceptée dans la fenêtre glissante. Retourne True
+    quand la foule vient de passer en délire (il faut broadcaster CROWD_HYPE)."""
+    now = time.time()
+    match._emote_times.append(now)
+    while match._emote_times and now - match._emote_times[0] > HYPE_WINDOW_SECONDS:
+        match._emote_times.popleft()
+    if len(match._emote_times) >= HYPE_THRESHOLD and now - match._last_hype > HYPE_COOLDOWN_SECONDS:
+        match._last_hype = now
+        return True
+    return False
 
 
 def apply_player_event(match: LiveMatch, sender: str, event: dict) -> bool:

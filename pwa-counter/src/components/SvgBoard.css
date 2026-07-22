@@ -32,6 +32,21 @@
 }
 [data-reduce-animations] .svgboard__sector--target { animation: none; }
 
+/* Balle de match (gradins) : pulse doré lent, sans assombrir le reste */
+.svgboard__sector--gold path,
+.svgboard__sector--gold circle {
+  animation: svgboard-gold 1.6s ease-in-out infinite;
+}
+@keyframes svgboard-gold {
+  50% { filter: brightness(1.9) saturate(1.4) drop-shadow(0 0 6px #ffd23c); }
+}
+[data-reduce-animations] .svgboard__sector--gold path,
+[data-reduce-animations] .svgboard__sector--gold circle {
+  animation: none;
+  /* Fallback statique : la zone reste désignée même sans animation */
+  filter: brightness(1.5) drop-shadow(0 0 4px #ffd23c);
+}
+
 /* Segment sélectionné (tap 1) */
 .svgboard__sector--picked path,
 .svgboard__sector--picked circle {

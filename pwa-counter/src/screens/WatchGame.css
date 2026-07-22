@@ -42,6 +42,25 @@
   min-height: 20px;
 }
 
+/* ── Balle de match : le spotlight ─────────────────────── */
+/* Le fond s'assombrit, la cible reçoit un halo doré, le statut vibre. */
+.watch--matchpoint {
+  background: radial-gradient(ellipse at 50% 30%, #16161c 0%, #060608 75%);
+}
+.watch--matchpoint .watch__board {
+  filter: drop-shadow(0 0 24px rgba(255, 210, 60, 0.35));
+}
+.watch__status--mp {
+  color: #ffd23c;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  animation: watch-mp-breathe 1.8s ease-in-out infinite;
+}
+@keyframes watch-mp-breathe {
+  50% { opacity: 0.8; transform: scale(1.02); }
+}
+[data-reduce-animations] .watch__status--mp { animation: none; }
+
 .watch__scores {
   display: flex;
   flex-direction: column;

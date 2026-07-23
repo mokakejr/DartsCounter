@@ -245,6 +245,17 @@ export default function HalveItGame() {
         <span className="hi__player-total">{currentScore} pts</span>
       </div>
 
+      {/* Score table — remontée sous le joueur courant et scrollable, pour voir
+          le score de tous les joueurs à chaque instant (comme le 51). */}
+      <div className="hi__scores">
+        {players.map((name, i) => (
+          <div key={name} className={`hi__row${i === player ? ' hi__row--active' : ''}`}>
+            <span className="hi__row-name">{censorName(name)}</span>
+            <span className="hi__row-val">{game.scores[i]}</span>
+          </div>
+        ))}
+      </div>
+
       {/* Score entry display */}
       <div className={`hi__display${willHalve ? ' hi__display--halve' : points > 0 ? ' hi__display--ok' : ''}`}>
         <span className="hi__display-num">{input || '0'}</span>
@@ -279,16 +290,6 @@ export default function HalveItGame() {
       {!remote && (
         <button className="hi__undo" onClick={undo} disabled={history.length === 0}>⟲ Annuler</button>
       )}
-
-      {/* Score table */}
-      <div className="hi__scores">
-        {players.map((name, i) => (
-          <div key={name} className={`hi__row${i === player ? ' hi__row--active' : ''}`}>
-            <span className="hi__row-name">{censorName(name)}</span>
-            <span className="hi__row-val">{game.scores[i]}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

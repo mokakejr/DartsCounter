@@ -409,6 +409,26 @@ export default function ShanghaiGame() {
         <span className="sg__player-total">{totalScore(game, player)} pts</span>
       </div>
 
+      {/* Score table — remontée sous le joueur courant et scrollable, pour voir
+          le score de tous les joueurs à chaque instant (comme le 51 / Cricket). */}
+      <div className="sg__scores">
+        {rankings.map(({ name, i, total }) => (
+          <div
+            key={name}
+            className={`sg__score-row${i === player && phase === 'playing' ? ' sg__score-row--active' : ''}`}
+          >
+            <span className="sg__score-name">{censorName(name)}</span>
+            <div className="sg__score-bar-track">
+              <div
+                className="sg__score-bar-fill"
+                style={{ width: `${(total / maxScore) * 100}%` }}
+              />
+            </div>
+            <span className="sg__score-pts">{total}</span>
+          </div>
+        ))}
+      </div>
+
       {/* Dart slots */}
       <div className="sg__darts">
         {[0, 1, 2].map(i => {
@@ -470,25 +490,6 @@ export default function ShanghaiGame() {
       ) : (
         <div className="sg__undo-placeholder" />
       )}
-
-      {/* Score table */}
-      <div className="sg__scores">
-        {rankings.map(({ name, i, total }) => (
-          <div
-            key={name}
-            className={`sg__score-row${i === player && phase === 'playing' ? ' sg__score-row--active' : ''}`}
-          >
-            <span className="sg__score-name">{censorName(name)}</span>
-            <div className="sg__score-bar-track">
-              <div
-                className="sg__score-bar-fill"
-                style={{ width: `${(total / maxScore) * 100}%` }}
-              />
-            </div>
-            <span className="sg__score-pts">{total}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

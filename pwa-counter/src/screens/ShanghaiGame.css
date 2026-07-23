@@ -257,17 +257,21 @@
 .sg__undo-placeholder { height: clamp(42px, 6svh, 48px); margin-bottom: 0; flex-shrink: 0; }
 
 /* ── Score table ────────────────────────────────────── */
-/* Seule zone qui scrolle (comme .cg__board-wrap) : header/board/zones/
-   SUIVANT/annuler restent toujours visibles, seule la liste des scores
-   cède si elle ne tient pas (beaucoup de joueurs / petit écran). */
+/* Remontée sous le joueur courant (comme .f51__scores / .cg__board-wrap) et
+   toujours visible : on voit le score de tous les joueurs à chaque instant.
+   Hauteur bornée + overflow-y : au-delà de ~3 joueurs la liste scrolle en
+   interne sans pousser les zones / SUIVANT hors écran. */
 .sg__scores {
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex: 1;
-  min-height: 40px;
+  flex-shrink: 0;
+  margin-bottom: 8px;
+  max-height: clamp(84px, 18svh, 200px);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 .sg__score-row {
   display: grid;
@@ -395,7 +399,7 @@
 /* Bornée par la hauteur d'écran (comme le 51, FiftyOneGame.css:18) pour que
    le reste (zones, SUIVANT, scores) reste visible sans scroller sur un
    téléphone standard. */
-.sg__board .svgboard { width: min(62vw, 25svh, 280px); }
+.sg__board .svgboard { width: min(62vw, 22svh, 260px); }
 
 /* ── Verrouillage hors tour (Epic 13.2) — même pattern que le 51 ─────── */
 .sg__remote-overlay {

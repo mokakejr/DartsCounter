@@ -18,7 +18,8 @@
 .hi__header {
   width: 100%;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 0 8px;
+  padding: 10px 0 6px;
+  flex-shrink: 0;
 }
 .hi__back {
   width: 36px; height: 36px;
@@ -34,11 +35,12 @@
 
 /* ── Target circle ──────────────────────────────────── */
 .hi__target {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  margin: 12px 0 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  margin: 8px 0 6px;
+  flex-shrink: 0;
 }
 .hi__target-ring {
-  min-width: 96px; height: 96px; padding: 0 10px;
+  min-width: clamp(56px, 8svh, 92px); height: clamp(56px, 8svh, 92px); padding: 0 10px;
   border-radius: 48px;
   border: 3px solid var(--primary);
   box-shadow: 0 0 24px color-mix(in srgb, var(--primary) 30%, transparent);
@@ -46,7 +48,7 @@
 }
 .hi__target-num {
   font-family: var(--font-display);
-  font-size: 30px;
+  font-size: clamp(24px, 4svh, 30px);
   line-height: 1;
   color: var(--text);
 }
@@ -55,23 +57,25 @@
 /* ── Current player ─────────────────────────────────── */
 .hi__player {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 }
-.hi__player-name { font-size: 26px; font-weight: 700; color: var(--text); }
+.hi__player-name { font-size: clamp(20px, 3svh, 26px); font-weight: 700; color: var(--text); }
 .hi__player-total { font-size: 13px; color: var(--muted); }
 
 /* ── Score entry display ────────────────────────────── */
 .hi__display {
   width: 100%;
   display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 16px; margin-bottom: 12px;
+  padding: clamp(10px, 2svh, 16px); margin-bottom: 8px;
   background: var(--surface); border: 2px solid var(--border);
   border-radius: 12px;
   transition: border-color 0.15s;
+  flex-shrink: 0;
 }
 .hi__display--ok { border-color: var(--win); }
 .hi__display--halve { border-color: var(--rank-1); }
-.hi__display-num { font-family: var(--font-display); font-size: 48px; line-height: 1; }
+.hi__display-num { font-family: var(--font-display); font-size: clamp(34px, 6svh, 48px); line-height: 1; }
 .hi__display-hint { font-size: 13px; color: var(--muted); text-align: center; }
 .hi__display--ok .hi__display-hint { color: var(--win); }
 .hi__display--halve .hi__display-hint { color: var(--rank-1); font-weight: 700; }
@@ -80,10 +84,11 @@
 .hi__pad {
   width: 100%;
   display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 8px; margin-top: auto;
+  gap: 6px; margin-top: auto;
+  flex-shrink: 0;
 }
 .hi__key {
-  padding: 18px;
+  padding: clamp(11px, 1.9svh, 18px);
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 10px; font-family: inherit;
   font-size: 22px; font-weight: 600; color: var(--text);
@@ -100,8 +105,9 @@
 /* ── Undo ───────────────────────────────────────────── */
 .hi__undo {
   width: 100%;
-  height: 48px;
-  margin-top: 10px;
+  height: clamp(40px, 6svh, 48px);
+  margin-top: 8px;
+  flex-shrink: 0;
   background: var(--surface);
   border: 1px solid #333333;
   border-radius: 8px;
@@ -121,10 +127,18 @@
 }
 
 /* ── Score table ────────────────────────────────────── */
+/* Remontée sous le joueur courant et toujours visible (comme .f51__scores) :
+   hauteur bornée + overflow-y pour voir le score de tous les joueurs à chaque
+   instant sans pousser le pavé numérique / SUIVANT hors écran. */
 .hi__scores {
   width: 100%;
   display: flex; flex-direction: column; gap: 8px;
-  margin-top: 12px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+  max-height: clamp(56px, 11svh, 132px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 .hi__row {
   display: flex; align-items: center; justify-content: space-between;

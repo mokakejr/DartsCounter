@@ -126,7 +126,7 @@ export default function PlaySetup() {
       .then(stats => {
         const top = [...stats]
           .sort((a, b) => b.games - a.games)
-          .slice(0, 4)
+          .slice(0, 5)
           .map(p => p.name);
         setTopPlayers(top);
       })
@@ -327,7 +327,7 @@ export default function PlaySetup() {
         )}
       </div>
 
-      {/* Quick-pick — top 4 most-played players */}
+      {/* Quick-pick — top 5 most-played players */}
       {topPlayers.length > 0 && !search && (
         <div className="play-setup__quick">
           <p className="play-setup__quick-label">FRÉQUENTS</p>

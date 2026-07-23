@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models import EloHistory, Game, GamePlayer, Player, PlayerRating
 from app.models.elo import GLOBAL_SCOPE, elo_scope_for
-from app.models.game import STATUS_COMPLETED, STATUS_PENDING_REVIEW
+from app.models.game import SOLO_MODES, STATUS_COMPLETED, STATUS_PENDING_REVIEW
 from app.schemas.game import GameCreate, GamePlayerRead, GameRead
 from app.services.anticheat import TRUST_GAME_COMPLETED, bump_trust, detect_outlier
 from app.services.elo import recompute_elo
@@ -52,6 +52,10 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
     if existing is not None:
         return _to_game_read(existing), False
 
+    # Entraînement solo (1 joueur) : aucune victoire n'est comptée — pas de
+    # winner_id persisté, pas de bonus XP de victoire, pas de série de victoires.
+    solo = payload.mode in SOLO_MODES
+
     game = Game(
         id=game_id,
         date=payload.date,
@@ -79,7 +83,7 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
                 position=position,
             )
         )
-        if is_winner:
+        if is_winner and not solo:
             game.winner_id = player.id
         game_players_read.append(GamePlayerRead(name=name, score=score, position=position))
 
@@ -89,7 +93,10 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
     for name, player in players_by_name.items():
         darts = darts_by_name.get(name, 0)
         apply_game_to_player(
-            player, payload.date, is_victory=name == payload.winner, darts_total=int(darts or 0)
+            player,
+            payload.date,
+            is_victory=name == payload.winner and not solo,
+            darts_total=int(darts or 0),
         )
 
     score_direction = await get_score_direction_map(session) if not payload.is_casual else {}
@@ -166,7 +173,7 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
         mode=payload.mode,
         variant=payload.variant,
         duration=payload.duration,
-        winner=payload.winner,
+        winner=None if solo else payload.winner,
         is_casual=payload.is_casual,
         status=game.status,
         extra=payload.extra,

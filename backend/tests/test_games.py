@@ -94,6 +94,31 @@ async def test_casual_game_excluded_from_leaderboard_games_count(client):
     assert alice["wins"] == 1
 
 
+async def test_solo_training_records_no_victory(client):
+    # Entraînement solo (Bob27, 1 joueur) : aucune victoire comptée — le joueur
+    # solo « gagne » trivialement mais rien ne doit l'enregistrer.
+    resp = await client.post("/auth/signup", json={"name": "Solo", "password": "hunter22"})
+    solo = {"Authorization": f"Bearer {resp.json()['access_token']}"}
+
+    body = (await client.post("/games", json={
+        "date": "2026-07-03T10:00:00Z",
+        "mode": "Bob27",
+        "players": ["Solo"],
+        "scores": [27],
+        "winner": "Solo",
+        "is_casual": True,
+    })).json()
+    # Pas de vainqueur enregistré, ni dans la réponse ni en base.
+    assert body["winner"] is None
+    stored = (await client.get("/games")).json()[0]
+    assert stored["winner"] is None
+
+    # Pas de bonus XP de victoire (+30) : base 50 × 1.1 (série 1) = 55,
+    # et non (50 + 30) × 1.1 = 88.
+    me = (await client.get("/players/me", headers=solo)).json()
+    assert me["ferveur_xp"] == 55
+
+
 async def test_list_games_ordered_newest_first(client):
     for day in (1, 2, 3):
         await client.post("/games", json={**BASE_GAME, "date": f"2026-01-0{day}T10:00:00Z"})

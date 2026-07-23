@@ -20,6 +20,11 @@ STATUS_COMPLETED = "COMPLETED"
 STATUS_PENDING_REVIEW = "PENDING_REVIEW"
 STATUS_VOIDED = "VOIDED"
 
+# Modes solo (1 joueur, entraînement) — jamais annoncés par webhook et sans
+# victoire comptée. Le front envoie ces libellés exacts (Bob27Game /
+# RoundTheClockGame).
+SOLO_MODES = {"Bob27", "RoundTheClock"}
+
 
 class Game(Base):
     __tablename__ = "games"

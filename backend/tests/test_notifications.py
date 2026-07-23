@@ -186,6 +186,18 @@ async def test_casual_game_is_announced_without_elo(client, fake_httpx):
     assert "(+" not in score_lines
 
 
+async def test_solo_training_game_not_announced(client, fake_httpx):
+    await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
+
+    # Un entraînement solo (Bob27, 1 joueur) ne doit déclencher aucun webhook.
+    resp = await client.post("/games", json={
+        **GAME, "mode": "Bob27", "variant": None,
+        "players": ["Alice"], "scores": [27], "winner": "Alice", "is_casual": True,
+    })
+    assert resp.status_code == 201
+    assert fake_httpx.calls == []
+
+
 async def test_pending_review_game_is_announced_with_mention(client, fake_httpx):
     await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
 

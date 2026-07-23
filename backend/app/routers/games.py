@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_db
 from app.core.security import get_current_player
 from app.models import Player
-from app.models.game import STATUS_COMPLETED, STATUS_PENDING_REVIEW
+from app.models.game import SOLO_MODES, STATUS_COMPLETED, STATUS_PENDING_REVIEW
 from app.schemas.game import GameAdjudication, GameCreate, GameRead, GameReport
 from app.services import games as games_service
 from app.services import tribunal as tribunal_service
@@ -22,9 +22,10 @@ async def create_game(
     session: AsyncSession = Depends(get_db),
 ) -> GameRead:
     game, created = await games_service.create_game(session, payload)
-    if created:
+    if created and game.mode not in SOLO_MODES:
         # Own DB session, not the request's — by the time background tasks
         # run the request's session (Depends(get_db)) has already closed.
+        # Les entraînements solo ne déclenchent aucune notification.
         background_tasks.add_task(dispatch_game_finished, game)
     return game
 

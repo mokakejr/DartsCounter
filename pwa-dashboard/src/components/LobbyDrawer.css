@@ -21,20 +21,35 @@
 }
 [data-reduce-animations] .lobby-drawer__handle { animation: none; }
 
-/* Le tiroir : bottom sheet plein écran, scroll interne. */
+/* Le tiroir a deux vies :
+   - fermé : il reste dans le flux de la page, donc le lobby scrolle
+     normalement du Hero vers le classement, le feed, etc. ;
+   - ouvert : il redevient une bottom sheet plein écran à scroll interne,
+     raccourci pour sauter au hub sans dérouler la page. */
 .lobby-drawer {
+  position: relative;
+  background: var(--bg, #0a0a0c);
+}
+
+.lobby-drawer.is-open {
   position: fixed;
   inset: 0;
   z-index: 47; /* sous le nav (50), au-dessus du ticker (45) et du chevron */
-  background: var(--bg, #0a0a0c);
-  transform: translateY(100%);
-  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0.24, 1);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-top: 34px; /* place pour le chevron de fermeture */
+  animation: drawer-rise 0.35s cubic-bezier(0.32, 0.72, 0.24, 1);
 }
-.lobby-drawer.is-open { transform: translateY(0); }
-[data-reduce-animations] .lobby-drawer { transition: none; }
+/* On passe de `relative` à `fixed` : transform n'est pas interpolable entre
+   les deux, d'où une keyframe plutôt qu'une transition. */
+@keyframes drawer-rise {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+[data-reduce-animations] .lobby-drawer.is-open { animation: none; }
+
+/* Rien à fermer quand le tiroir est simplement la suite de la page. */
+.lobby-drawer:not(.is-open) .lobby-drawer__close { display: none; }
 
 .lobby-drawer__close {
   position: sticky;

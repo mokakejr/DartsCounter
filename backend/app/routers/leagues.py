@@ -260,6 +260,43 @@ async def league_pantheon(
     ]
 
 
+@router.get("/{league_id}/palmares")
+async def league_palmares(
+    league_id: uuid.UUID,
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    """Classements figés des saisons passées de la ligue, la plus récente
+    d'abord. Le 1er de chaque saison est son Champion de Ligue."""
+    league = await _get_league_or_404(session, league_id)
+    _require_member(league, player)
+    from app.services import seasons as seasons_service
+
+    palmares = await seasons_service.get_palmares(session, league_id)
+    return [
+        {
+            "season_id": season.id,
+            "season_name": season.name,
+            "start_date": season.start_date,
+            "end_date": season.end_date,
+            "champion": next((_player_ref(r.player) for r in rows if r.is_champion), None),
+            "standings": [
+                {
+                    "position": r.position,
+                    "player": _player_ref(r.player),
+                    "rating": r.rating,
+                    "games": r.games,
+                    "wins": r.wins,
+                    "rank": r.rank_label,
+                    "is_champion": r.is_champion,
+                }
+                for r in rows
+            ],
+        }
+        for season, rows in palmares
+    ]
+
+
 @router.get("/{league_id}/disputes")
 async def league_disputes(
     league_id: uuid.UUID,

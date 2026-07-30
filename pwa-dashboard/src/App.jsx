@@ -20,6 +20,7 @@ import TrophiesPage from './routes/TrophiesPage.jsx';
 import XpGuide from './routes/XpGuide.jsx';
 import RankGuide from './routes/RankGuide.jsx';
 import Leagues from './routes/Leagues.jsx';
+import Palmares from './routes/Palmares.jsx';
 import Welcome from './routes/Welcome.jsx';
 import Login from './routes/Login.jsx';
 import MyProfile from './routes/MyProfile.jsx';
@@ -229,6 +230,7 @@ function AppInner() {
             <NavLink to="/profils" className={({ isActive }) => isActive ? 'is-active' : undefined}>Joueurs</NavLink>
             <NavLink to="/trophees" className={({ isActive }) => isActive ? 'is-active' : undefined}>Trophées</NavLink>
             <NavLink to="/ligues" className={({ isActive }) => isActive ? 'is-active' : undefined}>Ligues</NavLink>
+            <NavLink to="/palmares" className={({ isActive }) => isActive ? 'is-active' : undefined}>Palmarès</NavLink>
             <NavLink to="/tournois" className={({ isActive }) => isActive ? 'is-active' : undefined}>
               Tournois{openTournaments > 0 && <span className="nav__badge">{openTournaments}</span>}
             </NavLink>
@@ -262,6 +264,7 @@ function AppInner() {
         <Route path="/rangs" element={<RankGuide />} />
         <Route path="/tournois" element={<Tournois profiles={profiles} />} />
         <Route path="/ligues" element={<Leagues knownPlayers={knownPlayers} />} />
+        <Route path="/palmares" element={<Palmares />} />
         <Route path="/login" element={<Login />} />
         <Route path="/profile" element={<MyProfile />} />
         <Route path="/admin" element={<Admin />} />

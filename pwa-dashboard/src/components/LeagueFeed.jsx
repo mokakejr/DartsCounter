@@ -12,6 +12,8 @@ const EVENT_TITLES = {
   STREAK_BROKEN: 'FIN DE SÉRIE !',
   PHENIX: 'LE PHÉNIX !',
   REMONTADA: 'LA REMONTADA !',
+  SEASON_END: 'FIN DE SAISON !',
+  TOURNAMENT_END: 'TOURNOI TERMINÉ !',
 };
 
 function PlayerLink({ p }) {

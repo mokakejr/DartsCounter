@@ -176,6 +176,7 @@ export default function FiftyOneGame() {
         winner: players[scored.winner],
         startedAt: startedAt.current,
         isCasual,
+        liveId,
         extra: { darts: dartsThrown.current },
       });
       setGame(scored);

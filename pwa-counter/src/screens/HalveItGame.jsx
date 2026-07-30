@@ -133,6 +133,7 @@ export default function HalveItGame() {
         winner: win !== null ? players[win] : '',
         startedAt: startedAt.current,
         isCasual: true,
+        liveId,
       });
     } else {
       emit({ event: 'TURN_CHANGED', player: players[scored.currentPlayer], round: scored.currentRound + 1 });

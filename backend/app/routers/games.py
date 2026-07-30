@@ -26,7 +26,7 @@ async def create_game(
         # Own DB session, not the request's — by the time background tasks
         # run the request's session (Depends(get_db)) has already closed.
         # Les entraînements solo ne déclenchent aucune notification.
-        background_tasks.add_task(dispatch_game_finished, game)
+        background_tasks.add_task(dispatch_game_finished, game, payload.live_match_id)
     return game
 
 

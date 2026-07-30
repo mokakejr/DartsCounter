@@ -28,6 +28,11 @@ class Settings(BaseSettings):
 
     # Linked from notification messages ("voir toutes les stats").
     dashboard_url: str = "http://localhost:5174"
+    # Base de l'URL spectateur ({counter_url}/watch/{match_id}) mise dans la
+    # carte d'annonce de début de partie. Même valeur que le VITE_COUNTER_URL
+    # du dashboard, qui construit déjà ce lien pour sa barre LIVE — d'où le
+    # 5175 par défaut, le port du compteur dans docker-compose.local.yml.
+    counter_url: str = "http://localhost:5175"
 
     # Fallback webhook URLs used when no DB-configured WebhookTarget exists yet
     # for that target — same env var names as the old GitHub Actions secrets,

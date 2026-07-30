@@ -216,7 +216,7 @@ def test_stale_match_auto_closes_then_revives_on_play():
 
     match = live.create_match("FiftyOne", ["Leo", "Theo"])
     match.last_activity = time.time() - 16 * 60
-    assert asyncio.run(live.close_stale_matches()) == 1
+    assert [m.id for m in asyncio.run(live.close_stale_matches())] == [match.id]
     assert match.finished is True and match.aborted is True
     # Sortie du carousel, mais toujours consultable.
     assert live.list_matches() == []

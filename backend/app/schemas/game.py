@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class GameCreate(BaseModel):
@@ -18,6 +18,10 @@ class GameCreate(BaseModel):
     # Generic per-mode metadata bag (e.g. Bob's 27's rounds_completed/busted) —
     # preserved via raw_data without every mode needing its own typed fields.
     extra: dict[str, Any] | None = None
+    # Match live (Epic 11) auquel cette partie correspond. Sert uniquement à
+    # poster le résultat en réponse dans le fil Chat ouvert à son lancement —
+    # exclu du dump, il n'a rien à faire dans raw_data.
+    live_match_id: str | None = Field(default=None, exclude=True)
 
     @model_validator(mode="after")
     def _check_consistency(self) -> "GameCreate":

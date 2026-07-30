@@ -1,4 +1,8 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
+from urllib.parse import parse_qsl, urlsplit
+
+import pytest
 
 from app.services.recap import summarize_week
 from app.workers.scheduler import _week_bounds
@@ -318,3 +322,207 @@ async def test_weekly_recap_stays_on_global_targets(client, fake_httpx):
 
     # Le récap hebdo reste sur le canal global, pas sur les webhooks de ligue.
     assert [u for u, _ in fake_httpx.calls] == ["https://discord.example/x"]
+
+
+# ─── Fil de discussion : début de partie + résultat en réponse ────────────────
+
+
+LIVE_MATCH = {"mode": "Cricket", "players": ["Alice", "Bob"], "options": {"isCasual": False}}
+
+
+@pytest.fixture
+def instant_announce(monkeypatch):
+    """Neutralise le délai anti-faux-départ pour que l'annonce parte tout de
+    suite dans les tests."""
+    monkeypatch.setattr("app.services.notifications.ANNOUNCE_DELAY_SECONDS", 0)
+
+
+async def _start_live_match(client, body=None):
+    resp = await client.post("/live/matches", json=body or LIVE_MATCH)
+    assert resp.status_code == 201
+    # L'annonce part dans une tâche de fond : on lui laisse la main.
+    await asyncio.sleep(0.05)
+    return resp.json()
+
+
+def test_threaded_url_preserves_existing_query_params():
+    from app.services.targets.google_chat import _threaded_url
+
+    url = _threaded_url("https://chat.googleapis.com/v1/spaces/AAA/messages?key=k1&token=t1")
+    parsed = dict(parse_qsl(urlsplit(url).query))
+    assert parsed["key"] == "k1"
+    assert parsed["token"] == "t1"
+    assert parsed["messageReplyOption"] == "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD"
+
+
+async def test_game_start_announced_with_watch_link(client, fake_httpx, instant_announce):
+    await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
+
+    match = await _start_live_match(client)
+
+    assert len(fake_httpx.calls) == 1
+    url, body = fake_httpx.calls[0]
+    assert "messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD" in url
+    assert body["thread"]["threadKey"]
+    card = body["cardsV2"][0]["card"]
+    assert "ÇA COMMENCE" in card["header"]["title"]
+    assert "Alice vs Bob" in card["header"]["subtitle"]
+    buttons = card["sections"][-1]["widgets"][-1]["buttonList"]["buttons"]
+    assert buttons[0]["onClick"]["openLink"]["url"].endswith(f"/watch/{match['id']}")
+
+
+async def test_result_is_posted_as_a_reply_in_the_game_thread(client, fake_httpx, instant_announce):
+    await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
+
+    match = await _start_live_match(client)
+    _, start_body = fake_httpx.calls[0]
+
+    resp = await client.post("/games", json={**GAME, "live_match_id": match["id"]})
+    assert resp.status_code == 201
+
+    assert len(fake_httpx.calls) == 2
+    _, result_body = fake_httpx.calls[1]
+    assert result_body["thread"]["threadKey"] == start_body["thread"]["threadKey"]
+
+
+async def test_game_without_live_match_is_not_threaded(client, fake_httpx):
+    await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
+
+    # Partie remontée par la file offline : aucun match live, donc aucun fil.
+    resp = await client.post("/games", json=GAME)
+    assert resp.status_code == 201
+
+    url, body = fake_httpx.calls[0]
+    assert "thread" not in body
+    assert url == "https://chat.example/x"
+
+
+async def test_rematch_within_the_window_reuses_the_thread():
+    from app.services import chat_threads
+
+    first = chat_threads.thread_key_for(["Alice", "Bob"], "match-1")
+    # Revanche immédiate, joueurs identiques (ordre indifférent).
+    assert chat_threads.thread_key_for(["Bob", "Alice"], "match-2") == first
+    # Un autre plateau ouvre son propre fil.
+    assert chat_threads.thread_key_for(["Alice", "Carol"], "match-3") != first
+
+
+async def test_thread_is_not_reused_after_the_grouping_window():
+    from app.services import chat_threads
+
+    first = chat_threads.thread_key_for(["Alice", "Bob"], "match-1")
+    entry = chat_threads._THREADS[frozenset({"Alice", "Bob"})]
+    entry["last_activity"] -= chat_threads.GROUP_WINDOW_SECONDS + 1
+
+    assert chat_threads.thread_key_for(["Alice", "Bob"], "match-2") != first
+
+
+async def test_casual_and_solo_matches_are_not_announced(client, fake_httpx, instant_announce):
+    await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
+
+    await _start_live_match(client, {**LIVE_MATCH, "options": {"isCasual": True}})
+    # Le front envoie le LIBELLÉ du mode au registre live, pas la clé en base.
+    await _start_live_match(client, {"mode": "Bob's 27", "players": ["Alice", "Bob"]})
+    await _start_live_match(client, {"mode": "Cricket", "players": ["Alice"]})
+
+    assert fake_httpx.calls == []
+
+
+async def test_false_start_is_never_announced(client, fake_httpx):
+    from app.services import live
+    from app.services.notifications import dispatch_game_started
+
+    await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
+    match = live.create_match("Cricket", ["Alice", "Bob"])
+
+    async def finish_during_the_delay():
+        await asyncio.sleep(0.01)
+        match.finished = True
+        match.aborted = True
+
+    await asyncio.gather(dispatch_game_started(match, delay=0.05), finish_during_the_delay())
+
+    assert fake_httpx.calls == []
+    # La réservation est rendue : une reprise du jeu pourra encore annoncer.
+    assert match.announced is False
+
+
+async def test_abandoned_match_closes_its_thread(client, fake_httpx, instant_announce):
+    from app.services import live
+    from app.services.notifications import dispatch_game_abandoned
+
+    await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
+    match_id = (await _start_live_match(client))["id"]
+    match = live.get_match(match_id)
+    _, start_body = fake_httpx.calls[0]
+
+    match.finished = True
+    match.aborted = True
+    await dispatch_game_abandoned(match)
+
+    assert len(fake_httpx.calls) == 2
+    _, body = fake_httpx.calls[1]
+    assert "interrompue" in body["text"]
+    assert body["thread"]["threadKey"] == start_body["thread"]["threadKey"]
+
+    # Les trois chemins de clôture peuvent se déclencher (abandon explicite,
+    # départ des joueurs, inactivité) : pas de doublon.
+    await dispatch_game_abandoned(match)
+    assert len(fake_httpx.calls) == 2
+
+
+async def test_explicit_abort_over_the_socket_closes_the_thread(client, fake_httpx, instant_announce):
+    """Le compteur émet MATCH_FINISHED{aborted:true} quand un joueur quitte
+    l'écran de jeu — c'est le chemin d'abandon le plus courant."""
+    from app.services import live
+    from app.services.notifications import dispatch_game_abandoned
+
+    await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
+    match = live.get_match((await _start_live_match(client))["id"])
+
+    live.apply_player_event(match, "Alice", {"event": "MATCH_FINISHED", "aborted": True})
+    assert match.aborted is True
+    await dispatch_game_abandoned(match)
+
+    assert len(fake_httpx.calls) == 2
+    assert "interrompue" in fake_httpx.calls[1][1]["text"]
+
+
+async def test_abandon_is_silent_when_the_start_was_never_announced(client, fake_httpx):
+    from app.services import live
+    from app.services.notifications import dispatch_game_abandoned
+
+    await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
+    match = live.create_match("Cricket", ["Alice", "Bob"])
+
+    await dispatch_game_abandoned(match)
+
+    assert fake_httpx.calls == []
+
+
+async def test_discord_only_posts_the_result(client, fake_httpx, instant_announce):
+    await client.post("/webhooks", json={"target": "discord", "url": "https://discord.example/x"})
+
+    match = await _start_live_match(client)
+    assert fake_httpx.calls == []  # Discord ne sait pas répondre en fil : on n'annonce pas
+
+    await client.post("/games", json={**GAME, "live_match_id": match["id"]})
+    assert len(fake_httpx.calls) == 1
+    _, body = fake_httpx.calls[0]
+    assert "embeds" in body and "thread" not in body
+
+
+async def test_rank_change_shown_on_the_result_card(client, fake_httpx):
+    from app.services.targets.google_chat import _game_finished_body
+
+    body = _game_finished_body({
+        "mode": "Cricket",
+        "players": ["Alice", "Bob"],
+        "scores": [10, 20],
+        "winner": "Alice",
+        "duration": 120,
+        "elo": {"Alice": {"before": 10182, "after": 10200, "delta": 18}},
+        "rank_changes": {"Alice": {"rank": "Diamant I", "up": True}},
+    })
+    score_lines = body["cardsV2"][0]["card"]["sections"][0]["widgets"][0]["textParagraph"]["text"]
+    assert "⬆️" in score_lines and "Diamant I" in score_lines

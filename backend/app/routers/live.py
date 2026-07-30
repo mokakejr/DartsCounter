@@ -13,6 +13,7 @@ from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconn
 from pydantic import BaseModel, Field
 
 from app.services import live
+from app.services.notifications import dispatch_game_abandoned, dispatch_game_started
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,10 @@ async def create_live_match(payload: LiveMatchCreate) -> dict:
     match = live.create_match(
         payload.mode, payload.players, payload.remote, payload.variant, payload.options
     )
+    # Une partie locale est live dès sa création ; une partie à distance
+    # attend les « Prêt » du sas et sera annoncée au MATCH_STARTED.
+    if match.started:
+        asyncio.create_task(dispatch_game_started(match))
     return live.to_dict(match)
 
 
@@ -67,6 +72,7 @@ async def ready_live_match(match_id: str, payload: ReadyPayload) -> dict:
     await live.broadcast(match, {"event": "READY", "match_id": match.id, "player_id": payload.name})
     if just_started:
         await live.broadcast(match, {"event": "MATCH_STARTED", "match_id": match.id})
+        asyncio.create_task(dispatch_game_started(match))
     return live.to_dict(match)
 
 
@@ -118,12 +124,17 @@ async def live_room(
                 payload = {**data, "match_id": match.id, "player_id": data.get("player") or name}
                 if etype == "READY" and accepted:
                     await live.broadcast(match, {"event": "MATCH_STARTED", "match_id": match.id})
+                    asyncio.create_task(dispatch_game_started(match))
                 elif etype == "DND":
                     pass  # private toggle, nothing to broadcast
                 else:
                     # Game deltas go to everyone (players need the handover,
                     # spectators the show).
                     await live.broadcast(match, payload)
+                    # Abandon explicite (le joueur quitte l'écran de jeu) :
+                    # aucune partie ne sera enregistrée, on referme le fil.
+                    if etype == "MATCH_FINISHED" and match.aborted:
+                        await dispatch_game_abandoned(match)
 
             elif role == live.ROLE_SPECTATOR and etype in live.SPECTATOR_EVENTS:
                 if etype == "CHAT_MESSAGE":
@@ -172,3 +183,7 @@ async def _finish_if_abandoned(match, grace_seconds: int = 60) -> None:
         match.aborted = True
         match.touch()
         await live.broadcast(match, {"event": "MATCH_FINISHED", "match_id": match.id, "aborted": True})
+        # Pas de message de clôture ici : perdre les sockets 60 s arrive pour
+        # un téléphone en veille alors que la partie continue sur la table.
+        # Le fil sera refermé par l'abandon explicite ou par l'inactivité de
+        # 15 min, deux signaux qui, eux, ne trompent pas.

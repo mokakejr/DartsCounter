@@ -67,6 +67,19 @@ async def client() -> AsyncIterator[AsyncClient]:
 
 
 @pytest.fixture(autouse=True)
+def _clean_live_state():
+    """Le registre des matchs live et celui des fils Chat sont en mémoire et
+    donc globaux — un test qui les laisse remplis en contaminerait un autre."""
+    from app.services import chat_threads, live
+
+    live.MATCHES.clear()
+    chat_threads.reset()
+    yield
+    live.MATCHES.clear()
+    chat_threads.reset()
+
+
+@pytest.fixture(autouse=True)
 def _isolated_upload_dir(tmp_path, monkeypatch):
     """Image uploads (avatar/flight) would otherwise land in the real
     ./uploads dir next to the repo — point them at pytest's per-test tmp_path

@@ -243,6 +243,7 @@ export default function ShanghaiGame() {
       winner: win !== null ? players[win] : '',
       startedAt: startedAt.current,
       isCasual,
+      liveId,
       extra: { targets, darts: dartsThrown.current },
     });
     setGame(ng);

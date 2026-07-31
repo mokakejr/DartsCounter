@@ -188,6 +188,8 @@ export default function PlaySetup() {
         mode: MODE_LABEL[mode] ?? mode,
         players: selected,
         variant,
+        // Une partie amicale ne déclenche pas d'annonce de début côté webhook.
+        options: { isCasual },
       });
       liveId = live?.id ?? null;
     }

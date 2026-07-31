@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_db
 from app.schemas.webhook import WebhookConfigIn, WebhookConfigRead, WebhookTestIn
 from app.services import notifications, webhooks as webhooks_service
-from app.services.notifications import TEST_EVENT
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -27,7 +26,10 @@ async def test_webhook(payload: WebhookTestIn, session: AsyncSession = Depends(g
     if target is None:
         raise HTTPException(404, f"No URL configured for target '{payload.target}'")
     try:
-        await target.send(TEST_EVENT)
+        # Début puis résultat, dans le même fil : l'aperçu montre le
+        # comportement réel, pas juste une carte isolée.
+        for event in notifications.build_test_events():
+            await target.send(event)
     except Exception as exc:
         raise HTTPException(502, f"Failed to send test notification: {exc}") from exc
     return {"status": "sent"}

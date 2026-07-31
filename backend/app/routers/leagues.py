@@ -324,9 +324,9 @@ async def test_league_webhook(
     if not league.webhook_url:
         raise HTTPException(404, "No webhook URL configured for this league")
     try:
-        await notifications_service.target_for_url(league.webhook_url).send(
-            notifications_service.TEST_EVENT
-        )
+        target = notifications_service.target_for_url(league.webhook_url)
+        for event in notifications_service.build_test_events():
+            await target.send(event)
     except Exception as exc:
         raise HTTPException(502, f"Failed to send test notification: {exc}") from exc
     return {"status": "sent"}

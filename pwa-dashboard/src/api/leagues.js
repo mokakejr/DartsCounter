@@ -81,6 +81,11 @@ export function fetchPantheon(token, leagueId) {
   return apiGet(`/leagues/${leagueId}/pantheon`, {}, token);
 }
 
+// Classements figés des saisons passées, la plus récente d'abord.
+export function fetchPalmares(token, leagueId) {
+  return apiGet(`/leagues/${leagueId}/palmares`, {}, token);
+}
+
 export function setLeagueWebhook(token, leagueId, webhookUrl) {
   return apiPatch(`/leagues/${leagueId}/webhook`, { webhook_url: webhookUrl }, token);
 }

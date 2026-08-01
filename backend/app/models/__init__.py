@@ -5,7 +5,7 @@ from app.models.game import Game, GamePlayer
 from app.models.league import League, LeagueJoinRequest, LeagueMember
 from app.models.league_event import LeagueEvent, LeaguePantheon
 from app.models.player import Player
-from app.models.season import Season, SeasonRating
+from app.models.season import Season, SeasonRating, SeasonStanding
 from app.models.tournament import Tournament, TournamentEntry
 from app.models.title import PlayerTitle
 from app.models.webhook import WebhookTarget
@@ -27,6 +27,7 @@ __all__ = [
     "ScoreDirection",
     "Season",
     "SeasonRating",
+    "SeasonStanding",
     "Tournament",
     "TournamentEntry",
     "WebhookTarget",

@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime, timezone
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -94,19 +94,38 @@ async def create_season(
     name: str,
     start_date: date | None,
 ) -> Season:
+    """Clôture manuelle depuis l'admin — même chemin que le rollover mensuel
+    automatique (archive du palmarès, couronnement, soft reset), sinon la
+    saison créée n'aurait aucune baseline season_ratings et le premier
+    recompute_elo rejouerait tout l'historique en annulant le reset."""
+    from app.services.elo_config import get_engine_config
+    from app.services.seasons import (
+        close_season,
+        get_active_season,
+        month_bounds,
+        snapshot_current_ratings,
+    )
+
     today = datetime.now(timezone.utc).date()
-    # Close any currently active season
-    await session.execute(
-        update(Season)
-        .where(Season.is_active.is_(True))
-        .values(is_active=False, end_date=today)
-    )
-    season = Season(
-        name=name,
-        start_date=start_date or today,
-        is_active=True,
-    )
-    session.add(season)
+    active = await get_active_season(session)
+
+    if active is not None:
+        config = await get_engine_config(session)
+        active.end_date = today
+        season = await close_season(session, active, config.starting_rating)
+    else:
+        season = Season(name=name, start_date=today, is_active=True)
+        session.add(season)
+        await session.flush()
+        await snapshot_current_ratings(session, season)
+
+    season.name = name
+    season.start_date = start_date or season.start_date or today
+    # Fin de mois, mais jamais dans le passé : un start_date antidaté (rattraper
+    # une saison oubliée) donnerait sinon une saison déjà expirée, que le job
+    # de la nuit suivante reclôturerait aussitôt.
+    season.end_date = max(month_bounds(season.start_date)[1], month_bounds(today)[1])
+
     await session.commit()
     await session.refresh(season)
     return season

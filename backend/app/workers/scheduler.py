@@ -116,9 +116,15 @@ async def run_tournament_maintenance() -> None:
 
 
 def setup_jobs() -> None:
+    # Juste après minuit : la saison est mensuelle, la clôture doit tomber le
+    # 1er au plus tôt pour que les parties du nouveau mois comptent dans le
+    # nouveau classement et pas dans le palmarès qu'on vient de figer.
+    # Quotidien plutôt que mensuel : si le conteneur redémarre pile le 1er, le
+    # lendemain rattrape (end_date est dépassée), là où un cron mensuel
+    # sauterait le mois.
     scheduler.add_job(
         run_season_rollover,
-        CronTrigger(hour=5, minute=0, timezone=PARIS),
+        CronTrigger(hour=0, minute=5, timezone=PARIS),
         id="season_rollover",
         replace_existing=True,
     )

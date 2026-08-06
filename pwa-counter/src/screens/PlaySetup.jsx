@@ -94,18 +94,6 @@ export default function PlaySetup() {
   const [remote, setRemote] = useState(false);
   const remoteEligible = !isSolo;
 
-  // Moteur de Rivalité (Epic 5.2): head-to-head + proba ELO dès 2 joueurs.
-  const [rivalry, setRivalry] = useState(null);
-
-  useEffect(() => {
-    if (isSolo || selected.length < 2) { setRivalry(null); return; }
-    let cancelled = false;
-    apiGet('/stats/head-to-head', { players: selected.join(',') })
-      .then(pairs => { if (!cancelled) setRivalry(pairs); })
-      .catch(() => { if (!cancelled) setRivalry(null); });
-    return () => { cancelled = true; };
-  }, [selected, isSolo]);
-
   const known = mergeNames(localNames, serverNames);
 
   // Enrich known players from the backend on mount (best-effort — offline-safe).
@@ -430,32 +418,6 @@ export default function PlaySetup() {
               partager sera généré dans le sas d'attente.
             </p>
           )}
-        </div>
-      )}
-
-      {/* Bloc Rivalité (Epic 5.2) */}
-      {rivalry && rivalry.length > 0 && (
-        <div className="play-setup__rivalry">
-          <p className="play-setup__rivalry-label">RIVALITÉ</p>
-          {rivalry.map(r => {
-            const total = r.a_wins + r.b_wins;
-            const leaderName = r.a_wins === r.b_wins ? null : (r.a_wins > r.b_wins ? r.a : r.b);
-            const proba = Math.round(r.a_win_probability * 100);
-            return (
-              <div key={`${r.a}-${r.b}`} className="play-setup__rivalry-row">
-                <span className="play-setup__rivalry-score">
-                  {total === 0
-                    ? `${label(r.a)} vs ${label(r.b)} — premier duel !`
-                    : leaderName
-                      ? `${label(leaderName)} mène ${Math.max(r.a_wins, r.b_wins)} à ${Math.min(r.a_wins, r.b_wins)}`
-                      : `Égalité parfaite ${r.a_wins} — ${r.b_wins}`}
-                </span>
-                <span className="play-setup__rivalry-proba">
-                  {label(r.a)} gagne à {proba}%
-                </span>
-              </div>
-            );
-          })}
         </div>
       )}
 

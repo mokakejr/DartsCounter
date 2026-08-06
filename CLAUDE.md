@@ -19,7 +19,7 @@ Migration from an Android app + GitHub Pages to two modern PWAs with a Python ba
 
 ```
 dartscounter/
-  docker-compose.yml           # prod (master branch)
+  docker-compose.yml           # prod (main branch)
   docker-compose.dev.yml       # dev override (dev branch)
   docker-compose.local.yml     # local override (no Caddy, direct ports)
   .env.example
@@ -140,7 +140,7 @@ dartscounter/
         useStats.ts
   .github/
     workflows/
-      deploy-main.yml          # push master → SSH → docker compose pull + up (prod)
+      deploy-main.yml          # push main → SSH → docker compose pull + up (prod)
       deploy-dev.yml           # push dev → SSH → docker compose -f ... up (dev)
 ```
 
@@ -179,7 +179,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 - Caddy routes `darts.counter.dev.mydomain.com` → counter container internal port
 - Caddy routes `darts.api.dev.mydomain.com` → FastAPI container internal port
 
-### Main (branch `master` → `darts.mydomain.com`)
+### Main (branch `main` → `darts.mydomain.com`)
 ```bash
 docker compose up -d
 ```
@@ -201,12 +201,12 @@ Real domain values go in `.env.main` and `.env.dev` (not committed). Use `DOMAIN
 - docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 ```
 
-### `deploy-main.yml` (trigger: push to `master`)
+### `deploy-main.yml` (trigger: push to `main`)
 ```yaml
 - checkout
 - SSH into VPS
 - cd /opt/dartscounter
-- git pull origin master
+- git pull origin main
 - docker compose pull
 - docker compose up -d --build
 ```

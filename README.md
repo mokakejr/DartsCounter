@@ -328,10 +328,10 @@ directory on the VPS so dev and prod never share a Postgres/Redis volume.
    `DASHBOARD_URL`, by contrast, *are* literal full URLs you type out
    yourself, prefix and all — only `DOMAIN` is templated.
 
-   If the code you want to deploy hasn't been merged to `dev`/`master` yet,
+   If the code you want to deploy hasn't been merged to `dev`/`main` yet,
    `git checkout <your-branch>` here before continuing — `git clone` just
    needs *some* branch with the compose files on it, it doesn't have to be
-   `dev`/`master`. Switch back with `git checkout dev && git pull` once
+   `dev`/`main`. Switch back with `git checkout dev && git pull` once
    you've merged, so the directory matches what the CI/CD workflow expects.
 
 4. **Caddy config** — copy the relevant block from `caddy/Caddyfile.main` /
@@ -397,7 +397,7 @@ Run step 5's `alembic upgrade head` again any time a new migration lands.
 ### CI/CD
 
 `.github/workflows/deploy-main.yml` and `deploy-dev.yml` SSH into the VPS on
-push to `master`/`dev` respectively, `git pull`, then `docker compose pull && up -d --build`
+push to `main`/`dev` respectively, `git pull`, then `docker compose pull && up -d --build`
 in `/opt/dartscounter` / `/opt/dartscounter-dev`. They don't run migrations —
 do that manually (step 5 above) after a deploy that includes one.
 

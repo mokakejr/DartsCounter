@@ -133,7 +133,14 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
 
         config = await get_engine_config(session)
         updates = recompute_elo(
-            [{"id": game_id, "mode": payload.mode, "variant": payload.variant, "players": payload.players, "scores": payload.scores}],
+            [{
+                "id": game_id,
+                "mode": payload.mode,
+                "variant": payload.variant,
+                "players": payload.players,
+                "scores": payload.scores,
+                "winner": payload.winner,
+            }],
             config,
             score_direction,
             initial_ratings=initial_ratings,

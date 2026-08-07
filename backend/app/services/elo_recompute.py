@@ -2,7 +2,8 @@
 game in the DB chronologically through the current engine config. Shared by
 the migrate_json script and the admin POST /elo/recompute endpoint: both
 need the same "start over" operation, since Elo is treated as fully
-re-derivable from game history (mode, players, scores), never hand-edited.
+re-derivable from game history (mode, players, scores, winner), never
+hand-edited.
 """
 
 import uuid
@@ -49,6 +50,7 @@ async def recompute_all(session: AsyncSession, dry_run: bool = False) -> int:
             "variant": variant,
             "players": raw_data.get("players", []),
             "scores": raw_data.get("scores", []),
+            "winner": raw_data.get("winner"),
         }
         for gid, mode, variant, raw_data in rows
     ]

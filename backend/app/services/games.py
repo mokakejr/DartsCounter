@@ -205,6 +205,9 @@ def _to_achievement_dict(g: Game) -> dict:
         "mode": g.mode,
         "variant": g.variant,
         "players": [gp.player.name for gp in g.players],
+        # Aligné sur "players" — les trophées basés sur le score (ex. « Thomas »)
+        # indexent la liste par la position du joueur.
+        "scores": [gp.score for gp in g.players],
         "winner": g.winner.name if g.winner else None,
         "duration": g.duration or 0,
     }

@@ -30,6 +30,17 @@ LEVELS = [
 LEVEL_ICONS = ["🦴", "🍺", "🐎", "🍷", "🎯", "🔥", "🍻", "🎩", "🧔", "💪", "👑", "🚀", "🐐", "🍾"]
 
 
+def _normalize_variant(value: str | None) -> str:
+    """'Cut Throat' et 'CutThroat' cohabitent dans l'historique : on compare
+    sur une clé insensible à la casse et à la ponctuation (même règle que
+    app/services/elo.py::normalize_key)."""
+    return "".join(ch for ch in (value or "").lower() if ch.isalnum())
+
+
+def is_cut_throat(variant: str | None) -> bool:
+    return _normalize_variant(variant) == "cutthroat"
+
+
 def level_for_xp(xp: int) -> dict:
     cur = LEVELS[0]
     for lvl in LEVELS:
@@ -49,7 +60,7 @@ def _ensure(S: dict, name: str) -> dict:
             "cur_streak": 0, "max_streak": 0, "loss_streak": 0, "max_loss_streak": 0,
             "underdog": False, "comeback": False, "phoenix": False,
             "mode_wins": {}, "mode_games": {}, "modes_played": set(), "opponents": set(),
-            "shanghai_kill_wins": 0, "cut_throat_wins": 0,
+            "shanghai_kill_wins": 0, "cut_throat_wins": 0, "max_cut_throat_score": 0,
             "speed_win": False, "speed_win_count": 0, "marathon": False, "long_win": False,
             "night_owl": False, "day_keys": set(), "friday13": False,
             "after_midnight": False, "played_sat": False, "played_sun": False,
@@ -80,7 +91,10 @@ def compute_player_stats(games: list[dict]) -> dict[str, dict]:
         ymd = date.strftime("%Y-%m-%d")
         hr = date.hour
 
-        for p in (g.get("players") or []):
+        players = g.get("players") or []
+        scores = g.get("scores") or []
+
+        for idx, p in enumerate(players):
             s = _ensure(S, p)
             s["games"] += 1
             s["total_duration"] += dur
@@ -88,6 +102,12 @@ def compute_player_stats(games: list[dict]) -> dict[str, dict]:
             s["modes_played"].add(g["mode"])
             s["mode_games"][g["mode"]] = s["mode_games"].get(g["mode"], 0) + 1
             s["day_games"][ymd] = s["day_games"].get(ymd, 0) + 1
+
+            # Cut Throat : le score le plus bas gagne, donc un gros total = une
+            # bonne branlée. On garde le pire (= le plus haut) pour « Thomas ».
+            raw_score = scores[idx] if idx < len(scores) else None
+            if is_cut_throat(g.get("variant")) and isinstance(raw_score, (int, float)):
+                s["max_cut_throat_score"] = max(s["max_cut_throat_score"], int(raw_score))
 
             for opp in (g.get("players") or []):
                 if opp != p:
@@ -263,6 +283,7 @@ ACHIEVEMENTS: list[dict] = [
     {"id": "cursed",          "cat": "loss",    "ico": "🪦", "name": "Maudit",              "desc": "10 défaites consécutives",                      "cond": lambda s, _: s["max_loss_streak"] >= 10},
     {"id": "bottomless_pit",  "cat": "loss",    "ico": "🕳️", "name": "Puits sans Fond",     "desc": "12 défaites consécutives",                      "cond": lambda s, _: s["max_loss_streak"] >= 12},
     {"id": "are_you_serious", "cat": "loss",    "ico": "😐", "name": "T'es sérieux ?",      "desc": "20 défaites consécutives",                      "cond": lambda s, _: s["max_loss_streak"] >= 20},
+    {"id": "thomas",          "cat": "loss",    "ico": "🤯", "name": "Il nous fait une Thomas", "desc": "Finir une partie en Cut Throat avec plus de 1000 points", "cond": lambda s, _: s["max_cut_throat_score"] > 1000},
     # ── Modes de jeu ──
     {"id": "cricket_master",    "cat": "modes", "ico": "🦗", "name": "Maître du Cricket",   "desc": "10 victoires en Cricket",                       "cond": lambda s, _: s["mode_wins"].get("Cricket", 0) >= 10},
     {"id": "shanghai_killer",   "cat": "modes", "ico": "💥", "name": "Shanghai Killer",     "desc": "Gagner par Shanghai Kill",                      "cond": lambda s, _: s["shanghai_kill_wins"] >= 1},

@@ -1,6 +1,10 @@
 FROM python:3.12-slim
 
-COPY --from=ghcr.io/astral-sh/uv:0.11.11 /uv /uvx /usr/local/bin/
+# uv est installé depuis PyPI plutôt que copié depuis ghcr.io/astral-sh/uv :
+# le VPS se fait refuser le token anonyme de ghcr.io (403 Forbidden) et le build
+# échoue avant même de démarrer. PyPI est déjà indispensable au reste du build,
+# ça supprime une dépendance de registre au lieu d'en ajouter une.
+RUN pip install --no-cache-dir uv==0.11.11
 
 WORKDIR /app
 

@@ -2,7 +2,7 @@ import asyncio
 import logging
 import time
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -132,20 +132,26 @@ async def notify(session: AsyncSession, event: GameEvent) -> None:
 async def league_targets_for_players(
     session: AsyncSession, player_names: list[str]
 ) -> dict[str, NotificationTarget]:
-    """Webhooks of every league with ≥1 active member among the given
-    players, deduped by URL (two leagues sharing a Chat space get one
-    post). Keyed by league name for logging."""
+    """Webhooks of every league where *every* participant is an active
+    member, deduped by URL (two leagues sharing a Chat space get one post).
+    Keyed by league name for logging.
+
+    Un seul extérieur autour du plateau — invité d'un soir sans compte,
+    membre sorti de la ligue — et le salon de la ligue reste muet : ses
+    parties ne regardent que ses membres."""
+    names = set(player_names)
     rows = (
         await session.execute(
             select(League)
             .join(LeagueMember, LeagueMember.league_id == League.id)
             .join(Player, Player.id == LeagueMember.player_id)
             .where(
-                Player.name.in_(player_names),
+                Player.name.in_(names),
                 LeagueMember.is_active.is_(True),
                 League.webhook_url.is_not(None),
             )
-            .distinct()
+            .group_by(League.id)
+            .having(func.count(func.distinct(Player.id)) == len(names))
         )
     ).scalars().all()
 
@@ -164,13 +170,32 @@ async def _any_league_webhook_configured(session: AsyncSession) -> bool:
     return (await session.execute(stmt)).first() is not None
 
 
+async def outsiders(session: AsyncSession, player_names: list[str]) -> list[str]:
+    """Participants membres actifs d'aucune ligue : invités d'un soir tapés au
+    clavier, comptes sortis de toutes leurs ligues. Tout compte rejoint la
+    Taverne à l'inscription, donc en pratique : les joueurs sans compte."""
+    names = set(player_names)
+    known = set(
+        (
+            await session.execute(
+                select(Player.name)
+                .join(LeagueMember, LeagueMember.player_id == Player.id)
+                .where(Player.name.in_(names), LeagueMember.is_active.is_(True))
+                .distinct()
+            )
+        ).scalars().all()
+    )
+    return sorted(names - known)
+
+
 async def dispatch_to_leagues(
     session: AsyncSession, event: GameEvent, player_names: list[str], ref: str
 ) -> None:
-    """Routage par ligue : chaque ligue dont un participant est membre actif
-    reçoit l'annonce sur son webhook. Tant qu'aucune ligue n'a d'URL
+    """Routage par ligue : une ligue reçoit l'annonce sur son webhook si TOUS
+    les participants en sont membres actifs. Tant qu'aucune ligue n'a d'URL
     configurée, on retombe sur les cibles globales (transition sans coupure le
-    jour du déploiement). `ref` ne sert qu'aux logs."""
+    jour du déploiement) — le repli exige lui aussi une table sans extérieur.
+    `ref` ne sert qu'aux logs."""
     league_targets = await league_targets_for_players(session, player_names)
     if league_targets:
         for league_name, target in league_targets.items():
@@ -180,6 +205,10 @@ async def dispatch_to_leagues(
                 logger.exception("League webhook %r failed for %s", league_name, ref)
         logger.info("%s announced to league webhook(s): %s", ref, list(league_targets))
     elif not await _any_league_webhook_configured(session):
+        unaffiliated = await outsiders(session, player_names)
+        if unaffiliated:
+            logger.info("%s: %s in no league — not announced on global targets", ref, unaffiliated)
+            return
         logger.info("No league webhooks configured yet — falling back to global targets for %s", ref)
         await notify(session, event)
     else:
@@ -200,10 +229,25 @@ def _resolve_thread_key(live_match_id: str | None, player_names: list[str]) -> s
     return chat_threads.peek(player_names)
 
 
+def should_announce_finish(game: GameRead) -> bool:
+    """Pendant de should_announce_start pour la carte de résultat. Une partie
+    amicale ne sort jamais de l'appli : elle reste dans l'historique perso de
+    chacun, mais le salon de la ligue n'a pas à la voir."""
+    if len(game.players) < 2:
+        return False
+    if game.mode in SOLO_MODES:
+        return False
+    return not game.is_casual
+
+
 async def dispatch_game_finished(game: GameRead, live_match_id: str | None = None) -> None:
     """Runs as a FastAPI BackgroundTask, after the response is already sent —
     opens its own session since the request's (Depends(get_db)) is closed by
     then."""
+    if not should_announce_finish(game):
+        logger.info("Game %s not announced (amicale, solo ou joueur unique)", game.id)
+        return
+
     async with async_session() as session:
         all_games = await games_service.list_all_games_raw(session)
         trophies = achievements_service.newly_unlocked_per_player(all_games, str(game.id))
@@ -223,9 +267,10 @@ async def dispatch_game_finished(game: GameRead, live_match_id: str | None = Non
 
         # League feed events (Epic 9) — written here, asynchronously, never
         # in the request path; a feed failure must not block the webhooks.
-        # Casual and frozen (PENDING_REVIEW) games are announced but never
-        # feed the Panthéon, same as before the announce-everything change.
-        if not game.is_casual and game.status == "COMPLETED":
+        # Les parties gelées (PENDING_REVIEW) sont annoncées mais n'alimentent
+        # pas le Panthéon ; les amicales, elles, ne sont plus annoncées du tout
+        # (should_announce_finish) et n'arrivent donc jamais ici.
+        if game.status == "COMPLETED":
             try:
                 from app.services.league_events import generate_events_for_game
 
@@ -269,7 +314,6 @@ async def dispatch_game_finished(game: GameRead, live_match_id: str | None = Non
                 "elo": elo_by_player,
                 "rank_changes": rank_changes,
                 "status": game.status,
-                "is_casual": game.is_casual,
                 "dashboard_url": settings.dashboard_url,
                 # Réponse sous la carte « ça commence » de cette partie.
                 "thread_key": _resolve_thread_key(live_match_id, player_names),

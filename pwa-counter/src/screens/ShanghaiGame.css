@@ -415,14 +415,15 @@
   transform: translateY(-50%);
   font-family: var(--font-display);
   font-size: clamp(30px, 9.5vw, 58px);
+  font-weight: 900;
   line-height: 1;
-  color: var(--primary);
+  color: var(--text);
   pointer-events: none; /* ne vole jamais un tap destiné à la cible */
   user-select: none;
   white-space: nowrap;
 }
-.sg__board-flank--left { right: 100%; margin-right: clamp(4px, 2vw, 14px); }
-.sg__board-flank--right { left: 100%; margin-left: clamp(4px, 2vw, 14px); }
+.sg__board-flank--left { right: 100%; margin-right: clamp(10px, 5vw, 30px); }
+.sg__board-flank--right { left: 100%; margin-left: clamp(10px, 5vw, 30px); }
 /* « BULL » fait 4 caractères : réduit pour tenir dans la même gouttière. */
 .sg__board-flank--bull {
   font-size: clamp(17px, 5.2vw, 32px);

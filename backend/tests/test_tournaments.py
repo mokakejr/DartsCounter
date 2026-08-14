@@ -1,9 +1,6 @@
-"""Tournois score-attack + saisons (Hub v2)."""
+"""Tournois score-attack (Hub v2). Les saisons sont dans test_seasons.py."""
 
-from datetime import date, datetime, timedelta, timezone
-
-from app.core.db import async_session
-from app.services.seasons import get_active_season, rollover_if_needed
+from datetime import datetime, timedelta, timezone
 
 
 async def _signup(client, name):
@@ -87,47 +84,3 @@ async def test_tournament_creation_requires_league_admin(client):
         headers=bob,
     )
     assert resp.status_code == 403
-
-
-async def test_season_rollover_soft_reset(client):
-    alice = await _signup(client, "Alice")
-    # Deux parties classées pour créer des ratings.
-    for d in (1, 2):
-        await client.post(
-            "/games",
-            json={
-                "date": f"2026-07-0{d}T10:00:00Z",
-                "mode": "Cricket",
-                "players": ["Alice", "Bob"],
-                "scores": [40, 10],
-                "winner": "Alice",
-            },
-        )
-
-    async with async_session() as session:
-        # Première saison créée à la volée.
-        season = await rollover_if_needed(session)
-        assert season is not None and season.is_active
-
-        board = (await client.get("/stats/leaderboard")).json()
-        alice_elo = next(r for r in board if r["name"] == "Alice")["elo"]
-
-        # Forcer la fin de saison -> clôture + soft reset + nouvelle saison.
-        season.end_date = date.today() - timedelta(days=1)
-        await session.commit()
-        new_season = await rollover_if_needed(session)
-        assert new_season is not None and new_season.id != season.id
-        active = await get_active_season(session)
-        assert active.id == new_season.id
-
-    board = (await client.get("/stats/leaderboard")).json()
-    alice_after = next(r for r in board if r["name"] == "Alice")["elo"]
-    # Compressé vers le point de départ (10000) : plus proche, pas égal.
-    settings = (await client.get("/elo/settings")).json()
-    start = settings["starting_rating"]
-    assert abs(alice_after - start) < abs(alice_elo - start)
-    assert alice_after != start
-
-    # Champion couronné.
-    titles = (await client.get("/players/me/titles", headers=alice)).json()
-    assert "season_champion" in {t["id"] for t in titles}

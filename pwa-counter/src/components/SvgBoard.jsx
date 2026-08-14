@@ -27,11 +27,8 @@ function polar(angleDeg, r) {
  *  - interactive          : false = cible purement visuelle
  *  - darts                : [{value, ring}] fléchettes du tour, plantées en
  *                           marqueurs visuels
- *  - matchPointTarget     : numéro (ou 25) en pulse doré lent — la balle de
- *                           match des gradins, sans assombrir le reste
- *                           (contrairement à highlightTarget)
  */
-export default function SvgBoard({ onHit, highlightTarget = null, interactive = true, darts = [], matchPointTarget = null }) {
+export default function SvgBoard({ onHit, highlightTarget = null, interactive = true, darts = [] }) {
   const wrapRef = useRef(null);
   // { sector, x, y } — x/y en % du conteneur pour positionner l'overlay.
   const [picking, setPicking] = useState(null);
@@ -86,7 +83,6 @@ export default function SvgBoard({ onHit, highlightTarget = null, interactive = 
             `svgboard__sector` +
             (dimmed(value) ? ' svgboard__sector--dim' : '') +
             (highlightTarget === value ? ' svgboard__sector--target' : '') +
-            (matchPointTarget === value ? ' svgboard__sector--gold' : '') +
             (picking?.sector === value ? ' svgboard__sector--picked' : '');
           const ringFill = dark ? RED : GREEN;
           return (
@@ -113,7 +109,6 @@ export default function SvgBoard({ onHit, highlightTarget = null, interactive = 
             'svgboard__sector' +
             (dimmed(BULL) ? ' svgboard__sector--dim' : '') +
             (highlightTarget === BULL ? ' svgboard__sector--target' : '') +
-            (matchPointTarget === BULL ? ' svgboard__sector--gold' : '') +
             (picking?.sector === BULL ? ' svgboard__sector--picked' : '')
           }
           onPointerDown={e => tapSector(e, BULL)}

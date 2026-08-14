@@ -170,19 +170,6 @@
 .podium__medal { font-size: 22px; }
 .podium__stats { color: var(--muted); font-size: 12px; }
 
-.podium__target {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 9px;
-  background: var(--primary);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-.podium__target:hover { opacity: 0.85; }
-.podium__target:disabled { opacity: 0.6; cursor: default; }
-
 .podium__step {
   width: 100%;
   border-radius: 8px 8px 0 0;

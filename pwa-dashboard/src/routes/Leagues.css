@@ -412,8 +412,7 @@
 .leagues__privacy--on { border-color: var(--primary); }
 .leagues__privacy small { color: var(--muted); }
 
-.leagues__requests,
-.leagues__disputes {
+.leagues__requests {
   margin: 12px 0;
   display: flex;
   flex-direction: column;
@@ -428,24 +427,6 @@
 }
 .leagues__req-btn--ok { color: #4caf50; }
 .leagues__req-btn--no { color: #f44336; }
-
-.leagues__dispute {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 10px 12px;
-  border: 1px solid rgba(244, 67, 54, 0.35);
-  border-radius: 10px;
-  font-size: 14px;
-}
-.leagues__dispute-reason { color: var(--muted); font-size: 12px; margin-top: 2px; }
-.leagues__dispute-actions { display: flex; gap: 8px; }
-.leagues__btn--validate {
-  border-color: #4caf50;
-  color: #4caf50;
-}
 
 .leagues__webhook {
   display: flex;

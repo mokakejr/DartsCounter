@@ -103,6 +103,82 @@ def test_recompute_elo_mode_without_direction_override_defaults_higher_is_better
     assert by_player["B"].delta > 0  # higher score (20) wins, no override for Shanghai
 
 
+def test_recompute_elo_shanghai_kill_winner_gains_despite_lowest_score():
+    # A Shanghai kill ends the game on the spot, so the killer is usually
+    # behind on points: the declared winner has to outrank the scoreboard.
+    game = {
+        "id": "g1", "mode": "Shanghai", "variant": "Shanghai Kill",
+        "players": ["killer", "B", "C"], "scores": [24, 120, 90],
+    }
+    on_scores_alone = {u.player_name: u.delta for u in recompute_elo([game], CONFIG) if u.scope == GLOBAL_SCOPE}
+    assert on_scores_alone["killer"] < 0  # what the scoreboard alone says: last
+
+    by_player = {
+        u.player_name: u.delta
+        for u in recompute_elo([{**game, "winner": "killer"}], CONFIG)
+        if u.scope == GLOBAL_SCOPE
+    }
+    assert by_player["killer"] > 0
+    assert by_player["C"] < 0  # beaten by the killer and out-scored by B
+
+
+def test_recompute_elo_shanghai_kill_neutralizes_performance_multiplier():
+    # Scores from a game cut short aren't a performance signal for anyone,
+    # so nobody's delta is scaled by them.
+    games = [{
+        "id": "g1", "mode": "Shanghai", "variant": "Shanghai Kill",
+        "players": ["killer", "B"], "scores": [24, 120], "winner": "killer",
+    }]
+    updates = recompute_elo(games, CONFIG)
+    assert all(u.perf_multiplier == 1.0 for u in updates)
+
+
+def test_recompute_elo_declared_winner_only_flips_its_own_pairs():
+    # The killer beats everyone; the runners-up still rank among themselves
+    # by score.
+    games = [{
+        "id": "g1", "mode": "Shanghai", "variant": "Shanghai Kill",
+        "players": ["killer", "B", "C"], "scores": [24, 120, 90], "winner": "killer",
+    }]
+    updates = recompute_elo(games, CONFIG)
+    by_player = {u.player_name: u for u in updates if u.scope == GLOBAL_SCOPE}
+    assert by_player["killer"].delta > by_player["B"].delta > by_player["C"].delta
+
+
+def test_recompute_elo_winner_agreeing_with_scores_keeps_performance_multiplier():
+    # Regression guard: a normal game is unchanged by the winner override —
+    # same result whether or not the winner is declared.
+    base = {"id": "g1", "mode": "Cricket", "variant": None, "players": ["A", "B"], "scores": [40, 10]}
+    without = recompute_elo([base], CONFIG)
+    with_winner = recompute_elo([{**base, "winner": "A"}], CONFIG)
+    assert [(u.player_name, u.scope, u.delta) for u in without] == [
+        (u.player_name, u.scope, u.delta) for u in with_winner
+    ]
+    assert next(u for u in with_winner if u.player_name == "A").perf_multiplier == 1.6
+
+
+def test_recompute_elo_ignores_winner_not_at_the_table():
+    games = [{
+        "id": "g1", "mode": "Shanghai", "variant": None,
+        "players": ["A", "B"], "scores": [20, 10], "winner": "ghost",
+    }]
+    updates = recompute_elo(games, CONFIG)
+    by_player = {u.player_name: u for u in updates if u.scope == GLOBAL_SCOPE}
+    assert by_player["A"].delta > 0  # falls back to the scores
+
+
+def test_recompute_elo_lower_is_better_winner_override():
+    # Cut Throat: lowest score wins, and a declared winner still overrides it.
+    games = [{
+        "id": "g1", "mode": "Cricket", "variant": "Cut Throat",
+        "players": ["A", "B"], "scores": [20, 5], "winner": "A",
+    }]
+    updates = recompute_elo(games, CONFIG, score_direction={("cricket", "cutthroat"): True})
+    by_player = {u.player_name: u for u in updates if u.scope == GLOBAL_SCOPE}
+    assert by_player["A"].delta > 0
+    assert by_player["B"].delta < 0
+
+
 def test_recompute_elo_k_factor_decays_with_games_played():
     games = [{"id": "g1", "mode": "Cricket", "variant": None, "players": ["veteran", "rookie"], "scores": [20, 10]}]
     updates = recompute_elo(

@@ -302,3 +302,59 @@ async def test_create_season_closes_previous(client):
     s1_updated = next(s for s in seasons if s["id"] == s1["id"])
     assert s1_updated["is_active"] is False
     assert s1_updated["end_date"] is not None
+
+
+async def test_create_season_writes_soft_reset_baseline(client):
+    """Une saison créée à la main doit passer par le même chemin que le
+    rollover mensuel : sans baseline season_ratings, le premier recompute
+    rejouerait tout l'historique et annulerait le soft reset."""
+    import uuid as _uuid
+    from datetime import date as _date
+
+    from app.models.season import SeasonRating, SeasonStanding
+    from app.services.seasons import month_bounds
+
+    token = await _signup(client, "Admin")
+    await _make_admin("Admin")
+    # Inscrits (donc membres de la Taverne, seuls les membres entrent au
+    # palmarès), puis une partie classée pour leur donner un rating.
+    await _signup(client, "Alice")
+    await _signup(client, "Bob")
+    await _create_game(client)
+
+    s1 = (await client.post(
+        "/admin/seasons", json={"name": "S1", "start_date": "2026-01-01"}, headers=_auth(token)
+    )).json()
+    # La 1re saison n'a rien à clôturer : baseline = ratings actuels, tels quels.
+    # Début antidaté mais fin repoussée au mois courant, sinon elle serait déjà
+    # expirée à la création.
+    assert s1["end_date"] == month_bounds(_date.today())[1].isoformat()
+
+    elo_before = {r["name"]: r["elo"] for r in (await client.get("/stats/leaderboard")).json()}
+
+    s2 = (await client.post(
+        "/admin/seasons", json={"name": "S2"}, headers=_auth(token)
+    )).json()
+    assert s2["end_date"] == month_bounds(_date.fromisoformat(s2["start_date"]))[1].isoformat()
+
+    async with async_session() as session:
+        for season_id in (s1["id"], s2["id"]):
+            rows = (await session.execute(
+                select(SeasonRating).where(SeasonRating.season_id == _uuid.UUID(season_id))
+            )).scalars().all()
+            assert rows, f"baseline manquante pour {season_id}"
+
+        # La clôture manuelle archive aussi le palmarès de S1.
+        archived = (await session.execute(
+            select(SeasonStanding).where(SeasonStanding.season_id == _uuid.UUID(s1["id"]))
+        )).scalars().all()
+        assert archived
+
+    # Et applique le soft reset (Admin n'a jamais joué : déjà au rating de
+    # départ, rien à compresser).
+    start = (await client.get("/elo/settings")).json()["starting_rating"]
+    moved = [r for r in (await client.get("/stats/leaderboard")).json()
+             if elo_before[r["name"]] != start]
+    assert moved
+    for row in moved:
+        assert abs(row["elo"] - start) < abs(elo_before[row["name"]] - start)

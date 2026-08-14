@@ -12,22 +12,12 @@ import time
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 
-from app.services import live, notifications
+from app.services import live
+from app.services.notifications import dispatch_game_abandoned, dispatch_game_started
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["live"])
-
-
-def _maybe_announce(match) -> None:
-    """Annonce « 🔴 LIVE » (webhook, lien gradins) — une fois par match, en
-    tâche de fond (la création/ready ne bloque jamais sur le réseau). Les
-    entraînements solo ne sont pas annoncés. Le flag est posé AVANT tout
-    await : REST et WS peuvent courir, une seule annonce partira."""
-    if match.announced or len(match.players) < 2 or not match.started:
-        return
-    match.announced = True
-    asyncio.create_task(notifications.dispatch_live_started(match))
 
 
 class LiveMatchCreate(BaseModel):
@@ -49,7 +39,10 @@ async def create_live_match(payload: LiveMatchCreate) -> dict:
     match = live.create_match(
         payload.mode, payload.players, payload.remote, payload.variant, payload.options
     )
-    _maybe_announce(match)  # match local : live immédiatement
+    # Une partie locale est live dès sa création ; une partie à distance
+    # attend les « Prêt » du sas et sera annoncée au MATCH_STARTED.
+    if match.started:
+        asyncio.create_task(dispatch_game_started(match))
     return live.to_dict(match)
 
 
@@ -78,8 +71,8 @@ async def ready_live_match(match_id: str, payload: ReadyPayload) -> dict:
     # must both broadcast.
     await live.broadcast(match, {"event": "READY", "match_id": match.id, "player_id": payload.name})
     if just_started:
-        _maybe_announce(match)
         await live.broadcast(match, {"event": "MATCH_STARTED", "match_id": match.id})
+        asyncio.create_task(dispatch_game_started(match))
     return live.to_dict(match)
 
 
@@ -130,14 +123,18 @@ async def live_room(
                 # actual thrower; fall back to the connection's identity.
                 payload = {**data, "match_id": match.id, "player_id": data.get("player") or name}
                 if etype == "READY" and accepted:
-                    _maybe_announce(match)
                     await live.broadcast(match, {"event": "MATCH_STARTED", "match_id": match.id})
+                    asyncio.create_task(dispatch_game_started(match))
                 elif etype == "DND":
                     pass  # private toggle, nothing to broadcast
                 else:
                     # Game deltas go to everyone (players need the handover,
                     # spectators the show).
                     await live.broadcast(match, payload)
+                    # Abandon explicite (le joueur quitte l'écran de jeu) :
+                    # aucune partie ne sera enregistrée, on referme le fil.
+                    if etype == "MATCH_FINISHED" and match.aborted:
+                        await dispatch_game_abandoned(match)
 
             elif role == live.ROLE_SPECTATOR and etype in live.SPECTATOR_EVENTS:
                 if etype == "CHAT_MESSAGE":
@@ -155,42 +152,11 @@ async def live_room(
                         respect_dnd=True,
                     )
                 elif etype == "EMOTE":
-                    # Drop silencieux : un spammeur n'obtient aucun feedback.
-                    if not live.check_emote(match, name):
-                        continue
                     emote = str(data.get("emote", ""))[:8]
                     # Players in Focus mode (DND) are skipped (12.2).
                     await live.broadcast(
                         match,
                         {"event": "EMOTE", "match_id": match.id, "sender_id": name, "emote": emote},
-                        respect_dnd=True,
-                    )
-                    # La foule est en délire : agrégat serveur, tout le monde
-                    # rend le même moment (Jauge de Hype).
-                    if live.register_emote(match):
-                        await live.broadcast(
-                            match,
-                            {
-                                "event": "CROWD_HYPE",
-                                "match_id": match.id,
-                                "count": len(match._emote_times),
-                            },
-                            respect_dnd=True,
-                        )
-                elif etype == "VOTE":
-                    # Prono d'avant-match uniquement : une fois la première
-                    # fléchette lancée, les paris sont clos.
-                    player = data.get("player")
-                    if match.started or match.finished or player not in match.players:
-                        continue
-                    match.votes[name] = player
-                    await live.broadcast(
-                        match,
-                        {
-                            "event": "VOTE_UPDATE",
-                            "match_id": match.id,
-                            "counts": live.vote_counts(match),
-                        },
                         respect_dnd=True,
                     )
             # Anything else: silently dropped (role segregation, 11.1).
@@ -217,3 +183,7 @@ async def _finish_if_abandoned(match, grace_seconds: int = 60) -> None:
         match.aborted = True
         match.touch()
         await live.broadcast(match, {"event": "MATCH_FINISHED", "match_id": match.id, "aborted": True})
+        # Pas de message de clôture ici : perdre les sockets 60 s arrive pour
+        # un téléphone en veille alors que la partie continue sur la table.
+        # Le fil sera refermé par l'abandon explicite ou par l'inactivité de
+        # 15 min, deux signaux qui, eux, ne trompent pas.

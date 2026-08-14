@@ -271,6 +271,7 @@ export default function CricketGame() {
       winner: players[next.winner],
       startedAt: startedAt.current,
       isCasual,
+      liveId,
     });
     setPhase('finished');
     return true;

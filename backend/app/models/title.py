@@ -19,6 +19,11 @@ class TitleDef:
 # Catalogue lives here (not in the service) so schema/read helpers can name
 # titles without import cycles. stat_sniper (checkout %) joins once the
 # Dart-Wheel records per-dart data.
+#
+# season_champion n'est plus décerné depuis le passage aux saisons mensuelles
+# (league_champion l'a remplacé, un champion par ligue), mais reste au
+# catalogue : des lignes player_titles y font référence et les profils doivent
+# continuer à l'afficher.
 TITLES: dict[str, TitleDef] = {
     t.id: t
     for t in (
@@ -27,6 +32,11 @@ TITLES: dict[str, TitleDef] = {
         TitleDef("social_owner", "Tyran de la Ligue", "Posséder une ligue"),
         TitleDef("fail_26", "Abonné au 26", "Finir 3 parties à exactement 26 points"),
         TitleDef("season_champion", "Champion de Saison", "Finir une saison à la 1re place"),
+        TitleDef(
+            "league_champion",
+            "Champion de Ligue",
+            "Finir un mois à la 1re place de sa ligue",
+        ),
     )
 }
 

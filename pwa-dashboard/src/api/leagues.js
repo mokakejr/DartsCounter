@@ -53,18 +53,6 @@ export function decideJoinRequest(token, leagueId, playerId, action) {
   return apiPost(`/leagues/${leagueId}/requests/${playerId}`, { action }, token);
 }
 
-export function fetchDisputes(token, leagueId) {
-  return apiGet(`/leagues/${leagueId}/disputes`, {}, token);
-}
-
-export function adjudicateGame(token, gameId, action) {
-  return apiPost(`/games/${gameId}/adjudicate`, { action }, token);
-}
-
-export function reportGame(token, gameId, reason) {
-  return apiPost(`/games/${gameId}/report`, { reason }, token);
-}
-
 export function fetchLeagueEvents(token, leagueId, { limit = 50, offset = 0 } = {}) {
   return apiGet(`/leagues/${leagueId}/events`, { limit, offset }, token);
 }
@@ -79,6 +67,11 @@ export function provokeEvent(token, leagueId, eventId) {
 
 export function fetchPantheon(token, leagueId) {
   return apiGet(`/leagues/${leagueId}/pantheon`, {}, token);
+}
+
+// Classements figés des saisons passées, la plus récente d'abord.
+export function fetchPalmares(token, leagueId) {
+  return apiGet(`/leagues/${leagueId}/palmares`, {}, token);
 }
 
 export function setLeagueWebhook(token, leagueId, webhookUrl) {

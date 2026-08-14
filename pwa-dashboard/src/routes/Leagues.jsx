@@ -270,8 +270,6 @@ function LeagueCard({
         <JoinRequests league={league} token={token} />
       )}
 
-      {isAdmin && !isTaverne && <Disputes league={league} token={token} />}
-
       {!isTaverne && (
         <div className="leagues__code-row">
           <span className="leagues__code-label">Code d'invitation</span>
@@ -566,53 +564,6 @@ function JoinRequests({ league, token }) {
           <button className="leagues__req-btn leagues__req-btn--no" title="Refuser"
             onClick={() => decide(r.player_id, 'reject')}>✗</button>
         </span>
-      ))}
-    </div>
-  );
-}
-
-function Disputes({ league, token }) {
-  const [disputes, setDisputes] = useState([]);
-
-  const load = useCallback(() => {
-    api.fetchDisputes(token, league.id).then(setDisputes).catch(() => {});
-  }, [token, league.id]);
-
-  useEffect(load, [load]);
-
-  if (disputes.length === 0) return null;
-
-  async function verdict(gameId, action) {
-    await api.adjudicateGame(token, gameId, action);
-    load();
-  }
-
-  const REASONS = {
-    outlier: 'Performance anormale détectée',
-    impossible_score: 'Score impossible (signalé)',
-    rage_quit: 'Rage-quit (signalé)',
-    other: 'Signalé par un joueur',
-  };
-
-  return (
-    <div className="leagues__disputes">
-      <span className="leagues__code-label">⚖️ Litiges — en attente d'homologation</span>
-      {disputes.map(g => (
-        <div key={g.id} className="leagues__dispute">
-          <div className="leagues__dispute-body">
-            <strong>{g.mode}</strong>{' — '}
-            {g.players.map(p => `${p.name} (${p.score})`).join(' vs ')}
-            <div className="leagues__dispute-reason">{REASONS[g.flag_reason] ?? g.flag_reason}</div>
-          </div>
-          <div className="leagues__dispute-actions">
-            <button className="leagues__btn leagues__btn--validate" onClick={() => verdict(g.id, 'validate')}>
-              ✓ Homologuer
-            </button>
-            <button className="leagues__btn leagues__btn--delete" onClick={() => verdict(g.id, 'void')}>
-              ✗ Annuler le match
-            </button>
-          </div>
-        </div>
       ))}
     </div>
   );

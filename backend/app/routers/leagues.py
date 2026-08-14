@@ -260,20 +260,41 @@ async def league_pantheon(
     ]
 
 
-@router.get("/{league_id}/disputes")
-async def league_disputes(
+@router.get("/{league_id}/palmares")
+async def league_palmares(
     league_id: uuid.UUID,
     player: Player = Depends(get_current_player),
     session: AsyncSession = Depends(get_db),
-):
-    """Tribunal inbox: PENDING_REVIEW games involving this league's members."""
+) -> list[dict]:
+    """Classements figés des saisons passées de la ligue, la plus récente
+    d'abord. Le 1er de chaque saison est son Champion de Ligue."""
     league = await _get_league_or_404(session, league_id)
-    _require_role(league, player, "admin")
-    from app.services import tribunal as tribunal_service
-    from app.services.games import _to_game_read
+    _require_member(league, player)
+    from app.services import seasons as seasons_service
 
-    games = await tribunal_service.list_disputes(session, league)
-    return [_to_game_read(g) for g in games]
+    palmares = await seasons_service.get_palmares(session, league_id)
+    return [
+        {
+            "season_id": season.id,
+            "season_name": season.name,
+            "start_date": season.start_date,
+            "end_date": season.end_date,
+            "champion": next((_player_ref(r.player) for r in rows if r.is_champion), None),
+            "standings": [
+                {
+                    "position": r.position,
+                    "player": _player_ref(r.player),
+                    "rating": r.rating,
+                    "games": r.games,
+                    "wins": r.wins,
+                    "rank": r.rank_label,
+                    "is_champion": r.is_champion,
+                }
+                for r in rows
+            ],
+        }
+        for season, rows in palmares
+    ]
 
 
 @router.patch("/{league_id}", response_model=LeagueRead)
@@ -324,9 +345,9 @@ async def test_league_webhook(
     if not league.webhook_url:
         raise HTTPException(404, "No webhook URL configured for this league")
     try:
-        await notifications_service.target_for_url(league.webhook_url).send(
-            notifications_service.TEST_EVENT
-        )
+        target = notifications_service.target_for_url(league.webhook_url)
+        for event in notifications_service.build_test_events():
+            await target.send(event)
     except Exception as exc:
         raise HTTPException(502, f"Failed to send test notification: {exc}") from exc
     return {"status": "sent"}

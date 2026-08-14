@@ -20,12 +20,14 @@ import { clearResume } from './resume.js';
  * @param {number}   opts.startedAt – Date.now() captured when the game screen mounted
  * @param {boolean}  [opts.isCasual] – excluded from Elo when true (default false)
  * @param {object}   [opts.extra]    – generic per-mode metadata (e.g. Bob's 27 bust info)
+ * @param {string}   [opts.liveId]   – id du match live, pour que le backend poste le
+ *                                     résultat en réponse à la carte « ça commence »
  */
 // Dernier match joué sur cet appareil — nourrit la "Revanche Rapide" 1-clic
 // du PlayHome (Epics 5.1 / 7.4).
 export const LAST_GAME_KEY = 'dartsLastGame';
 
-export async function postGame({ mode, variant, players, scores, winner, startedAt, isCasual = false, extra }) {
+export async function postGame({ mode, variant, players, scores, winner, startedAt, isCasual = false, extra, liveId }) {
   const now = Date.now();
   clearResume(); // partie terminee : plus rien a reprendre apres un reload
   try {
@@ -44,6 +46,7 @@ export async function postGame({ mode, variant, players, scores, winner, started
     duration,
     is_casual: isCasual,
     ...(extra ? { extra } : {}),
+    ...(liveId ? { live_match_id: liveId } : {}),
   };
 
   try {

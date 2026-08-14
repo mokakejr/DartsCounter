@@ -1,4 +1,5 @@
 import uuid
+from datetime import date, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,26 +13,50 @@ from app.services.players import equipped_title, image_url, live_streak
 
 
 async def get_leaderboard(
-    session: AsyncSession, mode: str | None = None, league_id: uuid.UUID | None = None
+    session: AsyncSession,
+    mode: str | None = None,
+    league_id: uuid.UUID | None = None,
+    until: date | None = None,
 ) -> list[PlayerStats]:
     """`mode=None` is the global leaderboard (games/wins across every mode,
     elo = the "global" scope rating). Passing a mode name scopes all three
     to just that mode — used by the dashboard's per-mode Standings filter.
     `league_id` restricts rows to that league's members; inactive ("ghost")
-    members are returned last with is_active=False."""
+    members are returned last with is_active=False.
+
+    Le leaderboard est celui de la saison en cours : parties et victoires ne
+    comptent que depuis `season.start_date`, comme l'Elo qui repart d'un soft
+    reset à chaque nouveau mois. Les stats « depuis toujours » restent sur le
+    profil joueur et les trophées, qui ont leurs propres requêtes.
+
+    `until` borne le comptage à la fin de ce jour inclus. Réservé à l'archivage
+    du palmarès : le job de clôture tourne peu après minuit, mais s'il a pris
+    du retard (conteneur redémarré), les parties du mois suivant déjà jouées ne
+    doivent pas gonfler le classement de la saison qu'on est en train de figer.
+    """
+    from app.services.seasons import get_active_season
+
     # Always joined to Game (not just when `mode` is passed) so casual games —
     # excluded from Elo but still logged for personal history — never count
     # toward the competitive "games played" used for leaderboard ranking.
     games_query = (
         select(GamePlayer.player_id, func.count().label("games"))
         .join(Game, Game.id == GamePlayer.game_id)
-        .where(Game.is_casual.is_(False), Game.status == "COMPLETED")
+        .where(Game.is_casual.is_(False))
     )
     wins_query = (
         select(GamePlayer.player_id, func.count().label("wins"))
         .join(Game, Game.id == GamePlayer.game_id)
-        .where(Game.is_casual.is_(False), Game.status == "COMPLETED", GamePlayer.position == 1)
+        .where(Game.is_casual.is_(False), GamePlayer.position == 1)
     )
+    season = await get_active_season(session)
+    if season is not None and season.start_date is not None:
+        games_query = games_query.where(Game.date >= season.start_date)
+        wins_query = wins_query.where(Game.date >= season.start_date)
+    if until is not None:
+        cutoff = until + timedelta(days=1)
+        games_query = games_query.where(Game.date < cutoff)
+        wins_query = wins_query.where(Game.date < cutoff)
     if mode is not None:
         # A mode filter may be a shared Elo scope name (e.g. "Shanghai") that
         # several literal Game.mode strings feed into — count all of them,

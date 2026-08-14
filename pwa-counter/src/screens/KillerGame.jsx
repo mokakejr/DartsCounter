@@ -116,6 +116,7 @@ export default function KillerGame() {
       winner: ng.winner,
       startedAt: startedAt.current,
       isCasual: true,
+      liveId,
       extra: { eliminationOrder: ng.eliminationOrder, lives, numbers },
     });
     setGame(ng);

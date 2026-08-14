@@ -1,10 +1,21 @@
 FROM python:3.12-slim
 
-COPY --from=ghcr.io/astral-sh/uv:0.11.11 /uv /uvx /usr/local/bin/
+# uv est installé depuis PyPI plutôt que copié depuis ghcr.io/astral-sh/uv :
+# le VPS se fait refuser le token anonyme de ghcr.io (403 Forbidden) et le build
+# échoue avant même de démarrer. PyPI est déjà indispensable au reste du build,
+# ça supprime une dépendance de registre au lieu d'en ajouter une.
+RUN pip install --no-cache-dir uv==0.11.11
 
 WORKDIR /app
 
+# UV_COMPILE_BYTECODE_TIMEOUT=0 désactive le garde-fou de 60s qu'uv applique au
+# démarrage du sous-process Python de compilation bytecode. Sur le VPS, les trois
+# images se construisent en parallèle et ce démarrage dépasse la minute sous la
+# charge — uv abandonne alors le build ("Python startup timed out (60s)") alors
+# que rien n'est cassé, juste lent. Le garde-fou existe pour détecter un `python`
+# réellement HS ; ici c'est un faux positif.
 ENV UV_COMPILE_BYTECODE=1 \
+    UV_COMPILE_BYTECODE_TIMEOUT=0 \
     UV_LINK_MODE=copy \
     PYTHONUNBUFFERED=1
 

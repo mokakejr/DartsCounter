@@ -20,6 +20,7 @@ import TrophiesPage from './routes/TrophiesPage.jsx';
 import XpGuide from './routes/XpGuide.jsx';
 import RankGuide from './routes/RankGuide.jsx';
 import Leagues from './routes/Leagues.jsx';
+import Palmares from './routes/Palmares.jsx';
 import Welcome from './routes/Welcome.jsx';
 import Login from './routes/Login.jsx';
 import MyProfile from './routes/MyProfile.jsx';
@@ -31,9 +32,10 @@ import Tournois from './routes/Tournois.jsx';
 import { fetchTournaments } from './api/tournaments.js';
 import './App.css';
 
-// Le Lobby Cinématique (Epic 5) : l'écran = le Hero, rien d'autre. Tout le
-// hub (classement, feed, tendances, trophées) vit dans le tiroir qui glisse
-// par-dessus, et le LIVE est une barre HUD sous le header.
+// Le Lobby Cinématique (Epic 5) : le premier écran = le Hero, rien d'autre.
+// Le hub (classement, feed, tendances, trophées) suit dans la page — on y
+// descend au scroll, ou on l'appelle d'un coup via le tiroir. Le LIVE reste
+// une barre HUD sous le header.
 function Home({ games, stats, ranked, profiles = {}, eloBoard }) {
   return (
     <main>
@@ -228,6 +230,7 @@ function AppInner() {
             <NavLink to="/profils" className={({ isActive }) => isActive ? 'is-active' : undefined}>Joueurs</NavLink>
             <NavLink to="/trophees" className={({ isActive }) => isActive ? 'is-active' : undefined}>Trophées</NavLink>
             <NavLink to="/ligues" className={({ isActive }) => isActive ? 'is-active' : undefined}>Ligues</NavLink>
+            <NavLink to="/palmares" className={({ isActive }) => isActive ? 'is-active' : undefined}>Palmarès</NavLink>
             <NavLink to="/tournois" className={({ isActive }) => isActive ? 'is-active' : undefined}>
               Tournois{openTournaments > 0 && <span className="nav__badge">{openTournaments}</span>}
             </NavLink>
@@ -261,21 +264,19 @@ function AppInner() {
         <Route path="/rangs" element={<RankGuide />} />
         <Route path="/tournois" element={<Tournois profiles={profiles} />} />
         <Route path="/ligues" element={<Leagues knownPlayers={knownPlayers} />} />
+        <Route path="/palmares" element={<Palmares />} />
         <Route path="/login" element={<Login />} />
         <Route path="/profile" element={<MyProfile />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={home} />
       </Routes>
 
-      {/* Pas de footer sur le lobby : zéro scroll de page, l'écran est le jeu. */}
-      {location.pathname !== '/' && (
-        <footer className="footer shell">
-          <span>DartsCounter — La Ligue</span>
-          <a href="https://github.com/mokakejr/DartsCounter-" target="_blank" rel="noreferrer">
-            GitHub ↗
-          </a>
-        </footer>
-      )}
+      <footer className="footer shell">
+        <span>DartsCounter — La Ligue</span>
+        <a href="https://github.com/mokakejr/DartsCounter-" target="_blank" rel="noreferrer">
+          GitHub ↗
+        </a>
+      </footer>
     </>
   );
 }

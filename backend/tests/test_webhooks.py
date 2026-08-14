@@ -27,10 +27,13 @@ async def test_test_webhook_sends_to_configured_target(client, fake_httpx):
 
     resp = await client.post("/webhooks/test", json={"target": "google_chat"})
     assert resp.status_code == 202
-    assert len(fake_httpx.calls) == 1
-    url, body = fake_httpx.calls[0]
-    assert url == "https://chat.example/x"
-    assert "cardsV2" in body  # game_finished uses the cardsV2 format
+    # Aperçu complet : la carte de début puis le résultat, dans le même fil.
+    assert len(fake_httpx.calls) == 2
+    urls = [u for u, _ in fake_httpx.calls]
+    bodies = [b for _, b in fake_httpx.calls]
+    assert all(u.startswith("https://chat.example/x") for u in urls)
+    assert all("cardsV2" in b for b in bodies)  # les deux utilisent le format cardsV2
+    assert bodies[0]["thread"]["threadKey"] == bodies[1]["thread"]["threadKey"]
 
 
 async def test_test_webhook_404_when_not_configured(client):

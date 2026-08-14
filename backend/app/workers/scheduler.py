@@ -80,19 +80,25 @@ async def run_league_maintenance() -> None:
 
 
 def purge_live_matches() -> None:
+    from app.services.chat_threads import purge_expired as purge_threads
     from app.services.live import purge_expired
 
     purged = purge_expired()
     if purged:
         logger.info("Live matches: %d expired room(s) purged", purged)
+    purge_threads()
 
 
 async def close_stale_live_matches() -> None:
     from app.services.live import close_stale_matches
+    from app.services.notifications import dispatch_game_abandoned
 
     closed = await close_stale_matches()
     if closed:
-        logger.info("Live matches: %d stale match(es) auto-closed (15 min idle)", closed)
+        logger.info("Live matches: %d stale match(es) auto-closed (15 min idle)", len(closed))
+    # Referme le fil Chat des parties qui avaient été annoncées.
+    for match in closed:
+        await dispatch_game_abandoned(match)
 
 
 async def run_season_rollover() -> None:
@@ -110,9 +116,15 @@ async def run_tournament_maintenance() -> None:
 
 
 def setup_jobs() -> None:
+    # Juste après minuit : la saison est mensuelle, la clôture doit tomber le
+    # 1er au plus tôt pour que les parties du nouveau mois comptent dans le
+    # nouveau classement et pas dans le palmarès qu'on vient de figer.
+    # Quotidien plutôt que mensuel : si le conteneur redémarre pile le 1er, le
+    # lendemain rattrape (end_date est dépassée), là où un cron mensuel
+    # sauterait le mois.
     scheduler.add_job(
         run_season_rollover,
-        CronTrigger(hour=5, minute=0, timezone=PARIS),
+        CronTrigger(hour=0, minute=5, timezone=PARIS),
         id="season_rollover",
         replace_existing=True,
     )

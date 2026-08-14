@@ -1,11 +1,16 @@
 .rtc {
+  /* Même remède que le 51/Cricket/Shanghai : si le contenu dépasse la
+     hauteur d'écran (petit téléphone, zoom d'accessibilité), ce conteneur
+     scrolle au lieu de couper les boutons hors écran. */
   height: 100svh;
   display: flex;
   flex-direction: column;
   background: var(--bg);
-  padding: 0 20px 24px;
-  overflow: hidden;
+  padding: 0 20px max(16px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Header ─────────────────────────────────────────── */

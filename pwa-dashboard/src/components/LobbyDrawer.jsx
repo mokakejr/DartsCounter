@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import './LobbyDrawer.css';
 
 /**
- * Le Tiroir du lobby (Epic 5.4) : tout le contenu du hub (classement, feed,
- * tendances, trophées) glisse par-dessus le lobby depuis le bas. Ouverture :
- * chevron ^ en bas d'écran, ou swipe-up n'importe où (mobile). Fermeture :
- * chevron inversé, ou Escape.
+ * Le Tiroir du lobby (Epic 5.4) : le contenu du hub (classement, feed,
+ * tendances, trophées) suit le Hero dans la page — on y descend au scroll —
+ * et le chevron ^ le fait remonter en bottom sheet plein écran pour y sauter
+ * directement. Fermeture : chevron inversé, ou Escape.
  */
 export default function LobbyDrawer({ children }) {
   const [open, setOpen] = useState(false);
+  const [atTop, setAtTop] = useState(true);
 
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') setOpen(false); };
@@ -16,30 +17,18 @@ export default function LobbyDrawer({ children }) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // Swipe-up sur le lobby (le tiroir fermé ne couvre pas l'écran, donc les
-  // touches partent du lobby lui-même).
+  // Le chevron n'est un raccourci que depuis le Hero : une fois la page
+  // déroulée il flotterait par-dessus les sections qu'il est censé montrer.
   useEffect(() => {
-    if (open) return;
-    let startY = null;
-    const onStart = e => { startY = e.touches[0].clientY; };
-    const onMove = e => {
-      if (startY == null) return;
-      if (startY - e.touches[0].clientY > 60) { setOpen(true); startY = null; }
-    };
-    const onEnd = () => { startY = null; };
-    window.addEventListener('touchstart', onStart, { passive: true });
-    window.addEventListener('touchmove', onMove, { passive: true });
-    window.addEventListener('touchend', onEnd, { passive: true });
-    return () => {
-      window.removeEventListener('touchstart', onStart);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend', onEnd);
-    };
-  }, [open]);
+    const onScroll = () => setAtTop(window.scrollY < 80);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
     <>
-      {!open && (
+      {!open && atTop && (
         <button
           className="lobby-drawer__handle"
           onClick={() => setOpen(true)}
@@ -49,8 +38,12 @@ export default function LobbyDrawer({ children }) {
         </button>
       )}
       {/* data-lenis-prevent : le smooth-scroll Lenis hijacke la molette au
-          niveau document — sans ça, le scroll interne du tiroir est mort. */}
-      <div className={`lobby-drawer${open ? ' is-open' : ''}`} data-lenis-prevent>
+          niveau document — sans ça, le scroll interne du tiroir est mort.
+          Fermé, le tiroir scrolle avec la page : on rend la molette à Lenis. */}
+      <div
+        className={`lobby-drawer${open ? ' is-open' : ''}`}
+        {...(open ? { 'data-lenis-prevent': '' } : {})}
+      >
         <button
           className="lobby-drawer__close"
           onClick={() => setOpen(false)}

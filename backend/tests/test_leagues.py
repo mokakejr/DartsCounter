@@ -209,4 +209,6 @@ async def test_league_webhook_test_endpoint(client, fake_httpx):
     # Admin → 202 et la carte de test part sur l'URL de la ligue.
     resp = await client.post(test_url, headers=alice)
     assert resp.status_code == 202
-    assert [u for u, _ in fake_httpx.calls] == ["https://chat.example/x"]
+    # Deux cartes (début + résultat), toutes sur l'URL de la ligue.
+    assert len(fake_httpx.calls) == 2
+    assert all(u.startswith("https://chat.example/x") for u, _ in fake_httpx.calls)

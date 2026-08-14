@@ -159,6 +159,10 @@ export default function ShanghaiGame() {
   const player = game.currentPlayer;
   const target = targets[round];
   const isBullRound = isBullTarget(target);
+  // Rappel géant affiché de chaque côté de la cible : lisible debout, à un
+  // mètre du téléphone — ni le chiffre de la couronne ni le petit label
+  // "CIBLE : 20" ne le sont dans une cave.
+  const targetLabel = isBullRound ? 'BULL' : String(target);
   const zones = isBullRound ? BULL_ZONES : ZONES;
   const turnPts = darts.reduce((s, z) => s + z * target, 0);
   // Handover (13.2): hors de mon tour, la saisie est verrouillée.
@@ -390,6 +394,12 @@ export default function ShanghaiGame() {
       {/* Cible SVG : la zone du round en rouge fluo, le reste assombri
           (Epic 4.3). Tap direct possible — hors cible = MISS. */}
       <div className="sg__board">
+        <span
+          className={`sg__board-flank sg__board-flank--left${isBullRound ? ' sg__board-flank--bull' : ''}`}
+          aria-hidden="true"
+        >
+          {targetLabel}
+        </span>
         <SvgBoard
           highlightTarget={target}
           onHit={onBoardHit}
@@ -399,6 +409,12 @@ export default function ShanghaiGame() {
             ring: isBullRound ? (z === 2 ? 'DBULL' : 'BULL') : (z === 3 ? 'T' : z === 2 ? 'D' : 'S'),
           }))}
         />
+        <span
+          className={`sg__board-flank sg__board-flank--right${isBullRound ? ' sg__board-flank--bull' : ''}`}
+          aria-hidden="true"
+        >
+          {targetLabel}
+        </span>
         <p className="sg__target-label">
           {target === BULL ? 'BULL' : `CIBLE : ${target}`}
         </p>

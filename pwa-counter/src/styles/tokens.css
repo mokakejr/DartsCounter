@@ -41,6 +41,10 @@
   /* Typo */
   --font-display: 'Anton', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, sans-serif;
+  /* Chiffres à lire de loin (rappel de cible du Shanghai) : Archivo Black est
+     dessiné en graisse black, donc aucun gras synthétique — contrairement à
+     Anton qui n'existe qu'en 400. */
+  --font-score: 'Archivo Black', 'Anton', system-ui, sans-serif;
 
   /* Rythme */
   --maxw: 1200px;

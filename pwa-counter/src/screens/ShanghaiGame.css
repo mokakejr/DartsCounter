@@ -413,9 +413,9 @@
   position: absolute;
   top: calc(50% - 7px); /* recentré sur la cible seule, label exclu */
   transform: translateY(-50%);
-  font-family: var(--font-display);
+  font-family: var(--font-score);
   font-size: clamp(30px, 9.5vw, 58px);
-  font-weight: 900;
+  font-weight: 400; /* Archivo Black EST la graisse black : pas de faux gras */
   line-height: 1;
   color: var(--text);
   pointer-events: none; /* ne vole jamais un tap destiné à la cible */
@@ -424,10 +424,11 @@
 }
 .sg__board-flank--left { right: 100%; margin-right: clamp(10px, 5vw, 30px); }
 .sg__board-flank--right { left: 100%; margin-left: clamp(10px, 5vw, 30px); }
-/* « BULL » fait 4 caractères : réduit pour tenir dans la même gouttière. */
+/* « BULL » fait 4 caractères, dans une police large : réduit pour tenir dans
+   la même gouttière sans venir toucher le bord de l'écran. */
 .sg__board-flank--bull {
-  font-size: clamp(17px, 5.2vw, 32px);
-  letter-spacing: 0.04em;
+  font-size: clamp(15px, 4.6vw, 28px);
+  letter-spacing: 0.02em;
 }
 
 /* ── Verrouillage hors tour (Epic 13.2) — même pattern que le 51 ─────── */

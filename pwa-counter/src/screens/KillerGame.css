@@ -1,10 +1,15 @@
 .kg {
-  min-height: 100svh;
+  /* Hauteur FIXE + overflow-y (comme 51/Cricket/Shanghai) : min-height
+     poussait le body, qui ne scrolle pas — contenu long inaccessible. */
+  height: 100svh;
   display: flex;
   flex-direction: column;
   background: var(--bg);
-  padding: 0 20px 24px;
+  padding: 0 20px max(16px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Header ─────────────────────────────────────────── */

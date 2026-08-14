@@ -2,9 +2,10 @@
 
 Ported from scripts/elo-calculator.py's pairwise round-robin design, plus a
 performance multiplier on top: every pair of participants in a game faces
-off directly by score (see `_beats`, which also handles a draw when two
-players tie), with a per-player, per-scope K-factor that decays as that
-player accumulates games. Two scopes are computed per game: "global"
+off directly by score — or by the game's declared winner, who outranks the
+scores for the pairs they're in (see `_beats`, which also handles a draw
+when two players tie) — with a per-player, per-scope K-factor that decays
+as that player accumulates games. Two scopes are computed per game: "global"
 (every game) and the game's own mode (e.g. "Cricket") — see GLOBAL_SCOPE.
 
 All functions here are pure (no DB) and config-driven (an `EloConfig`
@@ -14,7 +15,7 @@ re-tunable from app/services/elo_config.py without touching this module.
 
 import statistics
 from dataclasses import dataclass
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 from app.models.elo import GLOBAL_SCOPE, elo_scope_for
 
@@ -40,6 +41,10 @@ class GameForElo(TypedDict):
     variant: str | None
     players: list[str]
     scores: list[int]
+    # The declared winner, when the mode reports one — authoritative over
+    # the scores (see `_beats`). Optional/None means "derive it from the
+    # scores", which is what every score-decided mode does anyway.
+    winner: NotRequired[str | None]
 
 
 def normalize_key(value: str | None) -> str:
@@ -111,13 +116,40 @@ def performance_multiplier(
     return min(clamp_max, max(clamp_min, ratio))
 
 
-def _beats(score_a: float, score_b: float, lower_is_better: bool) -> bool | None:
+def _beats(
+    player_a: str,
+    player_b: str,
+    score_by_player: dict[str, float],
+    lower_is_better: bool,
+    winner: str | None = None,
+) -> bool | None:
     """True if a beats b, False if b beats a, None if it's a draw (equal
     scores) — Shanghai explicitly allows ties, so this has to be a real
-    third outcome, not just an arbitrary tie-break order."""
+    third outcome, not just an arbitrary tie-break order.
+
+    A declared `winner` outranks the scores: some modes end the game on an
+    instant win rather than on points (a Shanghai kill — single, double and
+    triple on the same target in one turn — stops the game on the spot),
+    and the killer is very often *behind* on points when it lands, since
+    the remaining rounds are never played. Reading the scoreboard alone
+    there would have the winner losing every face-off, and Elo with it.
+    """
+    if winner is not None:
+        if player_a == winner:
+            return True
+        if player_b == winner:
+            return False
+    score_a, score_b = score_by_player[player_a], score_by_player[player_b]
     if score_a == score_b:
         return None
     return (score_a > score_b) if not lower_is_better else (score_a < score_b)
+
+
+def _leads_on_score(player: str, score_by_player: dict[str, float], lower_is_better: bool) -> bool:
+    """Whether `player` holds (or shares) the best score of the game."""
+    values = score_by_player.values()
+    best = min(values) if lower_is_better else max(values)
+    return score_by_player[player] == best
 
 
 def recompute_elo(
@@ -166,12 +198,25 @@ def recompute_elo(
         lower_is_better = lower_is_better_for(mode, game.get("variant"), score_direction)
 
         score_by_player = dict(zip(players, scores, strict=True))
-        perf = {
-            p: performance_multiplier(
-                score_by_player[p], scores, lower_is_better, config.perf_multiplier_min, config.perf_multiplier_max
-            )
-            for p in players
-        }
+
+        winner = game.get("winner") or None
+        if winner not in score_by_player:
+            winner = None  # tie, solo mode, or a name that isn't at this table
+
+        # A game the declared winner did not top on points was cut short by
+        # an instant win (Shanghai kill): the unplayed rounds make every
+        # score in it an artefact, so they carry no performance signal for
+        # anyone — neutral multiplier for the whole table. Everywhere else
+        # the scores agree with the outcome and are scored as usual.
+        if winner is not None and not _leads_on_score(winner, score_by_player, lower_is_better):
+            perf = dict.fromkeys(players, 1.0)
+        else:
+            perf = {
+                p: performance_multiplier(
+                    score_by_player[p], scores, lower_is_better, config.perf_multiplier_min, config.perf_multiplier_max
+                )
+                for p in players
+            }
 
         for scope in (GLOBAL_SCOPE, elo_scope_for(mode)):
             before = {p: state_for(p, scope).rating for p in players}
@@ -181,7 +226,7 @@ def recompute_elo(
             for i in range(n):
                 for j in range(i + 1, n):
                     a, b = players[i], players[j]
-                    outcome = _beats(score_by_player[a], score_by_player[b], lower_is_better)
+                    outcome = _beats(a, b, score_by_player, lower_is_better, winner)
                     expected_a = expected_score(before[a], before[b], config.convergence)
                     actual_a = 0.5 if outcome is None else (1.0 if outcome else 0.0)
                     deltas[a] += k[a] * (actual_a - expected_a) / (n - 1)

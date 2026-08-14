@@ -21,6 +21,17 @@ export const LEVELS = [
 // Jours de match de la France à la CDM 2026 (phase de poules, groupe I).
 export const FRANCE_WC_DATES = ['2026-06-16', '2026-06-22', '2026-06-26'];
 
+// 'Cut Throat' et 'CutThroat' cohabitent dans l'historique : on compare sur
+// une clé insensible à la casse et à la ponctuation (même règle que
+// normalize_key côté backend).
+export function normalizeVariant(v) {
+  return String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+export function isCutThroat(v) {
+  return normalizeVariant(v) === 'cutthroat';
+}
+
 export function levelForXP(xp) {
   let cur = LEVELS[0];
   for (const l of LEVELS) if (xp >= l.xp) cur = l;
@@ -47,7 +58,7 @@ export function computePlayerStats(games) {
       dayKeys:new Set(), friday13:false, afterMidnight:false, playedSat:false, playedSun:false,
       winDates:[], maxWinsInDay:0, maxWinsInWeek:0, allModesBonus:false,
       // itération 2 — champs additionnels pour les nouveaux trophées
-      beat:{}, speedWinCount:0, longWin:false,
+      beat:{}, speedWinCount:0, longWin:false, maxCutThroatScore:0,
       dayGames:{}, dayWins:{}, dayModesWon:{},
       perfectDay:false, maxModesWonInDay:0, distinctDays:0, maxDayStreak:0,
     };
@@ -70,6 +81,11 @@ export function computePlayerStats(games) {
       s.modeGames[g.mode] = (s.modeGames[g.mode] || 0) + 1;
       const _rawScore = Array.isArray(g.scores) ? g.scores[g.players.indexOf(p)] : undefined;
       if (_rawScore !== undefined) (s.modeScores[g.mode] = s.modeScores[g.mode] || []).push(_rawScore);
+      // Cut Throat : le score le plus bas gagne, donc un gros total = une bonne
+      // branlée. On garde le pire (= le plus haut) pour le trophée « Thomas ».
+      if (isCutThroat(g.variant) && typeof _rawScore === 'number') {
+        s.maxCutThroatScore = Math.max(s.maxCutThroatScore, _rawScore);
+      }
       s.dayGames[ymd] = (s.dayGames[ymd] || 0) + 1;
       g.players.forEach(o => { if (o !== p) s.opponents.add(o); });
       if (dur > 1800) s.marathon = true;
@@ -223,6 +239,7 @@ export const ACHIEVEMENTS = [
   { id:'cursed',            cat:'loss', ico:'\u{1FAA6}', name:'Maudit',           desc:'10 défaites consécutives',              cond:s => s.maxLossStreak >= 10, prog:s => [s.maxLossStreak, 10] },
   { id:'bottomless_pit',    cat:'loss', ico:'\u{1F573}️', name:'Puits sans Fond',  desc:'12 défaites consécutives',              cond:s => s.maxLossStreak >= 12, prog:s => [s.maxLossStreak, 12] },
   { id:'are_you_serious',   cat:'loss', ico:'\u{1F610}', name:"T'es sérieux ?",    desc:'20 défaites consécutives',              cond:s => s.maxLossStreak >= 20, prog:s => [s.maxLossStreak, 20] },
+  { id:'thomas',            cat:'loss', ico:'\u{1F92F}', name:'Il nous fait une Thomas', desc:'Finir une partie en Cut Throat avec plus de 1000 points', cond:s => s.maxCutThroatScore > 1000, prog:s => [s.maxCutThroatScore, 1001], value:s => `${s.maxCutThroatScore} pts encaissés` },
 
   // ── Modes de jeu ──
   { id:'cricket_master',    cat:'modes', ico:'\u{1F997}', name:'Maître du Cricket',desc:'10 victoires en Cricket',              cond:s => (s.modeWins.Cricket||0) >= 10, prog:s => [s.modeWins.Cricket||0, 10] },

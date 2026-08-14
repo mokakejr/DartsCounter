@@ -94,6 +94,31 @@ async def test_casual_game_excluded_from_leaderboard_games_count(client):
     assert alice["wins"] == 1
 
 
+async def test_solo_training_records_no_victory(client):
+    # Entraînement solo (Bob27, 1 joueur) : aucune victoire comptée — le joueur
+    # solo « gagne » trivialement mais rien ne doit l'enregistrer.
+    resp = await client.post("/auth/signup", json={"name": "Solo", "password": "hunter22"})
+    solo = {"Authorization": f"Bearer {resp.json()['access_token']}"}
+
+    body = (await client.post("/games", json={
+        "date": "2026-07-03T10:00:00Z",
+        "mode": "Bob27",
+        "players": ["Solo"],
+        "scores": [27],
+        "winner": "Solo",
+        "is_casual": True,
+    })).json()
+    # Pas de vainqueur enregistré, ni dans la réponse ni en base.
+    assert body["winner"] is None
+    stored = (await client.get("/games")).json()[0]
+    assert stored["winner"] is None
+
+    # Pas de bonus XP de victoire (+30) : base 50 × 1.1 (série 1) = 55,
+    # et non (50 + 30) × 1.1 = 88.
+    me = (await client.get("/players/me", headers=solo)).json()
+    assert me["ferveur_xp"] == 55
+
+
 async def test_list_games_ordered_newest_first(client):
     for day in (1, 2, 3):
         await client.post("/games", json={**BASE_GAME, "date": f"2026-01-0{day}T10:00:00Z"})
@@ -101,3 +126,33 @@ async def test_list_games_ordered_newest_first(client):
     games = (await client.get("/games", params={"limit": 2})).json()
     assert len(games) == 2
     assert games[0]["date"] > games[1]["date"]
+
+
+async def test_aberrant_score_is_a_normal_game(client):
+    """Non-régression : l'ancien anti-cheat gelait ce cas en PENDING_REVIEW —
+    la partie était enregistrée mais sortie de l'Elo et du classement, sans
+    aucun moyen de l'homologuer. Elle doit désormais compter comme les autres."""
+    shanghai = {**BASE_GAME, "mode": "Shanghai", "variant": None}
+    for i in range(10):
+        resp = await client.post("/games", json={
+            **shanghai,
+            "date": f"2026-01-{i + 1:02d}T10:00:00Z",
+            "scores": [40 + (i % 3), 38],
+        })
+        assert resp.status_code == 201
+
+    before = {row["name"]: row for row in (await client.get("/stats/leaderboard")).json()}
+
+    aberrant = await client.post("/games", json={
+        **shanghai, "date": "2026-02-01T10:00:00Z", "scores": [400, 38],
+    })
+    assert aberrant.status_code == 201
+    game_id = aberrant.json()["id"]
+
+    # Présente dans l'historique…
+    assert game_id in {g["id"] for g in (await client.get("/games")).json()}
+
+    # …et comptée au classement : une partie de plus et un Elo qui bouge.
+    after = {row["name"]: row for row in (await client.get("/stats/leaderboard")).json()}
+    assert after["Alice"]["games"] == before["Alice"]["games"] + 1
+    assert after["Alice"]["elo"] != before["Alice"]["elo"]

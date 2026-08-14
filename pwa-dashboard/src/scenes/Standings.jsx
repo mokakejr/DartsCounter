@@ -5,7 +5,6 @@ import { ALL_MODES } from '../lib/stats.js';
 import { MODE_LABEL } from '../lib/data.js';
 import { displayName } from '../lib/profiles.js';
 import PlayerCard from '../components/PlayerCard.jsx';
-import { useAuth } from '../lib/useAuth.jsx';
 import { useLeague } from '../lib/useLeague.jsx';
 import { fetchLeaderboard } from '../api/stats.js';
 import { fetchEloSettings } from '../api/elo.js';
@@ -21,7 +20,7 @@ function rankClass(i) {
 }
 
 export default function Standings({ ranked, profiles = {} }) {
-  const { activeLeague } = useLeague();
+  const { activeLeague, leagues } = useLeague();
   const leagueId = activeLeague?.id;
   const [filter, setFilter] = useState('Global');
   // Elo is ranked server-side (it's the whole point of the rating engine) —
@@ -48,9 +47,16 @@ export default function Standings({ ranked, profiles = {} }) {
   const elo = eloByFilter[cacheKey] || {};
 
   const { rankedRows, unrankedRows } = useMemo(() => {
-    // Une ligue active ne classe que ses membres actifs : les adversaires
-    // hors ligue comptent dans les stats des membres mais n'ont pas de ligne.
-    const memberSet = activeLeague?.players?.length ? new Set(activeLeague.players) : null;
+    // Le classement ne liste que des membres de ligue actifs : ceux de la
+    // ligue active, ou l'union de mes ligues en « Toutes les ligues » — ce
+    // mode veut dire « toutes les miennes », pas « toute la base ». Les
+    // adversaires croisés hors ligue comptent dans les stats des membres
+    // mais n'ont pas de ligne : à moins de 5 parties ils s'entassaient tous
+    // dans « Non classés ». Déconnecté (aucune ligue), rien n'est filtré.
+    const memberNames = activeLeague?.players?.length
+      ? activeLeague.players
+      : leagues.flatMap(l => l.players ?? []);
+    const memberSet = memberNames.length ? new Set(memberNames) : null;
     const scoped = memberSet ? ranked.filter(s => memberSet.has(s.name)) : ranked;
     const base = filter === 'Global'
       ? scoped
@@ -80,7 +86,7 @@ export default function Standings({ ranked, profiles = {} }) {
         .filter(s => gamesOf(s) < minRankedGames)
         .sort((a, b) => gamesOf(b) - gamesOf(a)),
     };
-  }, [ranked, filter, elo, minRankedGames, activeLeague]);
+  }, [ranked, filter, elo, minRankedGames, activeLeague, leagues]);
 
   return (
     <section className="standings shell" id="classement">
@@ -231,15 +237,8 @@ function LadderRow({ s, i, filter, profiles, playerElo, isRanked }) {
 
 
 // Le Podium Dynamique (Epic 10.1): les 3 premiers ne sont plus des lignes.
-// Ordre visuel 2-1-3, CTA rouge « Prendre sa place » (feature à venir,
-// n'envoie plus de webhook pour l'instant).
+// Ordre visuel 2-1-3.
 function Podium({ top, profiles, elo }) {
-  const auth = useAuth();
-
-  function challenge() {
-    window.alert('🚧 Ça va arriver, fonctionnalité pas encore prête !');
-  }
-
   const order = [top[1], top[0], top[2]].filter(Boolean);
   const placeOf = (s) => top.indexOf(s); // 0 = champion
 
@@ -247,7 +246,6 @@ function Podium({ top, profiles, elo }) {
     <div className="podium">
       {order.map((s) => {
         const place = placeOf(s);
-        const canChallenge = auth.player && auth.player.name !== s.name;
         return (
           <div key={s.name} className={`podium__slot podium__slot--p${place + 1}`}>
             <span className="podium__medal">{['🥇', '🥈', '🥉'][place]}</span>
@@ -265,11 +263,6 @@ function Podium({ top, profiles, elo }) {
             <span className="podium__stats">
               {elo[s.name] ? `${elo[s.name].elo} elo` : '—'}
             </span>
-            {canChallenge && (
-              <button className="podium__target" onClick={challenge}>
-                🎯 Prendre sa place
-              </button>
-            )}
             <span className={`podium__step podium__step--p${place + 1}`} />
           </div>
         );

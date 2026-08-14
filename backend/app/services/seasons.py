@@ -1,33 +1,52 @@
-"""Saisons compétitives avec soft reset (Hub v2).
+"""Saisons compétitives mensuelles avec soft reset (Hub v2).
 
 Un classement perpétuel tue le jeu : le 1er devient intouchable, le dernier
-abandonne. Toutes les SEASON_DAYS, on fige le classement, on couronne le
-champion (titre + événement de feed dans chaque ligue) et on compresse les
-ratings vers le point de départ (soft reset) pour relancer la course.
+abandonne. Chaque 1er du mois, on fige le classement de chaque ligue, on
+l'archive dans le palmarès, on couronne le champion de la ligue (titre +
+événement de feed) et on compresse les ratings vers le point de départ (soft
+reset) pour relancer la course.
 
 Compatibilité recompute_all : l'ELO du repo est « re-dérivable depuis
 l'historique » — un soft reset qui écrase PlayerRating serait annulé au
-premier replay (le tribunal en fait un par verdict !). D'où la table
+premier replay (l'admin peut en déclencher un à tout moment). D'où la table
 season_ratings : le snapshot compressé du début de saison sert de ratings
 initiaux, et le replay ne rejoue que les parties de la saison courante.
 """
 
+import calendar
 import logging
 import uuid
-from datetime import date, timedelta
+from datetime import date
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import LeagueEvent, PlayerRating, PlayerTitle, Season
-from app.models.elo import GLOBAL_SCOPE
-from app.models.season import SeasonRating
+from app.models.season import SeasonRating, SeasonStanding
 
 logger = logging.getLogger(__name__)
 
-SEASON_DAYS = 60
 # Soft reset : new = starting + (rating - starting) * SQUEEZE
 SQUEEZE = 0.5
+
+MONTHS_FR = (
+    "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
+)
+
+# Type de l'événement de feed écrit à la clôture d'une saison.
+EVENT_SEASON_END = "SEASON_END"
+CHAMPION_TITLE = "league_champion"
+
+
+def month_bounds(day: date) -> tuple[date, date]:
+    """Premier et dernier jour du mois contenant `day`."""
+    last = calendar.monthrange(day.year, day.month)[1]
+    return day.replace(day=1), day.replace(day=last)
+
+
+def month_name(day: date) -> str:
+    return f"{MONTHS_FR[day.month - 1]} {day.year}"
 
 
 async def get_active_season(session: AsyncSession) -> Season | None:
@@ -35,16 +54,19 @@ async def get_active_season(session: AsyncSession) -> Season | None:
     return (await session.execute(stmt)).scalar_one_or_none()
 
 
-async def _season_number(session: AsyncSession) -> int:
-    return len((await session.execute(select(Season.id))).all()) + 1
+async def _start_new_season(session: AsyncSession, start: date | None = None) -> Season:
+    """Ouvre la saison du mois contenant `start` (aujourd'hui par défaut).
 
-
-async def _start_new_season(session: AsyncSession) -> Season:
-    number = await _season_number(session)
+    `start_date` est la date réelle d'ouverture, pas forcément le 1er : c'est
+    la borne basse que recompute_all utilise pour rejouer la saison, et une
+    date antérieure à l'ouverture ferait rejouer des parties déjà encaissées
+    dans la baseline."""
+    start = start or date.today()
+    _, last = month_bounds(start)
     season = Season(
-        name=f"Saison {number}",
-        start_date=date.today(),
-        end_date=date.today() + timedelta(days=SEASON_DAYS),
+        name=month_name(start),
+        start_date=start,
+        end_date=last,
         is_active=True,
     )
     session.add(season)
@@ -71,6 +93,22 @@ async def _snapshot_squeezed_ratings(session: AsyncSession, season: Season, star
         )
 
 
+async def snapshot_current_ratings(session: AsyncSession, season: Season) -> None:
+    """Baseline « telle quelle » — pour une saison ouverte sans clôture
+    précédente (toute première saison, ou création manuelle en admin)."""
+    await session.execute(delete(SeasonRating).where(SeasonRating.season_id == season.id))
+    for r in (await session.execute(select(PlayerRating))).scalars().all():
+        session.add(
+            SeasonRating(
+                season_id=season.id,
+                player_id=r.player_id,
+                scope=r.scope,
+                rating=r.rating,
+                games_played=r.games_played,
+            )
+        )
+
+
 async def load_season_baseline(
     session: AsyncSession, season: Season
 ) -> tuple[dict[uuid.UUID, dict[str, float]], dict[uuid.UUID, dict[str, int]]]:
@@ -87,51 +125,150 @@ async def load_season_baseline(
     return ratings, games
 
 
-async def _crown_champion(session: AsyncSession, season: Season) -> None:
-    """Champion de saison = #1 ELO global. Titre sur le profil + événement
-    de feed dans chaque ligue dont il est membre actif."""
-    from app.models import League, LeagueMember, Player
+async def archive_standings(session: AsyncSession, season: Season) -> dict[uuid.UUID, list[SeasonStanding]]:
+    """Fige le classement de chaque ligue dans season_standings.
 
-    top = (
-        await session.execute(
-            select(PlayerRating)
-            .where(PlayerRating.scope == GLOBAL_SCOPE, PlayerRating.games_played > 0)
-            .order_by(PlayerRating.rating.desc())
-            .limit(1)
-        )
-    ).scalar_one_or_none()
-    if top is None:
-        return
-    champion = await session.get(Player, top.player_id)
-    if champion is None:
-        return
+    À appeler **avant** le soft reset, sinon on archiverait des ratings déjà
+    compressés. Retourne les lignes écrites, par league_id, ordonnées — le
+    couronnement s'en sert directement.
 
-    existing = await session.get(PlayerTitle, (champion.id, "season_champion"))
-    if existing is None:
-        session.add(PlayerTitle(player_id=champion.id, title_id="season_champion"))
+    Le classement vient de get_leaderboard, déjà trié (membres actifs d'abord,
+    puis Elo décroissant) et déjà filtré sur la saison courante pour les
+    colonnes parties/victoires. Les membres fantômes (partis en cours de
+    saison) et ceux qui n'ont pas joué du mois n'entrent pas au palmarès."""
+    from app.models import League
+    from app.services.stats import get_leaderboard
 
-    leagues = (
-        await session.execute(
-            select(League)
-            .join(LeagueMember, LeagueMember.league_id == League.id)
-            .where(LeagueMember.player_id == champion.id, LeagueMember.is_active.is_(True))
-        )
-    ).scalars().all()
-    label = champion.display_name or champion.name
+    await session.execute(delete(SeasonStanding).where(SeasonStanding.season_id == season.id))
+
+    leagues = (await session.execute(select(League))).scalars().all()
+    by_league: dict[uuid.UUID, list[SeasonStanding]] = {}
     for league in leagues:
+        board = await get_leaderboard(session, league_id=league.id, until=season.end_date)
+        played = [row for row in board if row.is_active and row.games > 0]
+        rows = [
+            SeasonStanding(
+                season_id=season.id,
+                league_id=league.id,
+                player_id=row.id,
+                position=position,
+                rating=round(row.elo),
+                games=row.games,
+                wins=row.wins,
+                rank_label=row.rank,
+            )
+            for position, row in enumerate(played, start=1)
+        ]
+        for row in rows:
+            session.add(row)
+        if rows:
+            by_league[league.id] = rows
+    return by_league
+
+
+async def _crown_league_champions(
+    session: AsyncSession, season: Season, standings: dict[uuid.UUID, list[SeasonStanding]]
+) -> None:
+    """Champion = #1 du classement de la ligue, à condition d'avoir atteint le
+    seuil de parties classées (sinon un joueur à une partie raflerait le
+    titre). Titre sur le profil + événement de feed dans la ligue."""
+    from app.models import League, Player
+    from app.services.elo_config import get_settings_row
+
+    # min_ranked_games vit sur la ligne de settings, pas sur l'EloConfig du
+    # moteur pur (qui ne connaît que le calcul du rating).
+    min_ranked_games = (await get_settings_row(session)).min_ranked_games
+
+    for league_id, rows in standings.items():
+        champion_row = next((r for r in rows if r.games >= min_ranked_games), None)
+        if champion_row is None:
+            logger.info("Season %s: no champion for league %s (min games not met)", season.name, league_id)
+            continue
+
+        league = await session.get(League, league_id)
+        champion = await session.get(Player, champion_row.player_id)
+        if league is None or champion is None:
+            continue
+
+        champion_row.is_champion = True
+        if await session.get(PlayerTitle, (champion.id, CHAMPION_TITLE)) is None:
+            session.add(PlayerTitle(player_id=champion.id, title_id=CHAMPION_TITLE))
+
+        label = champion.display_name or champion.name
+        podium_parts: list[str] = []
+        for r in rows[:3]:
+            player = await session.get(Player, r.player_id)
+            if player is not None:
+                podium_parts.append(f"{r.position}. {player.display_name or player.name}")
+        podium = " · ".join(podium_parts)
         session.add(
             LeagueEvent(
                 league_id=league.id,
-                event_type="SEASON_END",
+                event_type=EVENT_SEASON_END,
                 actor_id=champion.id,
-                story_text=f"{season.name} est terminée — {label} est sacré Champion de Saison !",
+                story_text=(
+                    f"{season.name} est terminée — {label} est sacré Champion de "
+                    f"{league.name} ! ({podium})"
+                ),
             )
         )
 
 
+async def close_season(session: AsyncSession, season: Season, starting: float) -> Season:
+    """Clôture `season` et ouvre celle du mois courant. L'ordre compte :
+    archive puis couronnement (sur les ratings de fin de saison), et seulement
+    ensuite le soft reset. Ne commit pas — l'appelant s'en charge."""
+    standings = await archive_standings(session, season)
+    await _crown_league_champions(session, season, standings)
+    season.is_active = False
+    new_season = await _start_new_season(session)
+    await _snapshot_squeezed_ratings(session, new_season, starting)
+    return new_season
+
+
+async def get_palmares(
+    session: AsyncSession, league_id: uuid.UUID, limit: int = 24
+) -> list[tuple[Season, list[SeasonStanding]]]:
+    """Palmarès d'une ligue : saisons clôturées de la plus récente à la plus
+    ancienne, chacune avec son classement archivé (`.player` chargé). `limit`
+    borne le nombre de saisons (deux ans par défaut), pas le nombre de lignes
+    par saison."""
+    from sqlalchemy.orm import selectinload
+
+    seasons = (
+        await session.execute(
+            select(Season)
+            .join(SeasonStanding, SeasonStanding.season_id == Season.id)
+            .where(SeasonStanding.league_id == league_id, Season.is_active.is_(False))
+            .distinct()
+            .order_by(Season.start_date.desc())
+            .limit(limit)
+        )
+    ).scalars().all()
+    if not seasons:
+        return []
+
+    rows = (
+        await session.execute(
+            select(SeasonStanding)
+            .where(
+                SeasonStanding.league_id == league_id,
+                SeasonStanding.season_id.in_([s.id for s in seasons]),
+            )
+            .options(selectinload(SeasonStanding.player))
+            .order_by(SeasonStanding.position)
+        )
+    ).scalars().all()
+
+    by_season: dict[uuid.UUID, list[SeasonStanding]] = {}
+    for row in rows:
+        by_season.setdefault(row.season_id, []).append(row)
+    return [(s, by_season.get(s.id, [])) for s in seasons]
+
+
 async def rollover_if_needed(session: AsyncSession) -> Season | None:
     """Job quotidien : crée la première saison si aucune, clôture + soft
-    reset + nouvelle saison quand la date de fin est dépassée. Retourne la
+    reset + nouvelle saison dès qu'on a passé la fin du mois. Retourne la
     nouvelle saison le cas échéant."""
     from app.services.elo_config import get_engine_config
 
@@ -141,17 +278,7 @@ async def rollover_if_needed(session: AsyncSession) -> Season | None:
     if active is None:
         season = await _start_new_season(session)
         # Baseline de la toute première saison = ratings actuels, tels quels.
-        await session.execute(delete(SeasonRating).where(SeasonRating.season_id == season.id))
-        for r in (await session.execute(select(PlayerRating))).scalars().all():
-            session.add(
-                SeasonRating(
-                    season_id=season.id,
-                    player_id=r.player_id,
-                    scope=r.scope,
-                    rating=r.rating,
-                    games_played=r.games_played,
-                )
-            )
+        await snapshot_current_ratings(session, season)
         await session.commit()
         logger.info("Season started: %s", season.name)
         return season
@@ -159,11 +286,7 @@ async def rollover_if_needed(session: AsyncSession) -> Season | None:
     if active.end_date is None or date.today() <= active.end_date:
         return None
 
-    # Clôture : couronne, gèle, compresse, relance.
-    await _crown_champion(session, active)
-    active.is_active = False
-    season = await _start_new_season(session)
-    await _snapshot_squeezed_ratings(session, season, config.starting_rating)
+    season = await close_season(session, active, config.starting_rating)
     await session.commit()
     logger.info("Season rolled over: %s -> %s (soft reset)", active.name, season.name)
     return season

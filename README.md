@@ -104,11 +104,46 @@ replaced once achievements move server-side.
 
 ## Notifications
 
-Two events: `game_finished` (every `POST /games`) and `weekly_recap` (every
-Friday 17:00 Europe/Paris, via APScheduler in `backend/app/workers/scheduler.py`).
-Both dispatch to every *enabled* configured target — Google Chat and/or
-Discord, same event, different message format
-(`backend/app/services/targets/{google_chat,discord}.py`).
+Events: `game_started` / `game_finished` / `game_abandoned` (une partie),
+plus `weekly_recap` (every Friday 17:00 Europe/Paris, via APScheduler in
+`backend/app/workers/scheduler.py`). All dispatch to every *enabled*
+configured target — Google Chat and/or Discord, same event, different message
+format (`backend/app/services/targets/{google_chat,discord}.py`).
+
+### Une partie = un fil de discussion
+
+Pour éviter que chaque partie remonte l'espace Chat avec un message isolé,
+une partie tient dans **un seul fil** :
+
+1. au lancement d'un match live, une carte « 🔴 ÇA COMMENCE » avec l'affiche
+   (Elo + rang), la rivalité, et un bouton **SUIVRE EN LIVE** vers
+   `{COUNTER_URL}/watch/{match_id}` ;
+2. le résultat arrive **en réponse** dans ce fil ;
+3. une partie abandonnée referme son fil au lieu de le laisser orphelin.
+
+Le fil est identifié par une `threadKey` que le backend choisit lui-même
+(`backend/app/services/chat_threads.py`) — rien à stocker côté Google, grâce à
+`messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD`. Une partie sans
+match live (file offline, saisie tardive) poste simplement un message racine,
+comme avant.
+
+Garde-fous anti-bruit :
+
+- seules les parties **multi-joueurs, non-amicales, non-solo** sont annoncées,
+  au lancement **comme à la fin** — une amicale reste dans l'historique perso
+  de chacun sans jamais atteindre l'espace Chat ;
+- une ligue n'est notifiée que si **tous** les participants en sont membres
+  actifs : un invité d'un soir sans compte, ou un membre qui a quitté la
+  ligue, suffit à garder le salon muet (idem sur le canal global de repli) ;
+- l'annonce attend 30 s (`ANNOUNCE_DELAY_SECONDS`) et vérifie que la partie
+  tourne toujours — une partie lancée par erreur n'atteint jamais l'espace ;
+- une revanche enchaînée entre les mêmes joueurs dans les 10 minutes retombe
+  dans le fil précédent : une soirée de 5 revanches = 1 fil.
+
+`COUNTER_URL` doit pointer sur le compteur pour que le bouton « suivre en
+live » fonctionne (cf. `.env.example`). Le threading est propre à Google
+Chat ; un webhook Discord classique ne sait pas répondre en fil, il ne reçoit
+donc que le résultat, exactement comme avant.
 
 Configure a target:
 
@@ -120,7 +155,8 @@ curl -X POST http://localhost:8000/webhooks \
 
 curl http://localhost:8000/webhooks               # list configured targets
 curl -X POST http://localhost:8000/webhooks/test \
-  -H "Content-Type: application/json" -d '{"target": "google_chat"}'   # send a sample message
+  -H "Content-Type: application/json" -d '{"target": "google_chat"}'
+# ^ envoie l'aperçu complet : la carte de début puis le résultat, dans le même fil
 ```
 
 No DB config yet? `GOOGLE_CHAT_WEBHOOK` / `DISCORD_WEBHOOK_URL` env vars
@@ -296,10 +332,10 @@ directory on the VPS so dev and prod never share a Postgres/Redis volume.
    `DASHBOARD_URL`, by contrast, *are* literal full URLs you type out
    yourself, prefix and all — only `DOMAIN` is templated.
 
-   If the code you want to deploy hasn't been merged to `dev`/`master` yet,
+   If the code you want to deploy hasn't been merged to `dev`/`main` yet,
    `git checkout <your-branch>` here before continuing — `git clone` just
    needs *some* branch with the compose files on it, it doesn't have to be
-   `dev`/`master`. Switch back with `git checkout dev && git pull` once
+   `dev`/`main`. Switch back with `git checkout dev && git pull` once
    you've merged, so the directory matches what the CI/CD workflow expects.
 
 4. **Caddy config** — copy the relevant block from `caddy/Caddyfile.main` /
@@ -365,7 +401,7 @@ Run step 5's `alembic upgrade head` again any time a new migration lands.
 ### CI/CD
 
 `.github/workflows/deploy-main.yml` and `deploy-dev.yml` SSH into the VPS on
-push to `master`/`dev` respectively, `git pull`, then `docker compose pull && up -d --build`
+push to `main`/`dev` respectively, `git pull`, then `docker compose pull && up -d --build`
 in `/opt/dartscounter` / `/opt/dartscounter-dev`. They don't run migrations —
 do that manually (step 5 above) after a deploy that includes one.
 

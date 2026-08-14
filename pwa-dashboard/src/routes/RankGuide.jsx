@@ -46,11 +46,18 @@ export default function RankGuide() {
           qui était « censé » perdre gagne plus de points que celui qui était favori.
         </p>
         <p>
+          Les duels se règlent au score, sauf face au <b>vainqueur déclaré</b> de la partie, qui
+          les gagne tous : un Shanghai kill met fin au jeu sur-le-champ, souvent alors que le
+          tueur est encore derrière au tableau — c'est bien une victoire, pas une dernière place.
+        </p>
+        <p>
           Le score de chaque duel est ensuite multiplié par un <b>facteur de performance</b> :
           ton score sur cette partie, comparé à la moyenne des scores de la table (inversé pour
           les modes/variantes où le score le plus bas gagne, comme le Cut Throat). Un carton fait
           gagner plus de points, une partie catastrophique en fait perdre plus — dans la limite
           de {settings ? `×${settings.perf_multiplier_min} à ×${settings.perf_multiplier_max}` : '…'}.
+          Sur une partie écourtée par un kill, les scores ne veulent plus rien dire : le facteur
+          est alors neutre (×1) pour tout le monde.
         </p>
         <p>
           Le poids de chaque partie (le facteur K) diminue avec l'expérience — les premières

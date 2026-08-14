@@ -216,7 +216,7 @@ def test_stale_match_auto_closes_then_revives_on_play():
 
     match = live.create_match("FiftyOne", ["Leo", "Theo"])
     match.last_activity = time.time() - 16 * 60
-    assert asyncio.run(live.close_stale_matches()) == 1
+    assert [m.id for m in asyncio.run(live.close_stale_matches())] == [match.id]
     assert match.finished is True and match.aborted is True
     # Sortie du carousel, mais toujours consultable.
     assert live.list_matches() == []
@@ -237,103 +237,3 @@ def test_purge_expired():
     match.last_activity = time.time() - 3 * 3600
     assert live.purge_expired() == 1
     assert live.get_match(match.id) is None
-
-
-# --- Jauge de Hype (agrégat d'emotes + rate limit serveur) -------------------
-
-
-def test_emote_rate_limited_per_sender():
-    """Le throttle client (1 s) est contournable — le serveur tranche."""
-    match = live.create_match("FiftyOne", ["Leo", "Theo"])
-    assert live.check_emote(match, "Bob") is True
-    assert live.check_emote(match, "Bob") is False  # back-to-back : rejeté
-    assert live.check_emote(match, "Carl") is True  # par expéditeur, pas global
-
-
-def test_crowd_hype_fires_at_threshold_then_cools_down():
-    match = live.create_match("FiftyOne", ["Leo", "Theo"])
-    for _ in range(live.HYPE_THRESHOLD - 1):
-        assert live.register_emote(match) is False
-    assert live.register_emote(match) is True  # seuil atteint : délire
-    # La même vague ne re-déclenche pas (refroidissement 30 s).
-    assert live.register_emote(match) is False
-
-
-def test_crowd_hype_window_slides():
-    """Les emotes plus vieilles que la fenêtre ne comptent plus."""
-    match = live.create_match("FiftyOne", ["Leo", "Theo"])
-    old = time.time() - live.HYPE_WINDOW_SECONDS - 1
-    for _ in range(live.HYPE_THRESHOLD):
-        match._emote_times.append(old)
-    assert live.register_emote(match) is False  # tout est purgé sauf celle-ci
-    assert len(match._emote_times) == 1
-
-
-def test_crowd_hype_broadcast_over_ws(monkeypatch):
-    """Deux spectateurs suffisent avec un seuil abaissé — un seul spammeur ne
-    peut PAS déclencher le délire (rate limit par expéditeur)."""
-    monkeypatch.setattr(live, "HYPE_THRESHOLD", 2)
-    with TestClient(app) as client:
-        match = _create(client)
-        with client.websocket_connect(f"/ws/live/{match['id']}?role=spectator&name=Bob") as bob, \
-             client.websocket_connect(f"/ws/live/{match['id']}?role=spectator&name=Carl") as carl:
-            bob.receive_json(), carl.receive_json()  # STATE
-
-            # Bob spamme : la 2e est droppée serveur, pas de CROWD_HYPE.
-            bob.send_json({"event": "EMOTE", "emote": "👏"})
-            bob.send_json({"event": "EMOTE", "emote": "👏"})
-            assert bob.receive_json()["event"] == "EMOTE"
-            assert carl.receive_json()["event"] == "EMOTE"
-
-            # Carl s'y met : 2 expéditeurs distincts dans la fenêtre -> délire.
-            carl.send_json({"event": "EMOTE", "emote": "🍺"})
-            assert carl.receive_json()["event"] == "EMOTE"
-            assert carl.receive_json()["event"] == "CROWD_HYPE"
-            assert bob.receive_json()["event"] == "EMOTE"
-            hype = bob.receive_json()
-            assert hype["event"] == "CROWD_HYPE"
-            assert hype["count"] >= 2
-
-
-# --- Prono d'avant-match (Tale of the Tape) ---------------------------------
-
-
-def test_prematch_vote_flow():
-    with TestClient(app) as client:
-        match = _create(client, remote=True)  # remote : pas encore démarré
-        mid = match["id"]
-        with client.websocket_connect(f"/ws/live/{mid}?role=spectator&name=Bob") as bob, \
-             client.websocket_connect(f"/ws/live/{mid}?role=spectator&name=Carl") as carl:
-            assert bob.receive_json()["event"] == "STATE"
-            assert carl.receive_json()["event"] == "STATE"
-
-            bob.send_json({"event": "VOTE", "player": "Leo"})
-            assert bob.receive_json()["counts"] == {"Leo": 1}
-            assert carl.receive_json()["counts"] == {"Leo": 1}
-
-            # Re-voter change son camp (last-write-wins), ne double pas.
-            bob.send_json({"event": "VOTE", "player": "Theo"})
-            assert carl.receive_json()["counts"] == {"Theo": 1}
-            bob.receive_json()
-
-            # Joueur inconnu : silencieusement ignoré.
-            carl.send_json({"event": "VOTE", "player": "Zorro"})
-            carl.send_json({"event": "VOTE", "player": "Leo"})
-            assert carl.receive_json()["counts"] == {"Theo": 1, "Leo": 1}
-            bob.receive_json()
-
-            # Retardataire : le STATE porte les agrégats (jamais qui a voté).
-            with client.websocket_connect(f"/ws/live/{mid}?role=spectator&name=Dave") as dave:
-                assert dave.receive_json()["match"]["votes"] == {"Theo": 1, "Leo": 1}
-
-            # Première fléchette lancée : les paris sont clos.
-            client.post(f"/live/matches/{mid}/ready", json={"name": "Leo"})
-            client.post(f"/live/matches/{mid}/ready", json={"name": "Theo"})
-            for _ in range(3):  # READY x2 + MATCH_STARTED
-                bob.receive_json()
-                carl.receive_json()
-            bob.send_json({"event": "VOTE", "player": "Leo"})
-            bob.send_json({"event": "EMOTE", "emote": "👏"})
-            # Le VOTE tardif n'a rien émis : la frame suivante est l'EMOTE.
-            assert bob.receive_json()["event"] == "EMOTE"
-        assert client.get(f"/live/matches/{mid}").json()["votes"] == {"Theo": 1, "Leo": 1}

@@ -18,7 +18,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import Game, GamePlayer, League, LeagueEvent, LeagueMember, LeaguePantheon, Player
-from app.models.game import STATUS_COMPLETED
 from app.models.league_event import (
     EVENT_CLEAN_SWEEP,
     EVENT_PHENIX,
@@ -274,7 +273,6 @@ async def evaluate_pantheon(session: AsyncSession) -> None:
             .where(
                 GamePlayer.player_id.in_(member_ids),
                 Game.is_casual.is_(False),
-                Game.status == STATUS_COMPLETED,
             )
             .group_by(GamePlayer.player_id)
             .order_by(func.count().desc())
@@ -292,7 +290,6 @@ async def evaluate_pantheon(session: AsyncSession) -> None:
             .where(
                 Game.winner_id.in_(member_ids),
                 Game.is_casual.is_(False),
-                Game.status == STATUS_COMPLETED,
                 loser.c.score == 0,
                 loser.c.player_id != Game.winner_id,
             )

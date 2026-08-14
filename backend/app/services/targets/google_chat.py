@@ -161,8 +161,6 @@ def _game_finished_body(data: dict) -> dict:
     # Le mode figure dans le sous-titre : dans un fil, la réponse doit rester
     # lisible sans avoir à remonter à la carte de début.
     subtitle = " · ".join(part for part in (label, data.get("variant"), f"⏱ {duration}") if part)
-    if data.get("status") == "PENDING_REVIEW":
-        subtitle += " · ⚖️ En attente d'homologation"
 
     # Scores section — one row per player, ranked by position order
     players = data.get("players", [])

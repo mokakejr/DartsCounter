@@ -42,12 +42,12 @@ async def get_leaderboard(
     games_query = (
         select(GamePlayer.player_id, func.count().label("games"))
         .join(Game, Game.id == GamePlayer.game_id)
-        .where(Game.is_casual.is_(False), Game.status == "COMPLETED")
+        .where(Game.is_casual.is_(False))
     )
     wins_query = (
         select(GamePlayer.player_id, func.count().label("wins"))
         .join(Game, Game.id == GamePlayer.game_id)
-        .where(Game.is_casual.is_(False), Game.status == "COMPLETED", GamePlayer.position == 1)
+        .where(Game.is_casual.is_(False), GamePlayer.position == 1)
     )
     season = await get_active_season(session)
     if season is not None and season.start_date is not None:

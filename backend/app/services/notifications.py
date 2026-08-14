@@ -267,19 +267,17 @@ async def dispatch_game_finished(game: GameRead, live_match_id: str | None = Non
 
         # League feed events (Epic 9) — written here, asynchronously, never
         # in the request path; a feed failure must not block the webhooks.
-        # Les parties gelées (PENDING_REVIEW) sont annoncées mais n'alimentent
-        # pas le Panthéon ; les amicales, elles, ne sont plus annoncées du tout
-        # (should_announce_finish) et n'arrivent donc jamais ici.
-        if game.status == "COMPLETED":
-            try:
-                from app.services.league_events import generate_events_for_game
+        # Les amicales ne sont plus annoncées du tout (should_announce_finish)
+        # et n'arrivent donc jamais ici.
+        try:
+            from app.services.league_events import generate_events_for_game
 
-                names = [p.name for p in game.players]
-                rows = (await session.execute(select(Player).where(Player.name.in_(names)))).scalars().all()
-                players_by_name = {p.name: p for p in rows}
-                await generate_events_for_game(session, game, all_games, elo_by_player, players_by_name)
-            except Exception:
-                logger.exception("League feed event generation failed for game %s", game.id)
+            names = [p.name for p in game.players]
+            rows = (await session.execute(select(Player).where(Player.name.in_(names)))).scalars().all()
+            players_by_name = {p.name: p for p in rows}
+            await generate_events_for_game(session, game, all_games, elo_by_player, players_by_name)
+        except Exception:
+            logger.exception("League feed event generation failed for game %s", game.id)
 
         # Stored positions only distinguish winner (1) from the rest (2), so
         # rank the podium here: winner first — even when their score isn't
@@ -313,7 +311,6 @@ async def dispatch_game_finished(game: GameRead, live_match_id: str | None = Non
                 "trophies": trophies,
                 "elo": elo_by_player,
                 "rank_changes": rank_changes,
-                "status": game.status,
                 "dashboard_url": settings.dashboard_url,
                 # Réponse sous la carte « ça commence » de cette partie.
                 "thread_key": _resolve_thread_key(live_match_id, player_names),

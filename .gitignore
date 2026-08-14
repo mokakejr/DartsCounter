@@ -2,6 +2,9 @@
 build/
 .gradle/
 app/build/
+# Cache de l'optimiseur de dépendances Vite, écrit à la racine si vite est
+# lancé depuis ailleurs que pwa-counter/ ou pwa-dashboard/
+.vite/
 
 # Android
 *.apk

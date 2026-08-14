@@ -395,11 +395,40 @@
   margin: 0 auto 4px;
   text-align: center;
   flex-shrink: 0;
+  /* Contexte de positionnement pour les deux rappels latéraux — aucun effet
+     visuel propre. */
+  position: relative;
 }
 /* Bornée par la hauteur d'écran (comme le 51, FiftyOneGame.css:18) pour que
    le reste (zones, SUIVANT, scores) reste visible sans scroller sur un
    téléphone standard. */
 .sg__board .svgboard { width: min(62vw, 22svh, 260px); }
+
+/* Numéro à viser en gros de chaque côté de la cible : lisible debout, à un
+   mètre du téléphone, ce que ne sont ni le chiffre de la couronne ni le
+   label « CIBLE : 20 ». En position absolue, donc hors flux : occupe les
+   gouttières laissées vides par la cible sans ajouter un seul pixel de
+   hauteur ou de largeur au layout (le bouton SUIVANT ne bouge pas). */
+.sg__board-flank {
+  position: absolute;
+  top: calc(50% - 7px); /* recentré sur la cible seule, label exclu */
+  transform: translateY(-50%);
+  font-family: var(--font-display);
+  font-size: clamp(30px, 9.5vw, 58px);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--text);
+  pointer-events: none; /* ne vole jamais un tap destiné à la cible */
+  user-select: none;
+  white-space: nowrap;
+}
+.sg__board-flank--left { right: 100%; margin-right: clamp(10px, 5vw, 30px); }
+.sg__board-flank--right { left: 100%; margin-left: clamp(10px, 5vw, 30px); }
+/* « BULL » fait 4 caractères : réduit pour tenir dans la même gouttière. */
+.sg__board-flank--bull {
+  font-size: clamp(17px, 5.2vw, 32px);
+  letter-spacing: 0.04em;
+}
 
 /* ── Verrouillage hors tour (Epic 13.2) — même pattern que le 51 ─────── */
 .sg__remote-overlay {

@@ -53,18 +53,6 @@ export function decideJoinRequest(token, leagueId, playerId, action) {
   return apiPost(`/leagues/${leagueId}/requests/${playerId}`, { action }, token);
 }
 
-export function fetchDisputes(token, leagueId) {
-  return apiGet(`/leagues/${leagueId}/disputes`, {}, token);
-}
-
-export function adjudicateGame(token, gameId, action) {
-  return apiPost(`/games/${gameId}/adjudicate`, { action }, token);
-}
-
-export function reportGame(token, gameId, reason) {
-  return apiPost(`/games/${gameId}/report`, { reason }, token);
-}
-
 export function fetchLeagueEvents(token, leagueId, { limit = 50, offset = 0 } = {}) {
   return apiGet(`/leagues/${leagueId}/events`, { limit, offset }, token);
 }

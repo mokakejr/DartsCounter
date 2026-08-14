@@ -12,7 +12,6 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import EloHistory, Game, Player, PlayerRating
-from app.models.game import STATUS_COMPLETED
 from app.services.elo import GameForElo, recompute_elo
 from app.services.elo_config import get_engine_config, get_score_direction_map
 
@@ -23,7 +22,7 @@ async def recompute_all(session: AsyncSession, dry_run: bool = False) -> int:
 
     Saisons : quand une saison active a un snapshot (season_ratings), le
     replay part de ce snapshot et ne rejoue que les parties de la saison —
-    le soft reset survit ainsi aux recomputes (tribunal, admin)."""
+    le soft reset survit ainsi aux recomputes (admin, saisons)."""
     from app.services.seasons import get_active_season, load_season_baseline
 
     config = await get_engine_config(session)
@@ -34,7 +33,7 @@ async def recompute_all(session: AsyncSession, dry_run: bool = False) -> int:
     baseline_games_by_id: dict = {}
     games_query = (
         select(Game.id, Game.mode, Game.variant, Game.raw_data)
-        .where(Game.is_casual.is_(False), Game.status == STATUS_COMPLETED)
+        .where(Game.is_casual.is_(False))
         .order_by(Game.date)
     )
     if season is not None and season.start_date is not None:

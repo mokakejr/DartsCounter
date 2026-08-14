@@ -8,7 +8,7 @@ reset) pour relancer la course.
 
 Compatibilité recompute_all : l'ELO du repo est « re-dérivable depuis
 l'historique » — un soft reset qui écrase PlayerRating serait annulé au
-premier replay (le tribunal en fait un par verdict !). D'où la table
+premier replay (l'admin peut en déclencher un à tout moment). D'où la table
 season_ratings : le snapshot compressé du début de saison sert de ratings
 initiaux, et le replay ne rejoue que les parties de la saison courante.
 """

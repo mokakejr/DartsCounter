@@ -233,45 +233,6 @@ async def test_solo_training_game_not_announced(client, fake_httpx):
     assert fake_httpx.calls == []
 
 
-async def test_pending_review_game_is_announced_with_mention(client, affiliated, fake_httpx):
-    await client.post("/webhooks", json={"target": "google_chat", "url": "https://chat.example/x"})
-
-    # Historique stable ~40 pts, puis une perf aberrante → gel anticheat.
-    for i in range(10):
-        await client.post("/games", json={
-            **GAME, "mode": "Shanghai", "variant": None,
-            "date": f"2026-01-{i + 1:02d}T10:00:00Z",
-            "scores": [40 + (i % 3), 38],
-        })
-    fake_httpx.calls = []
-
-    resp = await client.post("/games", json={
-        **GAME, "mode": "Shanghai", "variant": None,
-        "date": "2026-02-01T10:00:00Z", "scores": [400, 38],
-    })
-    assert resp.json()["status"] == "PENDING_REVIEW"
-
-    assert len(fake_httpx.calls) == 1
-    _, body = fake_httpx.calls[0]
-    assert "homologation" in body["cardsV2"][0]["card"]["header"]["subtitle"]
-
-
-def test_builders_pending_review_mention():
-    from app.services.targets.discord import _game_finished_body as discord_body
-    from app.services.targets.google_chat import _game_finished_body as gchat_body
-
-    data = {
-        "mode": "Cricket", "players": ["A", "B"], "scores": [10, 5],
-        "winner": "A", "duration": 60, "status": "PENDING_REVIEW",
-    }
-    assert "homologation" in gchat_body(data)["cardsV2"][0]["card"]["header"]["subtitle"]
-    assert any("homologation" in f["value"] for f in discord_body(data)["embeds"][0]["fields"])
-
-    data["status"] = "COMPLETED"
-    assert "homologation" not in gchat_body(data)["cardsV2"][0]["card"]["header"]["subtitle"]
-    assert not any("homologation" in f["value"] for f in discord_body(data)["embeds"][0]["fields"])
-
-
 async def test_no_targets_at_all_logs_warning(client, affiliated, fake_httpx, caplog):
     import logging
 

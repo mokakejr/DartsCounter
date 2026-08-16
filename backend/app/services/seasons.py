@@ -54,6 +54,13 @@ async def get_active_season(session: AsyncSession) -> Season | None:
     return (await session.execute(stmt)).scalar_one_or_none()
 
 
+async def list_seasons(session: AsyncSession) -> list[Season]:
+    """Toutes les saisons, la plus récente en tête. Sert au sélecteur de
+    période du dashboard : la saison active, puis les mois passés."""
+    stmt = select(Season).order_by(Season.start_date.desc().nullslast())
+    return list((await session.execute(stmt)).scalars().all())
+
+
 async def _start_new_season(session: AsyncSession, start: date | None = None) -> Season:
     """Ouvre la saison du mois contenant `start` (aujourd'hui par défaut).
 

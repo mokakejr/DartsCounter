@@ -372,3 +372,44 @@ async def test_champion_title_granted_once(client):
 
     titles = (await client.get("/players/me/titles", headers=alice)).json()
     assert CHAMPION_TITLE in {t["id"] for t in titles}
+
+
+# ─── Ressource /seasons (C1) ──────────────────────────────────────────────────
+
+async def test_current_season_exposes_id(client):
+    """L'ancien /seasons/current renvoyait {active, name, …} sans id — un
+    client ne pouvait donc filtrer aucune stat par saison. Le nouveau renvoie
+    l'objet complet, id compris."""
+    async with async_session() as session:
+        await _open_season(session)
+
+    resp = await client.get("/seasons/current")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body is not None
+    assert "id" in body and body["id"]
+    assert body["is_active"] is True
+    assert {"id", "name", "start_date", "end_date", "is_active"} <= set(body)
+
+
+async def test_current_season_null_when_none(client):
+    resp = await client.get("/seasons/current")
+    assert resp.status_code == 200
+    assert resp.json() is None
+
+
+async def test_list_seasons_most_recent_first(client):
+    """Deux saisons : une close, une active. Renvoyées la plus récente en tête,
+    pour alimenter le sélecteur de période du dashboard."""
+    async with async_session() as session:
+        first = await _open_season(session)
+        await _end_season_now(session, first)
+        await rollover_if_needed(session)  # ferme first, ouvre la suivante
+
+    resp = await client.get("/seasons")
+    assert resp.status_code == 200
+    seasons = resp.json()
+    assert len(seasons) >= 2
+    starts = [s["start_date"] for s in seasons if s["start_date"]]
+    assert starts == sorted(starts, reverse=True)
+    assert sum(1 for s in seasons if s["is_active"]) == 1

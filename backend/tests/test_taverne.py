@@ -12,7 +12,7 @@ async def _signup(client, name):
 async def test_signup_auto_assigns_taverne(client):
     alice = await _signup(client, "Alice")
     mine = (await client.get("/leagues/mine", headers=alice)).json()
-    assert [l["name"] for l in mine] == [TAVERNE_NAME]
+    assert [lg["name"] for lg in mine] == [TAVERNE_NAME]
     assert mine[0]["id"] == str(TAVERNE_LEAGUE_ID)
     assert mine[0]["owner_id"] is None
     assert mine[0]["privacy_level"] == "PUBLIC"
@@ -43,7 +43,7 @@ async def test_player_with_a_league_is_not_reassigned(client):
     resp = await client.post("/auth/login", json={"name": "Alice", "password": "hunter22"})
     assert resp.status_code == 200
     mine = (await client.get("/leagues/mine", headers=alice)).json()
-    assert [l["name"] for l in mine] == ["Ma Ligue"]
+    assert [lg["name"] for lg in mine] == ["Ma Ligue"]
 
 
 async def test_login_reassigns_player_without_any_league(client):
@@ -56,7 +56,7 @@ async def test_login_reassigns_player_without_any_league(client):
     resp = await client.post("/auth/login", json={"name": "Alice", "password": "hunter22"})
     assert resp.status_code == 200
     mine = (await client.get("/leagues/mine", headers=alice)).json()
-    assert [l["name"] for l in mine] == [TAVERNE_NAME]
+    assert [lg["name"] for lg in mine] == [TAVERNE_NAME]
 
 
 async def test_me_exposes_games_played(client):

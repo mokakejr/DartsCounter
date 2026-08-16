@@ -187,7 +187,7 @@ export default function WatchGame() {
       connRef.current = null;
       clearTimeout(flashTimer.current);
     };
-  }, [matchId, name]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [matchId, name]);
 
   function sendEmote(emote) {
     const now = Date.now();

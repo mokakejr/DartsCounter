@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Game, GamePlayer, LeagueMember, Player, PlayerRating
+from app.models import Game, GamePlayer, LeagueMember, Player, PlayerRating, Season
 from app.models.elo import GLOBAL_SCOPE, modes_in_family
 from app.schemas.stats import PlayerStats
 from app.services.elo import rank_for_rating
@@ -17,6 +17,7 @@ async def get_leaderboard(
     mode: str | None = None,
     league_id: uuid.UUID | None = None,
     until: date | None = None,
+    season: "Season | str | None" = None,
 ) -> list[PlayerStats]:
     """`mode=None` is the global leaderboard (games/wins across every mode,
     elo = the "global" scope rating). Passing a mode name scopes all three
@@ -24,10 +25,18 @@ async def get_leaderboard(
     `league_id` restricts rows to that league's members; inactive ("ghost")
     members are returned last with is_active=False.
 
-    Le leaderboard est celui de la saison en cours : parties et victoires ne
-    comptent que depuis `season.start_date`, comme l'Elo qui repart d'un soft
-    reset à chaque nouveau mois. Les stats « depuis toujours » restent sur le
-    profil joueur et les trophées, qui ont leurs propres requêtes.
+    `season` choisit la fenêtre de comptage des parties/victoires :
+      - None (défaut) : la saison en cours — comportement historique, le
+        classement repart d'un soft reset chaque mois ;
+      - "all" : tout l'historique, sans borne de date ;
+      - un objet Season : la fenêtre [start_date, end_date] de cette saison.
+
+    ⚠️ L'Elo affiché reste toujours la cote VIVANTE (PlayerRating), c'est-à-dire
+    celle de la saison courante. Il n'existe pas de cote « à cette date » :
+    l'Elo d'une saison passée est figé dans season_standings, exposé par
+    l'endpoint palmarès. Un classement `season=<passée>` donne donc les bons
+    comptages de participation, mais l'Elo est la cote actuelle — le sélecteur
+    du dashboard route les saisons closes vers le palmarès pour cette raison.
 
     `until` borne le comptage à la fin de ce jour inclus. Réservé à l'archivage
     du palmarès : le job de clôture tourne peu après minuit, mais s'il a pris
@@ -49,10 +58,24 @@ async def get_leaderboard(
         .join(Game, Game.id == GamePlayer.game_id)
         .where(Game.is_casual.is_(False), GamePlayer.position == 1)
     )
-    season = await get_active_season(session)
-    if season is not None and season.start_date is not None:
-        games_query = games_query.where(Game.date >= season.start_date)
-        wins_query = wins_query.where(Game.date >= season.start_date)
+
+    # Résolution de la fenêtre de saison.
+    if season == "all":
+        window = None
+    elif season is None:
+        window = await get_active_season(session)
+    else:
+        window = season  # objet Season déjà résolu par le routeur
+
+    if window is not None and window.start_date is not None:
+        games_query = games_query.where(Game.date >= window.start_date)
+        wins_query = wins_query.where(Game.date >= window.start_date)
+        # Borne haute pour une saison close (fenêtre complète), pas pour la
+        # saison active dont end_date est future/nulle.
+        if window.end_date is not None:
+            end_cutoff = window.end_date + timedelta(days=1)
+            games_query = games_query.where(Game.date < end_cutoff)
+            wins_query = wins_query.where(Game.date < end_cutoff)
     if until is not None:
         cutoff = until + timedelta(days=1)
         games_query = games_query.where(Game.date < cutoff)

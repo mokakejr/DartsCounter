@@ -23,14 +23,6 @@ from app.services.achievements import ACHIEVEMENTS
 
 _MJS = Path(__file__).resolve().parents[2] / "shared" / "achievements-core.mjs"
 
-# Les 12 trophées « détenteur unique » absents du port Python au moment où ce
-# test est écrit. D2 les ajoute et retire ce bloc + le xfail ci-dessous.
-KNOWN_GAPS = {
-    "cricket_champ", "sc_champ", "shanghai_champ", "fiftyone_champ",
-    "cricket_top_score", "sc_top_score", "shanghai_top_score", "fiftyone_top_score",
-    "cricket_low_score", "sc_low_score", "shanghai_low_score", "fiftyone_low_score",
-}
-
 
 def _js_achievement_ids() -> set[str]:
     node = shutil.which("node")
@@ -51,18 +43,6 @@ def _py_achievement_ids() -> set[str]:
     return {a["id"] for a in ACHIEVEMENTS}
 
 
-def test_known_gaps_are_exactly_those_expected():
-    """Verrou de régression sur la liste des manques elle-même : si un trophée
-    disparaît ou apparaît côté Python en dehors de D2, le diff change et ce
-    test le signale."""
-    missing = _js_achievement_ids() - _py_achievement_ids()
-    assert missing == KNOWN_GAPS, (
-        f"Le diff JS→Python a changé.\n"
-        f"Attendu (manques connus) : {sorted(KNOWN_GAPS)}\n"
-        f"Constaté : {sorted(missing)}"
-    )
-
-
 def test_no_python_only_achievements():
     """Aucun trophée ne doit exister côté Python sans exister côté JS : le front
     afficherait un trophée que le backend ne sait pas nommer."""
@@ -70,9 +50,12 @@ def test_no_python_only_achievements():
     assert extra == set(), f"Trophées Python sans équivalent JS : {sorted(extra)}"
 
 
-@pytest.mark.xfail(reason="12 trophées manquants côté Python, ajoutés en D2", strict=False)
 def test_catalogs_are_identical():
-    """La cible : ensembles d'ids strictement égaux. Passe au vert une fois D2
-    mergée — le xfail devient alors un xpass, signal qu'on peut retirer ce
-    décorateur."""
-    assert _js_achievement_ids() == _py_achievement_ids()
+    """La cible, atteinte en D2 : ensembles d'ids strictement égaux dans les
+    deux sens. Le xfail d'origine a été levé une fois les 12 trophées ajoutés."""
+    js, py = _js_achievement_ids(), _py_achievement_ids()
+    assert js == py, (
+        f"Divergence de catalogue.\n"
+        f"JS seulement : {sorted(js - py)}\n"
+        f"Python seulement : {sorted(py - js)}"
+    )

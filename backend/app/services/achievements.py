@@ -59,7 +59,8 @@ def _ensure(S: dict, name: str) -> dict:
             "name": name, "wins": 0, "games": 0, "total_duration": 0, "xp": 0,
             "cur_streak": 0, "max_streak": 0, "loss_streak": 0, "max_loss_streak": 0,
             "underdog": False, "comeback": False, "phoenix": False,
-            "mode_wins": {}, "mode_games": {}, "modes_played": set(), "opponents": set(),
+            "mode_wins": {}, "mode_games": {}, "mode_scores": {}, "modes_played": set(), "opponents": set(),
+            "mode_max_score": {}, "mode_min_score": {},
             "shanghai_kill_wins": 0, "cut_throat_wins": 0, "max_cut_throat_score": 0,
             "speed_win": False, "speed_win_count": 0, "marathon": False, "long_win": False,
             "night_owl": False, "day_keys": set(), "friday13": False,
@@ -106,6 +107,9 @@ def compute_player_stats(games: list[dict]) -> dict[str, dict]:
             # Cut Throat : le score le plus bas gagne, donc un gros total = une
             # bonne branlée. On garde le pire (= le plus haut) pour « Thomas ».
             raw_score = scores[idx] if idx < len(scores) else None
+            if raw_score is not None:
+                # Score brut par mode, base des records/planchers de score.
+                s["mode_scores"].setdefault(g["mode"], []).append(raw_score)
             if is_cut_throat(g.get("variant")) and isinstance(raw_score, (int, float)):
                 s["max_cut_throat_score"] = max(s["max_cut_throat_score"], int(raw_score))
 
@@ -201,6 +205,12 @@ def compute_player_stats(games: list[dict]) -> dict[str, dict]:
                 fav = m
         s["favorite_mode"] = fav
 
+        # Meilleur/pire score par mode (records et planchers).
+        for m, arr in s["mode_scores"].items():
+            if arr:
+                s["mode_max_score"][m] = max(arr)
+                s["mode_min_score"][m] = min(arr)
+
         s["level"] = level_for_xp(s["xp"])
 
         # day-based derived stats
@@ -242,6 +252,38 @@ def _is_giant_slayer(s: dict, all_stats: dict) -> bool:
 def _is_stakhanoviste(s: dict, all_stats: dict) -> bool:
     ranked = sorted(all_stats.values(), key=lambda x: -x["games"])
     return bool(ranked) and ranked[0]["name"] == s["name"] and s["games"] > 0
+
+
+def _is_mode_champion(s: dict, all_stats: dict, mode: str) -> bool:
+    """Détenteur du plus grand nombre de victoires dans `mode` (au moins une)."""
+    best = max(
+        (x for x in all_stats.values() if x["mode_wins"].get(mode, 0) > 0),
+        key=lambda x: x["mode_wins"].get(mode, 0),
+        default=None,
+    )
+    return best is not None and best["name"] == s["name"]
+
+
+def _has_mode_high_score(s: dict, all_stats: dict, mode: str) -> bool:
+    """Détenteur du meilleur score en une partie dans `mode`."""
+    if mode not in s["mode_max_score"]:
+        return False
+    best = max(
+        (x["mode_max_score"][mode] for x in all_stats.values() if mode in x["mode_max_score"]),
+        default=None,
+    )
+    return best is not None and s["mode_max_score"][mode] == best
+
+
+def _has_mode_low_score(s: dict, all_stats: dict, mode: str) -> bool:
+    """Détenteur du score le plus bas en une partie dans `mode`."""
+    if mode not in s["mode_min_score"]:
+        return False
+    worst = min(
+        (x["mode_min_score"][mode] for x in all_stats.values() if mode in x["mode_min_score"]),
+        default=None,
+    )
+    return worst is not None and s["mode_min_score"][mode] == worst
 
 
 # XP rank trophies — one per level; lv=l["lv"] default-captures to avoid closure trap
@@ -324,6 +366,21 @@ ACHIEVEMENTS: list[dict] = [
     {"id": "pi_day",          "cat": "special", "ico": "🥧", "name": "Pi Day",              "desc": "Jouer un 14 mars (3.14)",                       "cond": lambda s, _: "03-14" in s["day_keys"]},
     {"id": "friday_13",       "cat": "special", "ico": "🃏", "name": "Vendredi 13",         "desc": "Jouer un vendredi 13",                          "cond": lambda s, _: s["friday13"]},
     {"id": "weekend_warrior", "cat": "special", "ico": "🍻", "name": "Guerrier du Week-end", "desc": "Jouer un samedi et un dimanche",               "cond": lambda s, _: s["played_sat"] and s["played_sun"]},
+    # ── Champions par mode (un seul détenteur) ──
+    {"id": "cricket_champ",   "cat": "modes", "ico": "🏆", "name": "Champion Cricket",       "desc": "Le plus de victoires en Cricket",       "cond": lambda s, a: _is_mode_champion(s, a, "Cricket")},
+    {"id": "sc_champ",        "cat": "modes", "ico": "🏆", "name": "Champion Super Cricket", "desc": "Le plus de victoires en Super Cricket", "cond": lambda s, a: _is_mode_champion(s, a, "SuperCricket")},
+    {"id": "shanghai_champ",  "cat": "modes", "ico": "🏆", "name": "Champion Shanghai",      "desc": "Le plus de victoires en Shanghai",      "cond": lambda s, a: _is_mode_champion(s, a, "Shanghai")},
+    {"id": "fiftyone_champ",  "cat": "modes", "ico": "🏆", "name": "Champion Fifty-One",     "desc": "Le plus de victoires en Fifty-One",     "cond": lambda s, a: _is_mode_champion(s, a, "FiftyOne")},
+    # ── Records de score par mode (un seul détenteur) ──
+    {"id": "cricket_top_score",  "cat": "perf", "ico": "📈", "name": "Record Cricket",        "desc": "Meilleur score en une partie de Cricket",       "cond": lambda s, a: _has_mode_high_score(s, a, "Cricket")},
+    {"id": "sc_top_score",       "cat": "perf", "ico": "📈", "name": "Record Super Cricket",  "desc": "Meilleur score en une partie de Super Cricket", "cond": lambda s, a: _has_mode_high_score(s, a, "SuperCricket")},
+    {"id": "shanghai_top_score", "cat": "perf", "ico": "📈", "name": "Record Shanghai",       "desc": "Meilleur score en une partie de Shanghai",      "cond": lambda s, a: _has_mode_high_score(s, a, "Shanghai")},
+    {"id": "fiftyone_top_score", "cat": "perf", "ico": "📈", "name": "Record Fifty-One",      "desc": "Meilleur score en une partie de Fifty-One",     "cond": lambda s, a: _has_mode_high_score(s, a, "FiftyOne")},
+    # ── Scores plancher par mode (un seul détenteur) ──
+    {"id": "cricket_low_score",  "cat": "loss", "ico": "📉", "name": "Score Plancher Cricket",       "desc": "Score le plus bas en une partie de Cricket",       "cond": lambda s, a: _has_mode_low_score(s, a, "Cricket")},
+    {"id": "sc_low_score",       "cat": "loss", "ico": "📉", "name": "Score Plancher Super Cricket", "desc": "Score le plus bas en une partie de Super Cricket", "cond": lambda s, a: _has_mode_low_score(s, a, "SuperCricket")},
+    {"id": "shanghai_low_score", "cat": "loss", "ico": "📉", "name": "Score Plancher Shanghai",      "desc": "Score le plus bas en une partie de Shanghai",      "cond": lambda s, a: _has_mode_low_score(s, a, "Shanghai")},
+    {"id": "fiftyone_low_score", "cat": "loss", "ico": "📉", "name": "Score Plancher Fifty-One",     "desc": "Score le plus bas en une partie de Fifty-One",     "cond": lambda s, a: _has_mode_low_score(s, a, "FiftyOne")},
     *_XP_RANKS,
 ]
 

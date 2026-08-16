@@ -29,6 +29,7 @@ import LiveTicker from './components/LiveTicker.jsx';
 import LobbyDrawer from './components/LobbyDrawer.jsx';
 import NemesisWall from './components/NemesisWall.jsx';
 import Tournois from './routes/Tournois.jsx';
+import Styleguide from './routes/Styleguide.jsx';
 import { fetchTournaments } from './api/tournaments.js';
 import './App.css';
 
@@ -145,6 +146,11 @@ function AppInner() {
     }, 1000);
     return () => clearInterval(id);
   }, [calloutRemaining > 0]);
+
+  // La référence du design system ne dépend d'aucune donnée : elle reste
+  // consultable backend éteint, ce qui est précisément quand on veut inspecter
+  // des tokens. Elle passe donc AVANT le verrou de chargement ci-dessous.
+  if (location.pathname === '/styleguide') return <Styleguide />;
 
   if (loading || !auth.ready || !leaguesReady) {
     return (
@@ -268,6 +274,8 @@ function AppInner() {
         <Route path="/login" element={<Login />} />
         <Route path="/profile" element={<MyProfile />} />
         <Route path="/admin" element={<Admin />} />
+        {/* Référence interne du design system : non listée dans la navigation. */}
+        <Route path="/styleguide" element={<Styleguide />} />
         <Route path="*" element={home} />
       </Routes>
 

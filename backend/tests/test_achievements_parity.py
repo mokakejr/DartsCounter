@@ -23,6 +23,7 @@ import pytest
 from app.services.achievements import ACHIEVEMENTS, compute_player_stats
 
 _MJS = Path(__file__).resolve().parents[2] / "shared" / "achievements-core.mjs"
+_TROPHIES = Path(__file__).resolve().parents[2] / "pwa-dashboard" / "src" / "lib" / "trophies.js"
 
 
 def _node() -> str:
@@ -179,5 +180,55 @@ def test_prog_value_parity():
         "Divergence prog/value sur : " + ", ".join(sorted(diffs)) + "\n"
         + "\n".join(
             f"  {tid}:\n    JS = {js[tid]}\n    PY = {py[tid]}" for tid in sorted(diffs)
+        )
+    )
+
+
+# ── D4 : parité du mur complet (build_trophies ↔ buildTrophies) ──────────────
+def _js_build_trophies(player: str | None) -> list[dict]:
+    """buildTrophies du dashboard (pwa-dashboard/src/lib/trophies.js) rejoué sur
+    la fixture. JSON.stringify laisse tomber les fonctions de `...a`, ne restent
+    que les champs de données. `myValue` (camelCase) est renommé pour coller au
+    contrat snake_case de l'endpoint."""
+    player_js = "null" if player is None else json.dumps(player)
+    script = f"""
+Promise.all([
+  import({json.dumps(_TROPHIES.as_uri())}),
+  import({json.dumps(_MJS.as_uri())}),
+]).then(([T, M]) => {{
+  const stats = M.computePlayerStats({json.dumps(_GAMES)});
+  console.log(JSON.stringify(T.buildTrophies(stats, {player_js})));
+}});
+"""
+    out = json.loads(_run_node(script))
+    for t in out:
+        t["my_value"] = t.pop("myValue")
+    return out
+
+
+def _py_build_trophies(player: str | None) -> list[dict]:
+    from app.services.achievements import build_trophies
+
+    stats = compute_player_stats(_GAMES)
+    return json.loads(json.dumps(build_trophies(stats, player_name=player)))
+
+
+@pytest.mark.parametrize("player", [None, "Alice", "Bob"])
+def test_build_trophies_parity(player):
+    """Vérif D4 : la sortie de l'endpoint (build_trophies) coïncide avec le
+    buildTrophies client — détenteurs, unlocked, rareté, progression, my_value —
+    en vue globale ET en vue joueur. C'est la condition pour que le front cesse
+    de calculer le mur."""
+    js, py = _js_build_trophies(player), _py_build_trophies(player)
+    assert len(js) == len(py)
+    by_id_js = {t["id"]: t for t in js}
+    by_id_py = {t["id"]: t for t in py}
+    assert set(by_id_js) == set(by_id_py)
+    diffs = [tid for tid in by_id_js if by_id_js[tid] != by_id_py[tid]]
+    assert not diffs, (
+        f"Divergence mur (player={player}) sur : " + ", ".join(sorted(diffs)) + "\n"
+        + "\n".join(
+            f"  {tid}:\n    JS = {by_id_js[tid]}\n    PY = {by_id_py[tid]}"
+            for tid in sorted(diffs)
         )
     )

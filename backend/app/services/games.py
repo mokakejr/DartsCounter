@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -189,11 +189,21 @@ async def list_games(session: AsyncSession, limit: int = 50, offset: int = 0) ->
     return [_to_game_read(g) for g in rows]
 
 
-async def list_all_games_raw(session: AsyncSession) -> list[dict]:
-    """All games as plain dicts for the achievement engine, ascending chronological order."""
-    rows = (
-        await session.execute(select(Game).options(*_EAGER).order_by(Game.date))
-    ).scalars().all()
+async def list_all_games_raw(
+    session: AsyncSession,
+    since: date | None = None,
+    until_exclusive: date | None = None,
+) -> list[dict]:
+    """Games as plain dicts for the achievement engine, ascending chronological
+    order. `since` / `until_exclusive` bornent la fenêtre de saison — mêmes
+    bornes que get_leaderboard : Game.date >= since et Game.date < until_exclusive.
+    Sans bornes : tout l'historique."""
+    query = select(Game).options(*_EAGER).order_by(Game.date)
+    if since is not None:
+        query = query.where(Game.date >= since)
+    if until_exclusive is not None:
+        query = query.where(Game.date < until_exclusive)
+    rows = (await session.execute(query)).scalars().all()
     return [_to_achievement_dict(g) for g in rows]
 
 

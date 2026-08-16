@@ -413,3 +413,90 @@ async def test_list_seasons_most_recent_first(client):
     starts = [s["start_date"] for s in seasons if s["start_date"]]
     assert starts == sorted(starts, reverse=True)
     assert sum(1 for s in seasons if s["is_active"]) == 1
+
+
+# ─── Rétention de l'historique Elo par saison (C3) ────────────────────────────
+
+async def test_recompute_preserves_past_season_history(client):
+    """Le cœur de C3 : un recompute ne doit effacer que les lignes des parties
+    qu'il régénère. Quand une référence de saison existe, il ne rejoue que la
+    saison courante — les courbes des saisons passées doivent survivre, à
+    l'identique. Avant, delete(EloHistory) était inconditionnel : tout partait,
+    et seule la saison courante était reconstruite."""
+    from app.models import EloHistory, Game
+    from app.services.elo_recompute import recompute_all
+    from app.services.seasons import snapshot_current_ratings
+
+    await _signup(client, "Alice")
+    await _signup(client, "Bob")
+
+    async def _post(day, hour):
+        resp = await client.post(
+            "/games",
+            json={
+                "date": f"{day.isoformat()}T{hour:02d}:00:00Z",
+                "mode": "Cricket",
+                "players": ["Alice", "Bob"],
+                "scores": [40, 10],
+                "winner": "Alice",
+            },
+        )
+        assert resp.status_code == 201, resp.text
+
+    today = date.today()
+    july = today.replace(day=1) - timedelta(days=20)   # un mois avant, sûrement clos
+    august_start = today - timedelta(days=5)
+
+    async with async_session() as session:
+        past = Season(name="Passée", start_date=july, end_date=july + timedelta(days=25))
+        active = Season(name="Courante", start_date=august_start, end_date=None, is_active=True)
+        session.add_all([past, active])
+        await session.commit()
+        past_id, active_id = past.id, active.id
+
+    # Parties dans chaque saison.
+    await _post(july + timedelta(days=2), 10)
+    await _post(july + timedelta(days=3), 11)
+    await _post(august_start + timedelta(days=1), 10)
+
+    async with async_session() as session:
+        # 1er recompute : pas encore de référence de saison → replay complet,
+        # l'historique des deux saisons est créé.
+        await recompute_all(session)
+
+    async with async_session() as session:
+        past_rows = (
+            await session.execute(select(EloHistory).where(EloHistory.season_id == past_id))
+        ).scalars().all()
+        assert past_rows, "l'historique de la saison passée doit exister après le 1er replay"
+        # empreinte : game_id+scope -> elo_after, à retrouver intacte ensuite.
+        before = {(r.game_id, r.scope): r.elo_after for r in past_rows}
+
+        # On fige la référence de la saison courante (soft reset).
+        active_season = (
+            await session.execute(select(Season).where(Season.id == active_id))
+        ).scalar_one()
+        await snapshot_current_ratings(session, active_season)
+        await session.commit()
+
+    async with async_session() as session:
+        # 2e recompute : la référence existe → seule la saison courante est
+        # rejouée. La saison passée NE DOIT PAS bouger.
+        await recompute_all(session)
+
+    async with async_session() as session:
+        past_after = (
+            await session.execute(select(EloHistory).where(EloHistory.season_id == past_id))
+        ).scalars().all()
+        after = {(r.game_id, r.scope): r.elo_after for r in past_after}
+        assert after == before, "les courbes de la saison passée ont été altérées par le recompute"
+
+        # La saison courante, elle, a bien été reconstruite.
+        active_rows = (
+            await session.execute(select(EloHistory).where(EloHistory.season_id == active_id))
+        ).scalars().all()
+        assert active_rows, "la saison courante doit être régénérée"
+        # Cohérence de la dénormalisation : chaque ligne pointe la saison de sa partie.
+        for r in active_rows:
+            game = (await session.execute(select(Game).where(Game.id == r.game_id))).scalar_one()
+            assert r.season_id == game.season_id

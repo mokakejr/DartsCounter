@@ -99,7 +99,7 @@
 .hi__key:hover { background: var(--surface-2); }
 .hi__key--back { font-size: 18px; color: var(--muted); }
 .hi__key--ok { background: var(--border); color: var(--muted); cursor: not-allowed; }
-.hi__key--ok-active { background: var(--primary); color: #fff; cursor: pointer; border-color: var(--primary); }
+.hi__key--ok-active { background: var(--primary); color: var(--accent-ink); cursor: pointer; border-color: var(--primary); }
 .hi__key--ok-active:hover { opacity: 0.85; }
 
 /* ── Undo ───────────────────────────────────────────── */
@@ -175,7 +175,7 @@
   font-family: var(--font-display); font-size: 18px; letter-spacing: 0.06em;
   cursor: pointer; text-align: center; transition: opacity 0.15s;
 }
-.hi__btn--primary { background: var(--primary); color: #fff; }
+.hi__btn--primary { background: var(--primary); color: var(--accent-ink); }
 .hi__btn--secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
 .hi__btn:hover { opacity: 0.85; }
 

@@ -23,7 +23,7 @@
   border-radius: 10px;
   font-family: var(--font-display);
   font-size: 16px;
-  color: #fff;
+  color: var(--accent-ink);
   cursor: pointer;
   letter-spacing: 0.04em;
   transition: opacity 0.15s;
@@ -189,7 +189,7 @@
 .leagues__btn--primary {
   background: var(--primary);
   border-color: var(--primary);
-  color: #fff;
+  color: var(--accent-ink);
   font-weight: 700;
 }
 .leagues__btn--primary:hover { opacity: 0.85; border-color: var(--primary); }

@@ -23,7 +23,7 @@
   transition: color 0.2s, border-color 0.2s, background 0.2s;
 }
 .chip:hover { color: var(--text); border-color: var(--text); }
-.chip--on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.chip--on { background: var(--primary); border-color: var(--primary); color: var(--accent-ink); }
 
 .ladder { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 

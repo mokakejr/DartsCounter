@@ -61,8 +61,8 @@
   color: var(--text);
 }
 .confirm-modal__confirm--danger {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--accent-ink);
 }
 .confirm-modal__confirm:hover { opacity: 0.85; }

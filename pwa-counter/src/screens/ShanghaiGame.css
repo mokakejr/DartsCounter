@@ -222,7 +222,7 @@
   cursor: pointer;
   transition: opacity 0.15s;
 }
-.sg__btn--primary { background: var(--primary); color: #fff; }
+.sg__btn--primary { background: var(--primary); color: var(--accent-ink); }
 .sg__btn--secondary {
   background: var(--surface);
   border: 1px solid var(--border);

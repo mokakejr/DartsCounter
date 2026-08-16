@@ -40,15 +40,20 @@ def modes_in_family(family: str) -> list[str]:
 
 class EloHistory(Base):
     """One row per (game, player, scope) — the net rating change from that
-    game, after all of its pairwise face-offs are combined. Kept even after
-    a full recompute wipes and rebuilds the table, so a player's profile can
-    show a timeline of how their rating moved over time."""
+    game, after all of its pairwise face-offs are combined. Preserved across
+    recomputes: a recompute now only deletes and rebuilds the rows of the
+    games it actually replays (the current season when a season baseline
+    exists), so past seasons' curves survive. `season_id` denormalizes the
+    game's season for indexable per-season history queries."""
 
     __tablename__ = "elo_history"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     player_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("players.id"), nullable=False)
     game_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("games.id"), nullable=False)
+    season_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("seasons.id"), nullable=True
+    )
     scope: Mapped[str] = mapped_column(nullable=False, default=GLOBAL_SCOPE, server_default=GLOBAL_SCOPE)
     elo_before: Mapped[int] = mapped_column(Integer, nullable=False)
     elo_after: Mapped[int] = mapped_column(Integer, nullable=False)

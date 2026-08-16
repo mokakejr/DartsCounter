@@ -32,7 +32,7 @@ async def recompute_all(session: AsyncSession, dry_run: bool = False) -> int:
     baseline_by_id: dict = {}
     baseline_games_by_id: dict = {}
     games_query = (
-        select(Game.id, Game.mode, Game.variant, Game.raw_data)
+        select(Game.id, Game.mode, Game.variant, Game.raw_data, Game.season_id)
         .where(Game.is_casual.is_(False))
         .order_by(Game.date)
     )
@@ -51,8 +51,11 @@ async def recompute_all(session: AsyncSession, dry_run: bool = False) -> int:
             "scores": raw_data.get("scores", []),
             "winner": raw_data.get("winner"),
         }
-        for gid, mode, variant, raw_data in rows
+        for gid, mode, variant, raw_data, _season_id in rows
     ]
+    # season_id de chaque partie rejouée, pour dénormaliser sur elo_history.
+    season_by_game: dict[uuid.UUID, uuid.UUID | None] = {r[0]: r[4] for r in rows}
+    replayed_game_ids = list(season_by_game.keys())
 
     players = (await session.execute(select(Player))).scalars().all()
     player_id_by_name = {p.name: p.id for p in players}
@@ -79,7 +82,19 @@ async def recompute_all(session: AsyncSession, dry_run: bool = False) -> int:
     if dry_run:
         return len(player_names)
 
-    await session.execute(delete(EloHistory))
+    # RÉTENTION PAR SAISON — on ne supprime QUE les lignes des parties qu'on
+    # va régénérer. Quand une référence de saison existe, le replay ci-dessus
+    # ne couvre que la saison courante (Game.date >= season.start_date) : un
+    # delete total effacerait alors les saisons passées sans les reconstruire,
+    # de façon irréversible. Supprimer exactement l'ensemble rejoué est correct
+    # dans les deux cas — replay complet (toutes les parties) comme replay de
+    # saison (les parties de la saison seulement).
+    if replayed_game_ids:
+        await session.execute(
+            delete(EloHistory).where(EloHistory.game_id.in_(replayed_game_ids))
+        )
+    # PlayerRating est l'état vivant : il est intégralement reconstruit depuis
+    # final_state (référence + updates), donc on peut le vider en bloc.
     await session.execute(delete(PlayerRating))
 
     final_state: dict[tuple[uuid.UUID, str], dict] = {}
@@ -97,6 +112,7 @@ async def recompute_all(session: AsyncSession, dry_run: bool = False) -> int:
             EloHistory(
                 player_id=player_id,
                 game_id=u.game_id,
+                season_id=season_by_game.get(u.game_id),
                 scope=u.scope,
                 elo_before=u.elo_before,
                 elo_after=u.elo_after,

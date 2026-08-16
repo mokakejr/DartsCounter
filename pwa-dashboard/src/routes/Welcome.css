@@ -48,7 +48,7 @@
   font-family: var(--font-display);
   font-size: 17px;
   letter-spacing: 0.04em;
-  color: #fff;
+  color: var(--accent-ink);
   text-decoration: none;
   transition: opacity 0.15s, transform 0.15s;
 }

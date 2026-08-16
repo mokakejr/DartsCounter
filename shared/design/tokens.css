@@ -1,0 +1,151 @@
+/* ════════════════════════════════════════════════════════════════════════
+ * Design tokens — source unique, partagée par pwa-dashboard et pwa-counter.
+ *
+ * Règle d'or : peu de couleurs, à rôle unique, et AUCUN hex en dur ailleurs.
+ * Seule exception tolérée : le plateau de fléchettes (SvgBoard), qui reproduit
+ * un objet physique et garde ses vraies couleurs.
+ *
+ * Les échelles ci-dessous (espacement, typo, rayons) ne sont pas inventées :
+ * elles sont relevées sur les maquettes validées. Une valeur hors échelle dans
+ * une maquette est un bug de maquette, pas une exception à ajouter ici.
+ * ════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* ── Neutres éditoriaux (near-black / off-white) ────────────────────── */
+  --bg:        #0A0A0B;
+  --surface:   #131316;
+  --surface-2: #1B1B1F;
+  --border:    #26262B;
+  --text:      #F4F3EF;
+  --muted:     #8A8A8E; /* décoratif uniquement — trop faible pour un label */
+  --muted-2:   #B6B6BB; /* 9,8:1 — c'est LUI qui porte les labels */
+
+  /* ── Accent ─────────────────────────────────────────────────────────────
+   * L'ivoire des secteurs clairs du plateau. 15,64:1 sur --bg, et le noir
+   * posé dessus obtient exactement le même ratio : un aplat d'accent est
+   * lisible dans les deux sens, ce que le rouge précédent (4,32:1) ne
+   * permettait pas.
+   * Tout aplat d'accent DOIT porter color: var(--accent-ink).
+   */
+  --accent:      #EDE4CF;
+  --accent-ink:  #0A0A0B;
+  --accent-soft: rgba(237, 228, 207, 0.13); /* fond discret, ligne « c'est toi » */
+  --accent-line: rgba(237, 228, 207, 0.42); /* bordure d'un bloc mis en avant */
+
+  /* Alias de transition — le temps que les surfaces migrent vers --accent,
+     EPIC par EPIC. Supprimé en H1 ; ne pas l'utiliser dans du code neuf. */
+  --primary:     var(--accent);
+  --primary-dim: var(--surface-2);
+
+  /* ── Sémantique ─────────────────────────────────────────────────────── */
+  --win:    #34D399; /* 10,29:1 */
+  --loss:   #B6B6BB; /*  9,80:1 — un gris, pas un rouge : perdre n'est pas une erreur */
+  --hot:    #FFB44C; /* 11,20:1 — série en cours, live, badge */
+  --danger: #FF7A6E; /*  7,78:1 — erreur réelle */
+
+  /* ── Données : 8 teintes distinctes, toutes ≥ 4,5:1 sur --bg ──────────
+   * Remplace l'ancienne échelle --series-* (dérivée du rouge, dont deux
+   * niveaux tombaient à 2,78:1 et 1,78:1) ET le HSL haché de playerColors.
+   * Une entité = une couleur, la même partout. Le rouge est en 8e position :
+   * il existe encore comme donnée, il n'est plus ce qu'on voit d'abord.
+   */
+  --cat-1: #4CC9F0; /* 10,29 */
+  --cat-2: #FFD166; /* 13,72 */
+  --cat-3: #A78BFA; /*  7,27 */
+  --cat-4: #34D399; /* 10,29 */
+  --cat-5: #F472B6; /*  7,47 */
+  --cat-6: #93C5FD; /* 10,97 */
+  --cat-7: #FDBA74; /* 11,73 */
+  --cat-8: #FF6B6B; /*  7,13 */
+
+  /* ── Podium — métaux désaturés, UNIQUEMENT le classement ─────────────── */
+  --rank-1: #C9A227;
+  --rank-2: #9CA3AF;
+  --rank-3: #B0814F;
+
+  /* ── Rareté des trophées ────────────────────────────────────────────── */
+  --rar-common:    #828A99; /* était #6B7280 — 4,09:1, sous le seuil */
+  --rar-rare:      #4C9BE6;
+  --rar-epic:      #A974E6;
+  --rar-legendary: #E6A93C;
+
+  /* ── Paliers Elo — badges de rang uniquement ────────────────────────── */
+  --tier-bronze:         #C77F3C; /* était #A9682F — 4,44:1, sous le seuil */
+  --tier-silver:         #AEB6C2;
+  --tier-gold:           #E0B23C;
+  --tier-platinum:       #7FE0CC;
+  --tier-diamond:        #3FA9F5;
+  --tier-champion:       #14C38E;
+  --tier-grand-champion: #A855F7;
+
+  /* ── Espacement — 8 pas, relevés sur les maquettes ───────────────────── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  /* ── Typo — 8 pas, contre 40 tailles distinctes aujourd'hui ──────────── */
+  --font-display: 'Anton', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --fs-xs:  11px;
+  --fs-sm:  13px;
+  --fs-md:  15px;
+  --fs-lg:  18px;
+  --fs-xl:  24px;
+  --fs-2xl: 32px;
+  --fs-3xl: 48px;
+  --fs-4xl: 72px;
+
+  /* ── Rayons — 4, contre 14 valeurs distinctes aujourd'hui ────────────── */
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-pill: 999px;
+
+  /* ── Couches — remplace l'empilement actuel de 0 à 200 sans échelle ──── */
+  --z-base:   0;
+  --z-sticky: 10;
+  --z-drawer: 20;
+  --z-nav:    30;
+  --z-modal:  40;
+  --z-toast:  50;
+
+  /* ── Mouvement ──────────────────────────────────────────────────────── */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 350ms;
+  --ease-out: cubic-bezier(0.32, 0.72, 0.24, 1);
+
+  /* ── Rythme de page ─────────────────────────────────────────────────── */
+  --maxw:   1200px;
+  --gutter: clamp(20px, 5vw, 64px);
+
+  /* ── Cibles tactiles ────────────────────────────────────────────────── */
+  --tap-min: 48px;
+}
+
+/* Le mouvement décoratif suit le réglage système. Le « Mode Performance » de
+   l'application reste un surcroît volontaire par-dessus, pas son remplaçant :
+   jusqu'ici seule la case à cocher existait, et prefers-reduced-motion
+   n'était honoré nulle part. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus clavier visible partout. Il y avait 4 règles :focus dans le dashboard
+   et 1 dans le compteur : au clavier, on ne savait pas où l'on se trouvait. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}

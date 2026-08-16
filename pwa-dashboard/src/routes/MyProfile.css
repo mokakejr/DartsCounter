@@ -129,7 +129,7 @@
   font-family: var(--font-display);
   font-size: 15px;
   letter-spacing: 0.04em;
-  color: #fff;
+  color: var(--accent-ink);
   cursor: pointer;
   transition: opacity 0.15s;
 }

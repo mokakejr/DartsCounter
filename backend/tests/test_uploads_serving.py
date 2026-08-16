@@ -9,11 +9,22 @@ from pathlib import Path
 
 from PIL import Image
 
-from app.core.config import get_settings
+from app.main import app
+
+
+def _served_uploads_dir() -> Path:
+    # Le montage /uploads est créé une fois à l'import de l'app, avec un dossier
+    # fixe — la fixture _isolated_upload_dir (conftest) monkeypatche
+    # settings.upload_dir mais PAS ce montage. On écrit donc là où StaticFiles
+    # sert réellement, lu depuis le montage, pour éviter tout décalage.
+    for route in app.routes:
+        if getattr(route, "path", "") == "/uploads":
+            return Path(route.app.directory)
+    raise RuntimeError("montage /uploads introuvable")
 
 
 async def test_upload_served_as_webp_and_immutable(client):
-    upload_dir = Path(get_settings().upload_dir) / "avatars"
+    upload_dir = _served_uploads_dir() / "avatars"
     upload_dir.mkdir(parents=True, exist_ok=True)
     probe = upload_dir / "probe_g7.webp"
     Image.new("RGB", (8, 8), (200, 30, 42)).save(probe, format="WEBP")

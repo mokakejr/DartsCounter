@@ -1,11 +1,12 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
 from app.core.security import get_current_admin
 from app.models import Player
+from app.models.elo import GLOBAL_SCOPE
 from app.schemas.elo import (
     EloSettingsRead,
     EloSettingsUpdate,
@@ -13,9 +14,25 @@ from app.schemas.elo import (
     ScoreDirectionRead,
     ScoreDirectionUpdate,
 )
-from app.services import elo_config, elo_recompute
+from app.services import elo_config, elo_query, elo_recompute
 
 router = APIRouter(prefix="/elo", tags=["elo"])
+
+
+@router.get("/history")
+async def multi_elo_history(
+    players: str = Query(..., description="Noms séparés par des virgules"),
+    scope: str = Query(default=GLOBAL_SCOPE),
+    season: uuid.UUID | None = Query(default=None, description="id de saison, absent = tout l'historique"),
+    session: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    """Historique Elo de plusieurs joueurs en une requête. Le dashboard faisait
+    N GET séquentiels (un par joueur du top) — remplacé par cet appel unique.
+    Le nombre de noms est plafonné pour borner la requête."""
+    names = [n.strip() for n in players.split(",") if n.strip()]
+    if not names:
+        return []
+    return await elo_query.get_multi_player_elo_history(session, names[:10], scope, season)
 
 
 @router.get("/settings", response_model=EloSettingsRead)

@@ -314,3 +314,48 @@ async def test_player_elo_extremes_derives_rank_and_elo_history(client):
     assert body["best_rank_total_players"] == best_rank_snap[3]
     assert body["worst_rank"] == worst_rank_snap[2]
     assert body["worst_rank_total_players"] == worst_rank_snap[3]
+
+
+# ─── Historique Elo groupé (C5) ───────────────────────────────────────────────
+
+async def _post_game(client, day, winner, loser):
+    resp = await client.post(
+        "/games",
+        json={
+            "date": f"2026-03-{day:02d}T10:00:00Z",
+            "mode": "Cricket",
+            "players": [winner, loser],
+            "scores": [40, 10],
+            "winner": winner,
+        },
+    )
+    assert resp.status_code == 201
+
+
+async def test_bulk_elo_history_matches_single_player_calls(client):
+    """L'endpoint groupé doit renvoyer, pour chaque joueur, la même série que
+    l'appel mono-joueur : c'est le remplacement du fan-out de N GET."""
+    await _post_game(client, 1, "Alice", "Bob")
+    await _post_game(client, 2, "Bob", "Alice")
+    await _post_game(client, 3, "Alice", "Bob")
+
+    bulk = (await client.get("/elo/history?players=Alice,Bob&scope=global")).json()
+    by_name: dict[str, list] = {}
+    for row in bulk:
+        by_name.setdefault(row["name"], []).append(row["elo_after"])
+
+    # Alice a joué 3 parties -> 3 points ; Bob aussi.
+    assert len(by_name["Alice"]) == 3
+    assert len(by_name["Bob"]) == 3
+
+    # Comparaison à la source mono-joueur (players/{name}/elo-history).
+    alice_single = (await client.get("/players/Alice/elo-history?scope=global")).json()
+    alice_bulk_last = by_name["Alice"][-1]  # trié par date croissante
+    alice_single_last = sorted(alice_single, key=lambda r: r["game_date"])[-1]["elo_after"]
+    assert alice_bulk_last == alice_single_last
+
+
+async def test_bulk_elo_history_empty_for_unknown(client):
+    resp = await client.get("/elo/history?players=Personne")
+    assert resp.status_code == 200
+    assert resp.json() == []

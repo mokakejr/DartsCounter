@@ -69,7 +69,7 @@ export default function Tournois({ profiles = {} }) {
     <div className="tournois shell">
       <Link to="/" className="back">← La Ligue</Link>
       <h1 className="tournois__title display">Tournois — {league.name}</h1>
-      {season?.active && (
+      {season?.is_active && (
         <p className="tournois__season">
           {season.name} · se termine le {new Date(season.end_date).toLocaleDateString('fr-FR')}
           {' '}(soft reset du classement à la clôture)

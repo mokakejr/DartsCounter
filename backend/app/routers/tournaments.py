@@ -17,7 +17,6 @@ from app.models import Player
 from app.models.tournament import GOALS
 from app.services import players as players_service
 from app.services import tournaments as tournaments_service
-from app.services.seasons import get_active_season
 
 router = APIRouter(tags=["tournaments"])
 
@@ -53,19 +52,6 @@ async def _player_or_404(session: AsyncSession, name: str) -> Player:
     if player is None:
         raise HTTPException(404, "Player not found")
     return player
-
-
-@router.get("/seasons/current")
-async def current_season(session: AsyncSession = Depends(get_db)) -> dict:
-    season = await get_active_season(session)
-    if season is None:
-        return {"active": False}
-    return {
-        "active": True,
-        "name": season.name,
-        "start_date": season.start_date,
-        "end_date": season.end_date,
-    }
 
 
 @router.post("/tournaments", status_code=201)

@@ -5,6 +5,7 @@ unlocked by the latest game. all_games must include the new game already.
 """
 
 from datetime import datetime, timedelta
+from typing import Callable
 
 ALL_MODES = ["Cricket", "SuperCricket", "Shanghai", "FiftyOne"]
 
@@ -383,6 +384,76 @@ ACHIEVEMENTS: list[dict] = [
     {"id": "fiftyone_low_score", "cat": "loss", "ico": "📉", "name": "Score Plancher Fifty-One",     "desc": "Score le plus bas en une partie de Fifty-One",     "cond": lambda s, a: _has_mode_low_score(s, a, "FiftyOne")},
     *_XP_RANKS,
 ]
+
+
+# ── prog / value — parité stricte avec shared/achievements-core.mjs ──────────
+# prog(s) -> [courant, cible] pour la barre de progression (trophées verrouillés
+# comme débloqués) ; value(s) -> str pour la valeur affichée sur un trophée
+# obtenu. Mêmes formules que le JS, lues sur le dict de stats snake_case.
+# Attachés après coup pour garder la liste ACHIEVEMENTS lisible — le mur (F5) et
+# l'endpoint (D4) liront a.get("prog") / a.get("value").
+def _mode_champ_value(mode: str) -> Callable[[dict], str]:
+    def _value(s: dict) -> str:
+        n = s["mode_wins"].get(mode, 0)
+        return f"{n} victoire{'s' if n > 1 else ''}"
+
+    return _value
+
+
+_PROG: dict[str, Callable[[dict], list[int]]] = {
+    "first_blood":       lambda s: [s["wins"], 1],
+    "hat_trick":         lambda s: [s["max_streak"], 3],
+    "on_fire":           lambda s: [s["max_streak"], 5],
+    "unstoppable":       lambda s: [s["max_streak"], 10],
+    "triple_threat":     lambda s: [s["max_wins_in_day"], 3],
+    "legend_week":       lambda s: [s["max_wins_in_week"], 5],
+    "quarter_century":   lambda s: [s["wins"], 25],
+    "rough_patch":       lambda s: [s["max_loss_streak"], 3],
+    "punching_ball":     lambda s: [s["max_loss_streak"], 5],
+    "desert_crossing":   lambda s: [s["max_loss_streak"], 7],
+    "cursed":            lambda s: [s["max_loss_streak"], 10],
+    "bottomless_pit":    lambda s: [s["max_loss_streak"], 12],
+    "are_you_serious":   lambda s: [s["max_loss_streak"], 20],
+    "thomas":            lambda s: [s["max_cut_throat_score"], 1001],
+    "cricket_master":    lambda s: [s["mode_wins"].get("Cricket", 0), 10],
+    "shanghai_hunter":   lambda s: [s["shanghai_kill_wins"], 5],
+    "cricket_tactician": lambda s: [s["cut_throat_wins"], 5],
+    "fifty":             lambda s: [s["games"], 50],
+    "centurion":         lambda s: [s["games"], 100],
+    "veteran":           lambda s: [s["games"], 250],
+    "social":            lambda s: [len(s["opponents"]), 3],
+    "perfectionist":     lambda s: [s["games"] if s["wins"] == s["games"] else 0, 10],
+    "nemesis":           lambda s: [max([0, *s["beat"].values()]), 5],
+    "half_century":      lambda s: [s["wins"], 50],
+    "double_mode":       lambda s: [s["max_modes_won_in_day"], 2],
+    "master_of_four":    lambda s: [sum(1 for m in ALL_MODES if s["mode_wins"].get(m, 0) >= 5), 4],
+    "sniper":            lambda s: [s["speed_win_count"], 3],
+    "regular":           lambda s: [s["distinct_days"], 10],
+    "consistency":       lambda s: [s["max_day_streak"], 3],
+}
+
+_VALUE: dict[str, Callable[[dict], str]] = {
+    "thomas":             lambda s: f"{s['max_cut_throat_score']} pts encaissés",
+    "cricket_champ":      _mode_champ_value("Cricket"),
+    "sc_champ":           _mode_champ_value("SuperCricket"),
+    "shanghai_champ":     _mode_champ_value("Shanghai"),
+    "fiftyone_champ":     _mode_champ_value("FiftyOne"),
+    # NBSP ( ) avant le « : » — typographie française, à l'identique du JS.
+    "cricket_top_score":  lambda s: f"Score : {s['mode_max_score'].get('Cricket')}",
+    "sc_top_score":       lambda s: f"Score : {s['mode_max_score'].get('SuperCricket')}",
+    "shanghai_top_score": lambda s: f"Score : {s['mode_max_score'].get('Shanghai')}",
+    "fiftyone_top_score": lambda s: f"Score : {s['mode_max_score'].get('FiftyOne')}",
+    "cricket_low_score":  lambda s: f"Score : {s['mode_min_score'].get('Cricket')}",
+    "sc_low_score":       lambda s: f"Score : {s['mode_min_score'].get('SuperCricket')}",
+    "shanghai_low_score": lambda s: f"Score : {s['mode_min_score'].get('Shanghai')}",
+    "fiftyone_low_score": lambda s: f"Score : {s['mode_min_score'].get('FiftyOne')}",
+}
+
+for _a in ACHIEVEMENTS:
+    if _a["id"] in _PROG:
+        _a["prog"] = _PROG[_a["id"]]
+    if _a["id"] in _VALUE:
+        _a["value"] = _VALUE[_a["id"]]
 
 
 def compute_achievements(stats: dict[str, dict]) -> dict[str, list[str]]:

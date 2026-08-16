@@ -45,7 +45,7 @@ function Home({ games, stats, ranked, profiles = {}, eloBoard }) {
         <Standings ranked={ranked} profiles={profiles} />
         <NemesisWall ranked={ranked} profiles={profiles} />
         <Feed games={games} profiles={profiles} />
-        <Trends games={games} ranked={ranked} />
+        <Trends games={games} ranked={ranked} profiles={profiles} />
         <Trophies stats={stats} profiles={profiles} />
       </LobbyDrawer>
     </main>

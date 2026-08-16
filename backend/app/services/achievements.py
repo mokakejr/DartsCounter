@@ -464,6 +464,82 @@ def compute_achievements(stats: dict[str, dict]) -> dict[str, list[str]]:
     return earned
 
 
+# ── Mur à trophées — port de pwa-dashboard/src/lib/{rarity,trophies}.js ───────
+_RARITY_TIERS = {
+    "legendary": {"key": "legendary", "label": "Légendaire", "color": "var(--rar-legendary)"},
+    "epic":      {"key": "epic",      "label": "Épique",     "color": "var(--rar-epic)"},
+    "rare":      {"key": "rare",      "label": "Rare",       "color": "var(--rar-rare)"},
+    "common":    {"key": "common",    "label": "Commun",     "color": "var(--rar-common)"},
+}
+
+
+def rarity_tier(earners_count: int, total_players: int) -> dict | None:
+    """Rareté d'un trophée selon la part du roster qui le détient — parité avec
+    rarity.js. None = verrouillé."""
+    if not earners_count:
+        return None
+    ratio = earners_count / total_players if total_players else 1
+    if earners_count == 1 or ratio <= 0.2:
+        return _RARITY_TIERS["legendary"]
+    if ratio <= 0.4:
+        return _RARITY_TIERS["epic"]
+    if ratio <= 0.7:
+        return _RARITY_TIERS["rare"]
+    return _RARITY_TIERS["common"]
+
+
+def build_trophies(stats: dict[str, dict], player_name: str | None = None) -> list[dict]:
+    """Liste enrichie des trophées — parité avec buildTrophies (trophies.js) :
+    détenteurs, état de déverrouillage, rareté et progression des trophées
+    verrouillés. `player_name` : vue profil (progression = celle du joueur) ;
+    sinon vue globale (progression = le plus proche du roster)."""
+    players = list(stats.values())
+    total = len(players)
+    result: list[dict] = []
+    for a in ACHIEVEMENTS:
+        earners: list[dict] = []
+        for s in players:
+            if a["cond"](s, stats):
+                earner = {"name": s["name"], "wins": s["wins"]}
+                if "value" in a:
+                    earner["value"] = a["value"](s)
+                earners.append(earner)
+
+        if player_name is not None:
+            unlocked = any(e["name"] == player_name for e in earners)
+        else:
+            unlocked = len(earners) > 0
+
+        progress = None
+        if not unlocked and "prog" in a:
+            if player_name is not None and player_name in stats:
+                c, t = a["prog"](stats[player_name])
+                progress = [max(0, min(c, t)), t]
+            else:
+                best_cur, target = -1, None
+                for s in players:
+                    c, t = a["prog"](s)
+                    if c > best_cur:
+                        best_cur, target = c, t
+                if target is not None:
+                    progress = [max(0, min(best_cur, target)), target]
+
+        my_earner = (
+            next((e for e in earners if e["name"] == player_name), None)
+            if player_name is not None else None
+        )
+        result.append({
+            "id": a["id"], "cat": a["cat"], "ico": a["ico"],
+            "name": a["name"], "desc": a["desc"],
+            "earners": earners,
+            "unlocked": unlocked,
+            "rarity": rarity_tier(len(earners), total),
+            "progress": progress,
+            "my_value": my_earner.get("value") if my_earner else None,
+        })
+    return result
+
+
 def newly_unlocked_per_player(
     all_games: list[dict], new_game_id: str
 ) -> dict[str, list[dict]]:

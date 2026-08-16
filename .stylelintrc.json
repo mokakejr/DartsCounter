@@ -1,0 +1,43 @@
+{
+  "//": "Contrat de tokens. L'infidélité aux maquettes ne vient pas de quelqu'un qui dessine la mauvaise boîte : elle vient d'un padding: 18px là où la maquette dit 16, d'un #EDE4CF tapé en dur, d'un breakpoint inventé sur le moment. Ces trois règles rendent ces dérives impossibles à écrire. Livré en severity warning : on le passe en erreur en H2, une fois les surfaces migrées.",
+  "rules": {
+    "color-no-hex": [
+      true,
+      {
+        "severity": "warning",
+        "message": "Couleur en dur : passer par un token de shared/design/tokens.css."
+      }
+    ],
+    "declaration-property-value-allowed-list": [
+      {
+        "padding": ["/^var\\(--sp-/", "/^0$/", "/^auto$/", "/^clamp\\(/", "/^var\\(--gutter\\)$/"],
+        "margin": ["/^var\\(--sp-/", "/^0$/", "/^auto$/", "/^clamp\\(/"],
+        "gap": ["/^var\\(--sp-/", "/^0$/"]
+      },
+      {
+        "severity": "warning",
+        "message": "Espacement hors échelle : utiliser var(--sp-1..8)."
+      }
+    ],
+    "media-feature-name-value-allowed-list": [
+      {
+        "max-width": ["480px", "768px", "1024px"],
+        "min-width": ["480px", "768px", "1024px"]
+      },
+      {
+        "severity": "warning",
+        "message": "Breakpoint hors échelle : 480 / 768 / 1024 uniquement."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["**/SvgBoard.css", "**/styles/tokens.css", "shared/design/tokens.css"],
+      "rules": {
+        "color-no-hex": null,
+        "declaration-property-value-allowed-list": null
+      }
+    }
+  ],
+  "ignoreFiles": ["**/node_modules/**", "**/dist/**"]
+}

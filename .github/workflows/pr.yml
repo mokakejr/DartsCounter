@@ -60,6 +60,13 @@ jobs:
         working-directory: ${{ matrix.app }}
         # pwa-dashboard n'a pas encore de tests ; --if-present évite un faux rouge.
         run: npm test --if-present
+      - name: Lint CSS
+        working-directory: ${{ matrix.app }}
+        # Contrat de tokens. En avertissement pour l'instant : il mesure la
+        # dérive pendant que les surfaces migrent, sans bloquer la refonte
+        # qu'il est censé garder. Passé en erreur en H2.
+        run: npm run lint:css
+        continue-on-error: true
       - name: Build
         working-directory: ${{ matrix.app }}
         # Les VITE_* ne sont pas fournis : le client retombe sur ses valeurs

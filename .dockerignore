@@ -1,5 +1,7 @@
-# Used for builds whose context is the repo root (currently: pwa-dashboard/Dockerfile,
-# which needs both pwa-dashboard/ and shared/ in one context). Keeps that upload lean.
+# Used for builds whose context is the repo root — désormais les deux front
+# (pwa-dashboard/Dockerfile et pwa-counter/Dockerfile), qui ont chacun besoin
+# de leur dossier applicatif ET de shared/ dans un même contexte. Garde
+# l'upload de contexte léger.
 
 # Android app
 app/

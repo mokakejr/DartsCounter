@@ -16,5 +16,8 @@ export default defineConfig({
   ],
   server: {
     open: true,
+    // Autorise l'import des tokens partagés qui vivent un cran au-dessus de
+    // pwa-counter/ (même réglage que pwa-dashboard/vite.config.js).
+    fs: { allow: ['..'] },
   },
 });

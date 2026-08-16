@@ -51,7 +51,10 @@ services:
 
   counter:
     build:
-      context: ./pwa-counter
+      # Contexte racine comme le dashboard : les deux applications lisent
+      # désormais leurs tokens dans shared/design/, hors de leur dossier.
+      context: .
+      dockerfile: pwa-counter/Dockerfile
       args:
         VITE_API_URL: https://darts.api.${DOMAIN}
         VITE_DASHBOARD_URL: https://darts.${DOMAIN}

@@ -1,10 +1,17 @@
-// Color hashing (Epic 2.3): a player keeps the same curve color forever,
-// on every device — derived from the name, no palette index to drift.
-// The logged-in user is ALWAYS the app primary red: "moi vs les autres".
+// Couleur de joueur — un joueur garde la même teinte partout et sur tous les
+// appareils, dérivée de son nom. Le joueur connecté est TOUJOURS l'accent :
+// « moi vs les autres ».
+//
+// Avant, cette fonction produisait du HSL libre pendant que les graphes de
+// modes utilisaient une échelle rouge : deux langages de couleur coexistaient
+// sur le même écran. Tout passe désormais par l'échelle catégorielle unique de
+// shared/design/tokens.css.
 
-const PRIMARY = '#E61E2A';
+import { SERIES } from '../components/ChartTheme.jsx';
 
-// FNV-1a — stable, tiny, good spread for short strings.
+const ME = 'var(--accent)';
+
+// FNV-1a — stable, minuscule, bonne dispersion sur des chaînes courtes.
 function hash(str) {
   let h = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) {
@@ -14,16 +21,35 @@ function hash(str) {
   return h >>> 0;
 }
 
+/** Teinte stable d'un nom, prise dans l'échelle catégorielle. */
 export function stringToColor(key) {
-  const h = hash(String(key));
-  const hue = h % 360;
-  // Keep away from the primary red (±25°) so nobody impersonates "me".
-  const safeHue = hue < 25 || hue > 335 ? (hue + 60) % 360 : hue;
-  const sat = 55 + (h >> 9) % 25; // 55-79%
-  const light = 50 + (h >> 17) % 15; // 50-64%
-  return `hsl(${safeHue}, ${sat}%, ${light}%)`;
+  return SERIES[hash(String(key)) % SERIES.length];
 }
 
 export function playerColor(name, currentUserName) {
-  return name === currentUserName ? PRIMARY : stringToColor(name);
+  return name === currentUserName ? ME : stringToColor(name);
+}
+
+/**
+ * Attribue une couleur DISTINCTE à chaque nom d'une liste — indispensable pour
+ * un graphe, où deux courbes de la même teinte sont un bug de lecture. Le
+ * hachage sert de premier choix, puis on prend la première couleur libre.
+ * Au-delà de 8 joueurs les couleurs se répètent forcément : c'est pourquoi les
+ * graphes se limitent au top 5.
+ */
+export function playerPalette(names, currentUserName) {
+  const used = new Set();
+  const out = {};
+  for (const name of names) {
+    if (name === currentUserName) { out[name] = ME; continue; }
+    const start = hash(String(name)) % SERIES.length;
+    let color = SERIES[start];
+    if (used.has(color)) {
+      const free = SERIES.find(c => !used.has(c));
+      if (free) color = free;
+    }
+    used.add(color);
+    out[name] = color;
+  }
+  return out;
 }

@@ -6,21 +6,26 @@ import {
 import { modeDistribution } from '../lib/derive.js';
 import { MODE_LABEL, fmtDuration } from '../lib/data.js';
 import { fetchPlayerEloHistory } from '../api/players.js';
-import { SERIES, GRID, TICK, ChartTooltip } from '../components/ChartTheme.jsx';
-import { playerColor } from '../lib/playerColors.js';
+import { GRID, TICK, ChartTooltip, seriesColor } from '../components/ChartTheme.jsx';
+import { playerPalette } from '../lib/playerColors.js';
+import { displayName } from '../lib/profiles.js';
 import { useAuth } from '../lib/useAuth.jsx';
 import './Trends.css';
 
 const fmtTick = t => new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
-export default function Trends({ games, ranked }) {
+export default function Trends({ games, ranked, profiles = {} }) {
   const auth = useAuth();
-  // Moi = toujours le rouge primaire ; les autres = couleur hashée stable
-  // (Epic 2.3) — plus de palette par index qui change à chaque reclassement.
-  const colorOf = (name) => playerColor(name, auth?.player?.name);
+  // Moi = toujours l'accent ; les autres = teinte stable dérivée du nom,
+  // prise dans l'échelle catégorielle partagée.
   const dist = useMemo(() => modeDistribution(games), [games]);
-  // Top 5 players keep the chart readable + matches the 5-tone series scale.
+  // Top 5 : au-delà le graphe devient illisible, et la palette catégorielle
+  // ne compte que 8 teintes distinctes.
   const top = useMemo(() => ranked.slice(0, 5).map(s => s.name), [ranked]);
+  // Palette distincte plutôt que couleur par couleur : deux courbes de la
+  // même teinte dans un graphe sont un bug de lecture.
+  const palette = useMemo(() => playerPalette(top, auth?.player?.name), [top, auth?.player?.name]);
+  const colorOf = (name) => palette[name];
   const [eloData, setEloData] = useState([]);
 
   // ponytail: 5 parallel GETs; bulk /elo/history?players= endpoint if top-N grows.
@@ -79,7 +84,7 @@ export default function Trends({ games, ranked }) {
                   stroke="none"
                 >
                   {dist.map((d, i) => (
-                    <Cell key={d.mode} fill={SERIES[i % SERIES.length]} />
+                    <Cell key={d.mode} fill={seriesColor(i, dist.length)} />
                   ))}
                 </Pie>
                 <Tooltip content={<ChartTooltip />} />
@@ -89,7 +94,7 @@ export default function Trends({ games, ranked }) {
           <ul className="legend">
             {dist.map((d, i) => (
               <li key={d.mode}>
-                <span className="legend__dot" style={{ background: SERIES[i % SERIES.length] }} />
+                <span className="legend__dot" style={{ background: seriesColor(i, dist.length) }} />
                 {MODE_LABEL[d.mode] || d.mode} <b>{d.value}</b>
               </li>
             ))}
@@ -125,7 +130,7 @@ export default function Trends({ games, ranked }) {
             {top.map((p) => (
               <li key={p}>
                 <span className="legend__dot" style={{ background: colorOf(p) }} />
-                {p}
+                {displayName(profiles, p)}
               </li>
             ))}
           </ul>

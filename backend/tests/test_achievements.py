@@ -84,3 +84,48 @@ def test_thomas_ignores_non_cut_throat_games():
         },
     ]
     assert _thomas_earners(games) == []
+
+
+# ─── Nouveaux trophées « détenteur unique » (D2) ──────────────────────────────
+
+def _mode_champ_ids(stats):
+    from app.services.achievements import compute_achievements
+    return compute_achievements(stats)
+
+
+def test_mode_champion_and_score_records():
+    """Champion de mode, record de score et score plancher : un seul détenteur
+    chacun. Alice gagne le plus au Cricket ET marque le meilleur score ; Bob
+    détient le plancher."""
+    games = [
+        {"date": "2026-01-01T10:00:00Z", "mode": "Cricket", "players": ["Alice", "Bob"],
+         "scores": [120, 30], "winner": "Alice"},
+        {"date": "2026-01-02T10:00:00Z", "mode": "Cricket", "players": ["Alice", "Bob"],
+         "scores": [90, 40], "winner": "Alice"},
+        {"date": "2026-01-03T10:00:00Z", "mode": "Cricket", "players": ["Alice", "Bob"],
+         "scores": [50, 20], "winner": "Bob"},
+    ]
+    stats = compute_player_stats(games)
+    earned = _mode_champ_ids(stats)
+
+    # Alice : 2 victoires Cricket contre 1 → championne ; meilleur score (120).
+    assert "Alice" in earned["cricket_champ"]
+    assert "Bob" not in earned["cricket_champ"]
+    assert "Alice" in earned["cricket_top_score"]
+
+    # Bob : score le plus bas jamais marqué au Cricket (20).
+    assert "Bob" in earned["cricket_low_score"]
+    assert "Alice" not in earned["cricket_low_score"]
+
+
+def test_mode_score_state_populated():
+    """L'état mode_scores/mode_max_score/mode_min_score, absent du port avant
+    D2, doit être renseigné."""
+    games = [
+        {"date": "2026-01-01T10:00:00Z", "mode": "Shanghai", "players": ["Alice", "Bob"],
+         "scores": [80, 60], "winner": "Alice"},
+    ]
+    s = compute_player_stats(games)["Alice"]
+    assert s["mode_scores"]["Shanghai"] == [80]
+    assert s["mode_max_score"]["Shanghai"] == 80
+    assert s["mode_min_score"]["Shanghai"] == 80

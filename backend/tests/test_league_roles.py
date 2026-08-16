@@ -20,7 +20,7 @@ async def _mine(client, headers):
     """/leagues/mine minus the auto-assigned Taverne (every account gets it)."""
     from app.services.leagues import TAVERNE_NAME
     rows = (await client.get("/leagues/mine", headers=headers)).json()
-    return [l for l in rows if l["name"] != TAVERNE_NAME]
+    return [lg for lg in rows if lg["name"] != TAVERNE_NAME]
 
 
 async def _me(client, headers):
@@ -142,7 +142,7 @@ async def test_public_league_direct_join_and_directory(client):
 
     listing = (await client.get("/leagues/public", headers=bob)).json()
     # The Taverne (PUBLIC, auto-created) is listed too — only check ours.
-    ours = next(l for l in listing if l["id"] == league["id"])
+    ours = next(lg for lg in listing if lg["id"] == league["id"])
     assert "invite_code" not in ours
 
     resp = await client.post(f"/leagues/{league['id']}/join", headers=bob)

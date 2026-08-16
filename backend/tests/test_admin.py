@@ -1,8 +1,7 @@
-import pytest
 from sqlalchemy import select
 
 from app.core.db import async_session
-from app.models import Player, WebhookTarget
+from app.models import Player
 
 
 async def _signup(client, name="Alice", password="hunter22"):
@@ -91,7 +90,7 @@ async def test_delete_game_removes_it_and_logs(client):
 
     # Audit log was written
     logs = (await client.get("/admin/logs", headers=_auth(token))).json()
-    assert any(l["action"] == "delete_game" and l["entity_id"] == game_id for l in logs)
+    assert any(log["action"] == "delete_game" and log["entity_id"] == game_id for log in logs)
 
 
 # ─── ELO & Trophies ───────────────────────────────────────────────────────────
@@ -107,7 +106,7 @@ async def test_elo_recompute_via_admin(client):
     assert "players_updated" in resp.json()
 
     logs = (await client.get("/admin/logs", headers=_auth(token))).json()
-    assert any(l["action"] == "recompute_elo" for l in logs)
+    assert any(log["action"] == "recompute_elo" for log in logs)
 
 
 async def test_trophies_recompute(client):
@@ -123,7 +122,7 @@ async def test_trophies_recompute(client):
     assert "by_achievement" in body
 
     logs = (await client.get("/admin/logs", headers=_auth(token))).json()
-    assert any(l["action"] == "recompute_trophies" for l in logs)
+    assert any(log["action"] == "recompute_trophies" for log in logs)
 
 
 # ─── Players ──────────────────────────────────────────────────────────────────
@@ -172,7 +171,7 @@ async def test_reset_password(client):
     assert login.status_code == 200
 
     logs = (await client.get("/admin/logs", headers=_auth(token))).json()
-    assert any(l["action"] == "reset_password" for l in logs)
+    assert any(log["action"] == "reset_password" for log in logs)
 
 
 async def test_set_role(client):
@@ -200,7 +199,7 @@ async def test_set_role(client):
     assert bob_updated["is_admin"] is True
 
     logs = (await client.get("/admin/logs", headers=_auth(token))).json()
-    assert any(l["action"] == "set_role" for l in logs)
+    assert any(log["action"] == "set_role" for log in logs)
 
 
 # ─── Webhooks ─────────────────────────────────────────────────────────────────
@@ -240,7 +239,7 @@ async def test_toggle_webhook(client):
     assert resp.json()["enabled"] is True
 
     logs = (await client.get("/admin/logs", headers=_auth(token))).json()
-    toggle_logs = [l for l in logs if l["action"] == "toggle_webhook"]
+    toggle_logs = [log for log in logs if log["action"] == "toggle_webhook"]
     assert len(toggle_logs) == 2
 
 
@@ -281,7 +280,7 @@ async def test_create_season(client):
     assert body["is_active"] is True
 
     logs = (await client.get("/admin/logs", headers=_auth(token))).json()
-    assert any(l["action"] == "create_season" for l in logs)
+    assert any(log["action"] == "create_season" for log in logs)
 
 
 async def test_create_season_closes_previous(client):

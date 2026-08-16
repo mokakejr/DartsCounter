@@ -1,0 +1,67 @@
+name: PR
+
+# Première porte de contrôle du dépôt. Jusqu'ici rien ne tournait avant un
+# merge : les 231 tests backend n'étaient jamais exécutés par la CI, et un
+# build front cassé n'était découvert qu'au déploiement, sur le VPS.
+#
+# Ce fichier ne couvre que les vérifications rapides (lint + build). Les tests
+# pytest et le `docker compose build` arrivent en A2 — ils demandent des
+# services (Postgres, Redis) et prennent bien plus longtemps.
+
+on:
+  pull_request:
+
+# Une PR poussée trois fois de suite n'occupe pas trois fois les runners.
+concurrency:
+  group: pr-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  backend-lint:
+    name: ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --frozen
+      - name: ruff check
+        working-directory: backend
+        run: uv run ruff check .
+
+  frontend:
+    name: ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    strategy:
+      # On veut voir l'état des deux applications d'un coup, pas s'arrêter
+      # à la première qui casse.
+      fail-fast: false
+      matrix:
+        app: [pwa-dashboard, pwa-counter]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - name: Install dependencies
+        working-directory: ${{ matrix.app }}
+        run: npm ci
+      - name: Lint
+        working-directory: ${{ matrix.app }}
+        run: npm run lint
+      - name: Unit tests
+        working-directory: ${{ matrix.app }}
+        # pwa-dashboard n'a pas encore de tests ; --if-present évite un faux rouge.
+        run: npm test --if-present
+      - name: Build
+        working-directory: ${{ matrix.app }}
+        # Les VITE_* ne sont pas fournis : le client retombe sur ses valeurs
+        # par défaut (voir src/api/client.js). On valide que ça compile, pas
+        # que ça pointe sur le bon environnement — c'est le rôle du déploiement.
+        run: npm run build

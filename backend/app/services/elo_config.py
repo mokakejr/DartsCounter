@@ -7,7 +7,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.elo_config import SETTINGS_ID, EloSettings, ScoreDirection, normalize_key
+from app.models.elo_config import SETTINGS_ID, EloSettings, ScoreDirection
 from app.services.elo import EloConfig
 
 

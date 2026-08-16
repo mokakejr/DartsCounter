@@ -1,7 +1,7 @@
 from sqlalchemy import select
 
 from app.core.db import async_session
-from app.models import EloHistory, Game, GamePlayer, Player, PlayerRating
+from app.models import Game, GamePlayer, Player
 from app.scripts.merge_players import merge_players
 
 

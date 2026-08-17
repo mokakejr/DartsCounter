@@ -90,9 +90,8 @@ export default function Standings({ ranked, profiles = {} }) {
 
   return (
     <section className="standings shell" id="classement">
-      <div className="sec-head">
-        <p className="eyebrow">01 — Classement</p>
-        <h2 className="display sec-title">Qui domine&nbsp;?</h2>
+      <div className="standings__head">
+        <h2 className="standings__title">Classement</h2>
         <div className="standings__filters">
           {FILTERS.map(f => (
             <button
@@ -106,36 +105,10 @@ export default function Standings({ ranked, profiles = {} }) {
         </div>
       </div>
 
-      {rankedRows.length >= 3 && (
-        <Podium top={rankedRows.slice(0, 3)} profiles={profiles} elo={elo} />
-      )}
-
-      {rankedRows.length >= 3 && rankedRows.length > 3 && (
-        <div className="pit">
-          {rankedRows.slice(3).map((s, i) => {
-            const wins = filter === 'Global' ? s.wins : s._wins;
-            const games = filter === 'Global' ? s.games : s._games;
-            const rate = games ? Math.round((wins / games) * 100) : 0;
-            return (
-              <PlayerCard
-                key={s.name}
-                className="pit__card"
-                name={s.name}
-                label={`#${i + 4} ${displayName(profiles, s.name)}`}
-                avatarUrl={profiles[s.name]?.avatar_url}
-                rank={elo[s.name]?.rank}
-                title={`${elo[s.name] ? `${elo[s.name].elo} elo · ` : ''}${rate}% V`}
-                streak={profiles[s.name]?.current_streak ?? 0}
-                size={36}
-                to={`/joueur/${encodeURIComponent(s.name)}`}
-              />
-            );
-          })}
-        </div>
-      )}
-
+      {/* Un seul format de ligne, quel que soit l'effectif (F2) : plus de podium
+          ni de fosse qui branchaient sur le nombre de joueurs. */}
       <ol className="ladder">
-        {rankedRows.length < 3 && rankedRows.map((s, i) => (
+        {rankedRows.map((s, i) => (
           <LadderRow
             key={s.name}
             s={s}
@@ -172,9 +145,6 @@ export default function Standings({ ranked, profiles = {} }) {
   );
 }
 
-// Médailles top 3 (Epic 2.2): icône + bordure or/argent/bronze.
-const MEDALS = ['🥇', '🥈', '🥉'];
-
 function LadderRow({ s, i, filter, profiles, playerElo, isRanked }) {
   const wins = filter === 'Global' ? s.wins : s._wins;
   const games = filter === 'Global' ? s.games : s._games;
@@ -190,7 +160,7 @@ function LadderRow({ s, i, filter, profiles, playerElo, isRanked }) {
       transition={{ duration: 0.45, delay: Math.min(i * 0.04, 0.3) }}
     >
       <span className={`ladder__rank ${rank}`}>
-        {isRanked && i < 3 ? MEDALS[i] : isRanked ? i + 1 : '–'}
+        {isRanked ? i + 1 : '–'}
       </span>
       <PlayerCard
         className="ladder__player"
@@ -207,11 +177,8 @@ function LadderRow({ s, i, filter, profiles, playerElo, isRanked }) {
       <span className="ladder__stat ladder__stat--bar">
         <span className="winrate-bar" title={`${wins} victoires / ${games} parties`}>
           <span
-            className="winrate-bar__fill"
-            style={{
-              width: `${Math.round(winRate * 100)}%`,
-              background: winRate >= 0.5 ? '#4CAF50' : '#F44336',
-            }}
+            className={`winrate-bar__fill${winRate < 0.5 ? ' winrate-bar__fill--low' : ''}`}
+            style={{ width: `${Math.round(winRate * 100)}%` }}
           />
         </span>
         <em>{Math.round(winRate * 100)}% · {wins} V</em>
@@ -228,45 +195,8 @@ function LadderRow({ s, i, filter, profiles, playerElo, isRanked }) {
           </>
         )}
       </span>
-      <span className="ladder__stat ladder__stat--hide">
-        <b>{games}</b><em>{games === 1 ? 'partie' : 'parties'}</em>
-      </span>
     </motion.li>
   );
 }
 
 
-// Le Podium Dynamique (Epic 10.1): les 3 premiers ne sont plus des lignes.
-// Ordre visuel 2-1-3.
-function Podium({ top, profiles, elo }) {
-  const order = [top[1], top[0], top[2]].filter(Boolean);
-  const placeOf = (s) => top.indexOf(s); // 0 = champion
-
-  return (
-    <div className="podium">
-      {order.map((s) => {
-        const place = placeOf(s);
-        return (
-          <div key={s.name} className={`podium__slot podium__slot--p${place + 1}`}>
-            <span className="podium__medal">{['🥇', '🥈', '🥉'][place]}</span>
-            <PlayerCard
-              className="podium__card"
-              name={s.name}
-              label={displayName(profiles, s.name)}
-              avatarUrl={profiles[s.name]?.avatar_url}
-              rank={elo[s.name]?.rank}
-              title={profiles[s.name]?.title}
-              streak={profiles[s.name]?.current_streak ?? 0}
-              size={place === 0 ? 84 : 62}
-              to={`/joueur/${encodeURIComponent(s.name)}`}
-            />
-            <span className="podium__stats">
-              {elo[s.name] ? `${elo[s.name].elo} elo` : '—'}
-            </span>
-            <span className={`podium__step podium__step--p${place + 1}`} />
-          </div>
-        );
-      })}
-    </div>
-  );
-}

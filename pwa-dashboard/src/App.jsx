@@ -216,36 +216,42 @@ function AppInner() {
       <ScrollTop />
       <nav className="nav">
         <Link to="/" className="nav__brand display">DC</Link>
-        {leagues.length > 0 && (
-          <select
-            className="nav__league"
-            value={activeLeague?.id ?? ''}
-            aria-label="Ligue active"
-            onChange={e => {
-              const id = e.target.value;
-              // activateLeague est un toggle : re-passer l'id actif le désactive.
-              if (id) { if (activeLeague?.id !== id) activateLeague(id); }
-              else if (activeLeague) activateLeague(activeLeague.id);
-            }}
-          >
-            <option value="">Toutes les ligues</option>
-            {leagues.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-          </select>
-        )}
+
+        {/* Destinations en onglets (desktop) — masquées sous 768px, où elles
+            passent dans le tiroir « Plus ». */}
+        <div className="nav__tabs">
+          <NavLink to="/" end className={({ isActive }) => `nav__tab${isActive ? ' is-active' : ''}`}>Classement</NavLink>
+          <NavLink to="/profils" className={({ isActive }) => `nav__tab${isActive ? ' is-active' : ''}`}>Joueurs</NavLink>
+          <NavLink to="/trophees" className={({ isActive }) => `nav__tab${isActive ? ' is-active' : ''}`}>Trophées</NavLink>
+          <NavLink to="/ligues" className={({ isActive }) => `nav__tab${isActive ? ' is-active' : ''}`}>Ligues</NavLink>
+          <NavLink to="/tournois" className={({ isActive }) => `nav__tab${isActive ? ' is-active' : ''}`}>
+            Tournois{openTournaments > 0 && <span className="nav__badge">{openTournaments}</span>}
+          </NavLink>
+        </div>
+
         <div className="nav__right">
+          {leagues.length > 0 && (
+            <select
+              className="nav__league"
+              value={activeLeague?.id ?? ''}
+              aria-label="Ligue active"
+              onChange={e => {
+                const id = e.target.value;
+                // activateLeague est un toggle : re-passer l'id actif le désactive.
+                if (id) { if (activeLeague?.id !== id) activateLeague(id); }
+                else if (activeLeague) activateLeague(activeLeague.id);
+              }}
+            >
+              <option value="">Toutes les ligues</option>
+              {leagues.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+            </select>
+          )}
           <Link to={auth.player ? '/profile' : '/login'} className="nav__account">
             {auth.player ? censorName(auth.player.display_name || auth.player.name) : 'Connexion'}
-            {myEntry && <span className="nav__rank"> | {myEntry.rank} · {myEntry.elo} ({ordinal(myIdx + 1)})</span>}
+            {myEntry && <span className="nav__rank"> · {myEntry.rank} · {myEntry.elo} · {ordinal(myIdx + 1)}</span>}
           </Link>
-          <button
-            className="nav__callout"
-            disabled={calloutRemaining > 0}
-            onClick={openCallout}
-          >
-            {calloutRemaining > 0 ? `⏳ ${fmtCountdown(calloutRemaining)}` : '🔔'}
-          </button>
-          <button className="nav__burger" onClick={() => setMenuOpen(o => !o)} aria-label="Menu">
-            {menuOpen ? '✕' : '☰'}
+          <button className="nav__more" onClick={() => setMenuOpen(o => !o)} aria-label="Plus">
+            {menuOpen ? '✕' : 'Plus'}
           </button>
         </div>
       </nav>
@@ -253,17 +259,28 @@ function AppInner() {
         <>
           <div className="nav__backdrop" onClick={() => setMenuOpen(false)} />
           <div className="nav__drawer">
-            <NavLink to="/profils" className={({ isActive }) => isActive ? 'is-active' : undefined}>Joueurs</NavLink>
-            <NavLink to="/trophees" className={({ isActive }) => isActive ? 'is-active' : undefined}>Trophées</NavLink>
-            <NavLink to="/ligues" className={({ isActive }) => isActive ? 'is-active' : undefined}>Ligues</NavLink>
-            <NavLink to="/palmares" className={({ isActive }) => isActive ? 'is-active' : undefined}>Palmarès</NavLink>
-            <NavLink to="/tournois" className={({ isActive }) => isActive ? 'is-active' : undefined}>
+            {/* Destinations principales — dans le tiroir seulement en mobile
+                (en onglets sur desktop). */}
+            <NavLink to="/" end className={({ isActive }) => `nav__drawer-main${isActive ? ' is-active' : ''}`}>Classement</NavLink>
+            <NavLink to="/profils" className={({ isActive }) => `nav__drawer-main${isActive ? ' is-active' : ''}`}>Joueurs</NavLink>
+            <NavLink to="/trophees" className={({ isActive }) => `nav__drawer-main${isActive ? ' is-active' : ''}`}>Trophées</NavLink>
+            <NavLink to="/ligues" className={({ isActive }) => `nav__drawer-main${isActive ? ' is-active' : ''}`}>Ligues</NavLink>
+            <NavLink to="/tournois" className={({ isActive }) => `nav__drawer-main${isActive ? ' is-active' : ''}`}>
               Tournois{openTournaments > 0 && <span className="nav__badge">{openTournaments}</span>}
             </NavLink>
+            {/* Le « Plus » — toujours dans le tiroir. */}
+            <NavLink to="/palmares" className={({ isActive }) => isActive ? 'is-active' : undefined}>Palmarès</NavLink>
             <NavLink to="/xp" className={({ isActive }) => isActive ? 'is-active' : undefined}>XP</NavLink>
             <NavLink to="/rangs" className={({ isActive }) => isActive ? 'is-active' : undefined}>Rangs</NavLink>
-            {auth.player?.is_admin && (
-              <NavLink to="/admin" className={({ isActive }) => isActive ? 'is-active' : undefined}>Admin</NavLink>
+            {auth.player?.is_admin && <NavLink to="/admin" className={({ isActive }) => isActive ? 'is-active' : undefined}>Admin</NavLink>}
+            {auth.player && (
+              <button
+                className="nav__drawer-btn"
+                disabled={calloutRemaining > 0}
+                onClick={() => { setMenuOpen(false); openCallout(); }}
+              >
+                {calloutRemaining > 0 ? `⏳ ${fmtCountdown(calloutRemaining)}` : '🔔 Défier un pote'}
+              </button>
             )}
             <span className="nav__count">{(allGames ?? games).length} parties</span>
           </div>

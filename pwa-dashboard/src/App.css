@@ -16,7 +16,60 @@
   border-bottom: 1px solid var(--border);
 }
 .nav__brand { font-size: 22px; letter-spacing: 0.04em; }
-.nav__right { display: flex; align-items: center; gap: 8px; }
+.nav__right { display: flex; align-items: center; gap: var(--sp-3); }
+
+/* Destinations en onglets (desktop) — soulignées quand actives (E2/E3). */
+.nav__tabs { display: flex; align-items: center; gap: var(--sp-5); }
+.nav__tab {
+  position: relative;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--muted-2);
+  padding: var(--sp-2) 0;
+  white-space: nowrap;
+}
+.nav__tab:hover { color: var(--text); }
+.nav__tab.is-active { color: var(--text); font-weight: 700; }
+.nav__tab.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: calc(-1 * var(--sp-1));
+  height: 2px;
+  background: var(--primary);
+}
+
+/* « Plus » : l'overflow (Palmarès, XP, Rangs, Admin, Défier). Remplace le
+   burger — sur mobile il porte aussi les destinations principales. */
+.nav__more {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  color: var(--muted-2);
+  font-size: 13px;
+  padding: var(--sp-1) var(--sp-3);
+  cursor: pointer;
+}
+.nav__more:hover { color: var(--text); border-color: var(--muted); }
+
+.nav__drawer-main { display: none; }
+.nav__drawer-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--hot);
+  font: inherit;
+  cursor: pointer;
+  padding: var(--sp-2) 0;
+}
+.nav__drawer-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Sous 768px : les onglets passent dans le tiroir « Plus ». */
+@media (max-width: 768px) {
+  .nav__tabs { display: none; }
+  .nav__drawer-main { display: block; }
+}
 
 .nav__burger {
   width: 36px; height: 36px;

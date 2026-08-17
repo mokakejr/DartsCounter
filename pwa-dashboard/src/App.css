@@ -48,6 +48,10 @@
   font-size: 13px;
   padding: var(--sp-1) var(--sp-3);
   cursor: pointer;
+  /* Largeur figée : « Plus » et « ✕ » occupent la même place, sinon basculer
+     le menu décale le rang à sa gauche. */
+  min-width: 4rem;
+  text-align: center;
 }
 .nav__more:hover { color: var(--text); border-color: var(--muted); }
 

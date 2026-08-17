@@ -43,6 +43,8 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
   const [seasons, setSeasons] = useState([]);
   // Saison du mur (C6). Défaut « depuis toujours » : toute la carrière.
   const [season, setSeason] = useState('all');
+  // Onglet du profil (F3) — structure seule, contenus déplacés tels quels.
+  const [ptab, setPtab] = useState('overview');
 
   useEffect(() => {
     fetchPlayerRatings(name).then(setRatings).catch(() => setRatings([]));
@@ -180,34 +182,52 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
         )}
       </header>
 
-      <div className="xpbar">
-        <div className="xpbar__track"><span style={{ width: `${s.level.pct}%` }} /></div>
-        <div className="xpbar__meta">
-          <span>{s.xp} XP</span>
-          {!s.level.isMax && <span>{s.level.nextXP} XP → niv. {s.level.lv + 1}</span>}
-          {s.level.isMax && <span>Niveau max atteint 🍾</span>}
-        </div>
-      </div>
-
-      <div className="tiles">
-        {tiles.map(t => (
-          <div key={t.k} className="tile">
-            <span className="tile__v" style={t.accent ? { color: t.accent } : undefined}>{t.v}</span>
-            <span className="tile__k">{t.k}</span>
-          </div>
+      <nav className="ptabs">
+        {[['overview', "Vue d'ensemble"], ['permode', 'Par mode'], ['rivalites', 'Rivalités'], ['trophees', 'Trophées'], ['historique', 'Historique']].map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            className={`ptab${ptab === id ? ' is-active' : ''}`}
+            onClick={() => setPtab(id)}
+          >
+            {label}{id === 'trophees' && trophies.length ? ` · ${earned.length}` : ''}
+          </button>
         ))}
-      </div>
+      </nav>
 
-      {modeRatings.length > 0 && (
-        <div className="rankrow">
-          {modeRatings.map(r => (
-            <RankBadge key={r.scope} label={MODE_LABEL[r.scope] || r.scope} rank={r.rank} elo={r.rating} size="sm" />
-          ))}
+      {ptab === 'overview' && (
+        <div className="ptab-panel">
+          <div className="xpbar">
+            <div className="xpbar__track"><span style={{ width: `${s.level.pct}%` }} /></div>
+            <div className="xpbar__meta">
+              <span>{s.xp} XP</span>
+              {!s.level.isMax && <span>{s.level.nextXP} XP → niv. {s.level.lv + 1}</span>}
+              {s.level.isMax && <span>Niveau max atteint 🍾</span>}
+            </div>
+          </div>
+          <div className="tiles">
+            {tiles.map(t => (
+              <div key={t.k} className="tile">
+                <span className="tile__v" style={t.accent ? { color: t.accent } : undefined}>{t.v}</span>
+                <span className="tile__k">{t.k}</span>
+              </div>
+            ))}
+          </div>
+          {modeRatings.length > 0 && (
+            <div className="rankrow">
+              {modeRatings.map(r => (
+                <RankBadge key={r.scope} label={MODE_LABEL[r.scope] || r.scope} rank={r.rank} elo={r.rating} size="sm" />
+              ))}
+            </div>
+          )}
+          <h2 className="profile__h2 eyebrow">Activité</h2>
+          {/* Calendrier « GitHub » — indépendant du filtre de saison. */}
+          <ActivityCalendar games={games} name={name} />
         </div>
       )}
 
-      <div className="profile__cols">
-        <section>
+      {ptab === 'permode' && (
+        <div className="ptab-panel">
           <h2 className="profile__h2 eyebrow">Par mode</h2>
           <div className="modebars">
             {ALL_MODES.map(m => {
@@ -224,7 +244,11 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
               );
             })}
           </div>
+        </div>
+      )}
 
+      {ptab === 'rivalites' && (
+        <div className="ptab-panel">
           <h2 className="profile__h2 eyebrow">Rivalités</h2>
           {h2h.map(r => {
             const me    = r.a === name ? r.aWins : r.bWins;
@@ -240,9 +264,11 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
             );
           })}
           {h2h.length === 0 && <p className="profile__muted">Pas encore de rivalité.</p>}
-        </section>
+        </div>
+      )}
 
-        <section>
+      {ptab === 'historique' && (
+        <div className="ptab-panel">
           <h2 className="profile__h2 eyebrow">Dernières parties</h2>
           <ul className="profile__games">
             {recent.map((g, i) => {
@@ -314,18 +340,10 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
               </div>
             </div>
           )}
-        </section>
-      </div>
-
-      <section className="wallsec">
-        <div className="wallsec__head">
-          <h2 className="wallsec__title">Activité</h2>
         </div>
-        {/* Calendrier « GitHub » — indépendant du filtre de saison (12 mois
-            glissants), volontairement. */}
-        <ActivityCalendar games={games} name={name} />
-      </section>
+      )}
 
+      {ptab === 'trophees' && (
       <section className="wallsec">
         <div className="wallsec__head">
           <h2 className="wallsec__title">Mur à trophées</h2>
@@ -358,6 +376,7 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
           })}
         </div>
       </section>
+      )}
 
       <TrophyModal trophy={selectedTrophy} onClose={() => setSelectedTrophy(null)} profiles={profiles} />
     </div>

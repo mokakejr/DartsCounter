@@ -4,6 +4,7 @@ import './ActivityCalendar.css';
 const DAY_MS = 86400000;
 const WEEKS = 53;
 const WEEKDAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+const MONTH_ABBR = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'];
 
 // Un jour local en clé YYYY-MM-DD (le bucketing suit le fuseau du navigateur,
 // comme le reste des stats côté client).
@@ -65,8 +66,19 @@ function buildCalendar(games, name) {
   let semainesDaffilee = 0;
   for (let w = WEEKS - 1; w >= 0 && activeWeeks[w]; w--) semainesDaffilee += 1;
 
+  // Étiquette de mois par colonne : le mois s'affiche au-dessus de la première
+  // semaine où il apparaît (comme GitHub).
+  const monthLabels = [];
+  let prevMonth = -1;
+  for (let w = 0; w < WEEKS; w++) {
+    const m = weeks[w][0].date.getMonth();
+    monthLabels.push(m !== prevMonth ? MONTH_ABBR[m] : '');
+    prevMonth = m;
+  }
+
   return {
     weeks,
+    monthLabels,
     stats: { joursActifs, recordEnJour, jourFavori, semainesDaffilee },
   };
 }
@@ -86,14 +98,29 @@ function fmtDay(date) {
  * performance d'une saison.
  */
 export default function ActivityCalendar({ games, name, onPickDay }) {
-  const { weeks, stats } = useMemo(() => buildCalendar(games, name), [games, name]);
+  const { weeks, monthLabels, stats } = useMemo(() => buildCalendar(games, name), [games, name]);
 
   return (
     <div className="cal">
-      <div className="cal__grid" role="img" aria-label="Calendrier d'activité sur 12 mois">
-        {weeks.map((col, w) => (
-          <div key={w} className="cal__week">
-            {col.map(cell => (
+      <div className="cal__chart">
+        {/* Mois en abscisse (au-dessus des colonnes de semaines), façon GitHub. */}
+        <div className="cal__months" aria-hidden="true">
+          <span className="cal__days-spacer" />
+          {weeks.map((_, w) => (
+            <span key={w} className="cal__month">{monthLabels[w]}</span>
+          ))}
+        </div>
+        <div className="cal__rows">
+          {/* Jours de la semaine en ordonnée (à gauche), un sur deux. */}
+          <div className="cal__days" aria-hidden="true">
+            {WEEKDAY_LABELS.map((d, i) => (
+              <span key={i} className="cal__day">{i % 2 === 1 ? d : ''}</span>
+            ))}
+          </div>
+          <div className="cal__grid" role="img" aria-label="Calendrier d'activité sur 12 mois">
+            {weeks.map((col, w) => (
+              <div key={w} className="cal__week">
+                {col.map(cell => (
               <button
                 key={cell.key}
                 type="button"
@@ -105,6 +132,8 @@ export default function ActivityCalendar({ games, name, onPickDay }) {
             ))}
           </div>
         ))}
+          </div>
+        </div>
       </div>
 
       <div className="cal__foot">

@@ -4,6 +4,9 @@
   display: flex;
   align-items: center;
   overflow: hidden;
+  /* Décalage réel sous la nav opaque (E2) : le contenu centré du hero ne
+     remonte plus derrière la barre quand il est haut. */
+  padding-top: var(--nav-h);
 }
 
 /* ── Couches du lobby : titre (décor) < fléchette 3D < CTA/avatar ── */

@@ -1,121 +1,81 @@
-.hero {
-  position: relative;
-  min-height: 100svh;
+/* Bandeau champion (F2) — remplace le lobby cinématique (fléchette 3D + titre
+   plein écran). Compact et horizontal : le classement suit immédiatement
+   dessous, visible sans scroller. avatar · corps · Jouer. */
+.champ {
   display: flex;
   align-items: center;
-  overflow: hidden;
-  /* Décalage réel sous la nav opaque (E2) : le contenu centré du hero ne
-     remonte plus derrière la barre quand il est haut. */
-  padding-top: var(--nav-h);
+  gap: var(--sp-5);
+  padding: var(--sp-6) 0;
 }
 
-/* ── Couches du lobby : titre (décor) < fléchette 3D < CTA/avatar ── */
-.hero__dart {
-  position: absolute;
-  inset: 0;
-  left: 30%;
-  z-index: 1;
-  pointer-events: none;
-  mask-image: radial-gradient(95% 100% at 60% 50%, #000 85%, transparent 100%);
+.champ__avatar {
+  flex: none;
+  border-radius: var(--r-pill);
 }
 
-.hero__grid {
-  position: relative;
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  align-items: center;
-  gap: 40px;
-}
-
-.hero__title {
-  position: relative;
-  z-index: 0; /* le décor : derrière la fléchette */
-  opacity: 0.8;
-  font-size: clamp(56px, 11vw, 150px);
-  margin: 26px 0 32px;
-}
-.hero__line { display: block; }
-.hero__line + .hero__line { padding-top: 0.16em; }
-.hero__accent { color: var(--primary); }
-
-.hero__champ {
-  position: relative;
-  z-index: 2;
+.champ__body {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  border-left: 2px solid var(--primary);
-  padding-left: 18px;
+  gap: var(--sp-2);
 }
 
-.hero__cta {
+.champ__eyebrow { margin: 0; }
+
+.champ__name {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 56px);
+  line-height: 0.95;
+}
+
+.champ__stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-4);
+  margin-top: var(--sp-1);
+}
+
+.champ__pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 28px;
-  padding: 14px 28px;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--win) 16%, transparent);
+  color: var(--win);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.champ__stat { color: var(--muted-2); font-size: 14px; }
+.champ__stat--fire { color: var(--text); font-weight: 600; }
+
+.champ__cta {
+  flex: none;
+  padding: var(--sp-4) var(--sp-6);
+  border-radius: var(--r-pill);
   background: var(--primary);
   color: var(--accent-ink);
-  border-radius: 12px;
-  font-family: var(--font-display);
-  font-size: clamp(15px, 2vw, 18px);
-  letter-spacing: 0.06em;
-  transition: opacity 0.2s;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  white-space: nowrap;
 }
-.hero__cta:hover { opacity: 0.88; color: #fff; }
+.champ__cta:hover { opacity: 0.9; }
 
-@media (max-width: 820px) {
-  .hero__grid { grid-template-columns: 1fr; }
-  .hero__dart { left: 0; opacity: 0.5; }
-}
+.champ--empty { justify-content: space-between; }
 
-/* ── Avatar central du champion + .on-fire (Epic 2.1) ──── */
-.hero__avatar {
-  display: block;
-  margin-bottom: 14px;
-  width: fit-content;
-  border-radius: 50%;
+@media (max-width: 768px) {
+  .champ {
+    flex-wrap: wrap;
+    gap: var(--sp-4);
+    padding: var(--sp-5) 0;
+  }
+  .champ__cta {
+    order: 3;
+    width: 100%;
+    text-align: center;
+  }
 }
-.hero__avatar .player-card__meta { display: none; }
-
-.hero__avatar.on-fire .player-card__frame {
-  animation: hero-fire 1.4s ease-in-out infinite;
-  border-color: #ff7a18;
-}
-@keyframes hero-fire {
-  0%, 100% { box-shadow: 0 0 14px 2px rgba(255, 122, 24, 0.55); }
-  50% { box-shadow: 0 0 30px 8px rgba(255, 60, 0, 0.75); }
-}
-[data-reduce-animations] .hero__avatar.on-fire .player-card__frame {
-  animation: none;
-  box-shadow: none;
-}
-
-/* ── L'unique Soleil : CTA massif qui pulse doucement ──── */
-.hero__action {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 18px;
-}
-
-.hero__cta--play {
-  display: block;
-  width: min(100%, 380px);
-  padding: 20px 24px;
-  text-align: center;
-  font-size: clamp(20px, 5vw, 26px);
-  letter-spacing: 0.08em;
-  border-radius: 16px;
-  box-shadow: 0 10px 28px rgba(230, 30, 42, 0.4);
-  animation: hero-pulse 2s ease-in-out infinite;
-}
-.hero__cta--play:hover { animation-play-state: paused; }
-@keyframes hero-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-}
-[data-reduce-animations] .hero__cta--play { animation: none; }

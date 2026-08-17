@@ -1,102 +1,67 @@
 import { motion } from 'framer-motion';
-import { Suspense, lazy } from 'react';
-// three.js ne charge qu'ici, à la demande — sorti du bundle initial (E1).
-// Déjà sous <Suspense fallback={null}> plus bas, le lazy est transparent.
-const Dart = lazy(() => import('../components/Dart.jsx'));
 import PlayerCard from '../components/PlayerCard.jsx';
-import RankBadge from '../components/RankBadge.jsx';
 import { displayName } from '../lib/profiles.js';
 import './Hero.css';
 
 const COUNTER_URL = import.meta.env.VITE_COUNTER_URL || 'http://localhost:5174';
 
 /**
- * Le Lobby Cinématique (Epic 5) — l'écran ne dit que deux choses :
- *   1. Le Boss Final — "X RÈGNE." en décor derrière la fléchette 3D.
- *   2. JOUER — l'unique soleil, il pulse et attire le clic.
- * Mon rang vit dans le header, le classement dans le tiroir (LobbyDrawer),
- * tout le reste plus bas dans le tiroir ou sur les profils.
+ * Bandeau champion (F2) : le champion garde son moment, mais en bandeau
+ * compact — le classement reste visible sans scroller, juste en dessous.
+ * Plus de fléchette 3D ni de titre plein écran (c'était l'« avant » du chantier).
+ * avatar · (eyebrow + nom + pastilles de stats) · Jouer.
  */
-export default function Hero({ ranked, profiles = {}, eloBoard = [] }) {
+export default function Hero({ ranked, profiles = {}, eloBoard = [], seasonLabel }) {
   const champEntry = eloBoard[0];
-  const champStats = champEntry ? ranked.find(r => r.name === champEntry.name) : null;
   const champName = champEntry?.name;
+  const champStats = champName ? ranked.find((r) => r.name === champName) : null;
   const champProfile = champName ? profiles[champName] : null;
 
+  if (!champEntry) {
+    return (
+      <header className="champ shell champ--empty">
+        <p className="eyebrow">DartsCounter · La Ligue</p>
+        <a href={COUNTER_URL} className="champ__cta">🎯 Jouer</a>
+      </header>
+    );
+  }
+
+  const wins = champStats?.wins ?? 0;
+  const games = champStats?.games ?? 0;
+  const winrate = games ? Math.round((wins / games) * 100) : 0;
+  const streak = champStats?.curStreak ?? 0;
+
   return (
-    <header className="hero">
-      <div className="hero__dart">
-        <Suspense fallback={null}>
-          <Dart
-            accentColor={champProfile?.accent_color}
-            flightImageUrl={champProfile?.flight_image_url}
-            flightCropA={champProfile?.flight_crop_a}
-            flightCropB={champProfile?.flight_crop_b}
-            flightMode={champProfile?.flight_mode}
-          />
-        </Suspense>
-      </div>
+    <motion.header
+      className="champ shell"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <span className={`champ__avatar${streak >= 3 ? ' on-fire' : ''}`}>
+        <PlayerCard
+          name={champName}
+          label=""
+          avatarUrl={champProfile?.avatar_url}
+          rank={champEntry.rank}
+          size={96}
+          to={`/joueur/${encodeURIComponent(champName)}`}
+        />
+      </span>
 
-      <div className="hero__grid shell">
-        <div className="hero__head">
-          <motion.p
-            className="eyebrow"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            {champEntry ? 'Champion en titre' : 'DartsCounter · La Ligue'}
-          </motion.p>
-
-          <motion.h1
-            className="display hero__title"
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.05 }}
-          >
-            {champEntry ? (
-              <>
-                <span className="hero__line">{displayName(profiles, champName)}</span>
-                <span className="hero__line hero__accent">règne.</span>
-              </>
-            ) : (
-              <>La <span className="hero__accent">Ligue</span></>
-            )}
-          </motion.h1>
-
-          {champEntry && (
-            <motion.div
-              className="hero__champ"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.25 }}
-            >
-              <span className={`hero__avatar${(champStats?.curStreak ?? 0) >= 3 ? ' on-fire' : ''}`}>
-                <PlayerCard
-                  name={champName}
-                  label=""
-                  avatarUrl={champProfile?.avatar_url}
-                  rank={champEntry.rank}
-                  size={120}
-                  to={`/joueur/${encodeURIComponent(champName)}`}
-                />
-              </span>
-              <RankBadge rank={champEntry.rank} elo={champEntry.elo} size="lg" />
-            </motion.div>
-          )}
-
-          <motion.div
-            className="hero__action"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            <a href={COUNTER_URL} className="hero__cta hero__cta--play">
-              🎯 JOUER
-            </a>
-          </motion.div>
+      <div className="champ__body">
+        <p className="eyebrow champ__eyebrow">
+          Champion en titre{seasonLabel ? ` · ${seasonLabel}` : ''}
+        </p>
+        <h1 className="display champ__name">{displayName(profiles, champName)}</h1>
+        <div className="champ__stats">
+          <span className="champ__pill">◆ Champion · {champEntry.elo}</span>
+          <span className="champ__stat">{wins} V / {games} parties · {winrate} %</span>
+          {streak >= 2 && <span className="champ__stat champ__stat--fire">🔥 {streak} d'affilée</span>}
         </div>
       </div>
-    </header>
+
+      <a href={COUNTER_URL} className="champ__cta">🎯 Jouer</a>
+    </motion.header>
   );
 }

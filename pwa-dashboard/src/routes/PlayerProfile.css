@@ -90,6 +90,33 @@
 .h2h { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 15px; }
 .h2h__score { font-variant-numeric: tabular-nums; color: var(--muted); }
 
+/* Onglets du profil (F3) — soulignés quand actifs, comme la nav. */
+.ptabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-5);
+  border-bottom: 1px solid var(--border);
+  margin: var(--sp-5) 0 var(--sp-6);
+}
+.ptab {
+  position: relative;
+  background: transparent;
+  border: none;
+  color: var(--muted-2);
+  font-size: 15px;
+  padding: 0 0 var(--sp-3);
+  cursor: pointer;
+}
+.ptab:hover { color: var(--text); }
+.ptab.is-active { color: var(--text); font-weight: 700; }
+.ptab.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: var(--primary);
+}
+
 /* Section dédiée du mur (pleine largeur, sous les colonnes) — il respire et se
    lit comme un mur, plus coincé à côté des stats par mode. */
 .wallsec { margin-top: var(--sp-7); }

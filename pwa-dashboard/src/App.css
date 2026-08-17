@@ -1,17 +1,20 @@
+:root { --nav-h: 56px; }
+
 .nav {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 50;
+  height: var(--nav-h);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px var(--gutter);
-  mix-blend-mode: difference;
-  /* La barre est surtout du vide : sans ça, ses 68px pleine largeur avalent
-     les clics du contenu en dessous (chevron du tiroir, barre LIVE). */
-  pointer-events: none;
+  padding: 0 var(--gutter);
+  /* Barre opaque : le contenu ne défile plus dessous en s'inversant
+     (fini mix-blend-mode: difference et le chevauchement de 11 px). Le
+     décalage réel du contenu se fait via --nav-h côté écrans. */
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
-.nav > * { pointer-events: auto; }
 .nav__brand { font-size: 22px; letter-spacing: 0.04em; }
 .nav__right { display: flex; align-items: center; gap: 8px; }
 

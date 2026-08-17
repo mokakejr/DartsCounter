@@ -4,9 +4,9 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianG
 import { ALL_MODES } from '../lib/stats.js';
 import { MODE_LABEL, fmtDuration } from '../lib/data.js';
 import { rivalries, bestBob27Result, bestRoundTheClockTime } from '../lib/derive.js';
-import { buildTrophies } from '../lib/trophies.js';
 import { displayName } from '../lib/profiles.js';
 import { fetchPlayerRatings, fetchPlayerEloHistory, fetchPlayerEloExtremes } from '../api/players.js';
+import { fetchAchievements } from '../api/stats.js';
 import { SERIES, GRID, TICK, ChartTooltip } from '../components/ChartTheme.jsx';
 import TrophyModal from '../components/TrophyModal.jsx';
 import Dart from '../components/Dart.jsx';
@@ -33,11 +33,20 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
   const [ratings, setRatings] = useState([]);
   const [eloHistory, setEloHistory] = useState([]);
   const [eloExtremes, setEloExtremes] = useState(null);
+  // Mur à trophées servi par le backend (F5/D4) : tous les trophées, avec
+  // unlocked/rareté/progression relatifs à ce joueur — le front ne calcule
+  // plus. my_value → myValue pour rester compatible avec TrophyModal.
+  const [trophies, setTrophies] = useState([]);
 
   useEffect(() => {
     fetchPlayerRatings(name).then(setRatings).catch(() => setRatings([]));
     fetchPlayerEloHistory(name, 'global').then(setEloHistory).catch(() => setEloHistory([]));
     fetchPlayerEloExtremes(name, 'global').then(setEloExtremes).catch(() => setEloExtremes(null));
+    // Défaut « depuis toujours » : le mur montre les trophées de toute la
+    // carrière du joueur. Le sélecteur de saison (à venir) rescopera.
+    fetchAchievements({ player: name, season: 'all' })
+      .then(rows => setTrophies(rows.map(t => ({ ...t, myValue: t.my_value }))))
+      .catch(() => setTrophies([]));
   }, [name]);
 
   // eloHistory comes back newest-first; the chart reads left-to-right.
@@ -46,10 +55,7 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
     [eloHistory]
   );
 
-  const earned = useMemo(() => {
-    if (!s) return [];
-    return buildTrophies(stats, name).filter(t => t.unlocked);
-  }, [stats, name, s]);
+  const earned = useMemo(() => trophies.filter(t => t.unlocked), [trophies]);
 
   const recent = useMemo(
     () =>
@@ -228,18 +234,29 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
         </section>
 
         <section>
-          <h2 className="profile__h2 eyebrow">Trophées · {earned.length}</h2>
-          <div className="profile__trophies">
-            {earned.map(t => (
-              <button
-                key={t.id}
-                className="ptrophy"
-                title={`${t.name} — ${t.desc}`}
-                onClick={() => setSelectedTrophy(t)}
-              >
-                {t.ico}
-              </button>
-            ))}
+          <h2 className="profile__h2 eyebrow">Mur à trophées · {earned.length}/{trophies.length}</h2>
+          <div className="wall">
+            {trophies.map(t => {
+              const prog = !t.unlocked && t.progress
+                ? Math.round((t.progress[0] / t.progress[1]) * 100)
+                : 0;
+              return (
+                <button
+                  key={t.id}
+                  className={`wall__pin${t.unlocked ? ' is-earned' : ' is-locked'}`}
+                  style={t.unlocked && t.rarity ? { '--rar': t.rarity.color } : undefined}
+                  title={t.unlocked ? `${t.name} — ${t.desc}` : `Verrouillé — ${t.desc}`}
+                  onClick={() => setSelectedTrophy(t)}
+                >
+                  <span className="wall__ico">{t.ico}</span>
+                  <span className="wall__name">{t.name}</span>
+                  {t.unlocked && t.rarity && <span className="wall__rarity">{t.rarity.label}</span>}
+                  {!t.unlocked && t.progress && (
+                    <span className="wall__prog"><span style={{ width: `${prog}%` }} /></span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <h2 className="profile__h2 eyebrow">Dernières parties</h2>

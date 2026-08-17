@@ -1,0 +1,65 @@
+/* Calendrier d'activité (F4) — style contributions GitHub. Cases de 14px,
+   intensité en ivoire (plus c'est clair, plus on a joué). Scroll horizontal
+   sous les petites largeurs : la grille garde sa taille, elle ne se comprime
+   pas (sinon elle ne se lit plus). */
+.cal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.cal__grid {
+  display: flex;
+  gap: var(--sp-1);
+  overflow-x: auto;
+  padding-bottom: var(--sp-1);
+}
+.cal__week {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.cal__cell {
+  width: 14px;
+  height: 14px;
+  border: none;
+  padding: 0;
+  /* Carré à coins doux, pas un rond (les cases GitHub) — hors échelle de rayon,
+     propre au calendrier. */
+  border-radius: 3px;
+  background: var(--surface-2);
+}
+.cal__cell--l0 { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.cal__cell--l1 { background: color-mix(in srgb, var(--primary) 25%, var(--surface-2)); }
+.cal__cell--l2 { background: color-mix(in srgb, var(--primary) 45%, var(--surface-2)); }
+.cal__cell--l3 { background: color-mix(in srgb, var(--primary) 70%, var(--surface-2)); }
+.cal__cell--l4 { background: var(--primary); }
+.cal__cell--future { visibility: hidden; }
+button.cal__cell:not(:disabled) { cursor: pointer; }
+button.cal__cell:not(:disabled):hover { outline: 2px solid var(--text); outline-offset: 1px; }
+
+.cal__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3) var(--sp-5);
+}
+.cal__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-5);
+  color: var(--muted-2);
+  font-size: 13px;
+}
+.cal__stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+.cal__legend {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  color: var(--muted);
+  font-size: 11px;
+}
+.cal__legend .cal__cell { width: 12px; height: 12px; }

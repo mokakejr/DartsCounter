@@ -10,6 +10,7 @@ import { fetchAchievements } from '../api/stats.js';
 import { fetchSeasons } from '../api/seasons.js';
 import { SERIES, GRID, TICK, ChartTooltip } from '../components/ChartTheme.jsx';
 import SeasonSelector from '../components/SeasonSelector.jsx';
+import ActivityCalendar from '../components/ActivityCalendar.jsx';
 import TrophyModal from '../components/TrophyModal.jsx';
 import Dart from '../components/Dart.jsx';
 import RankBadge from '../components/RankBadge.jsx';
@@ -315,6 +316,15 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
           )}
         </section>
       </div>
+
+      <section className="wallsec">
+        <div className="wallsec__head">
+          <h2 className="wallsec__title">Activité</h2>
+        </div>
+        {/* Calendrier « GitHub » — indépendant du filtre de saison (12 mois
+            glissants), volontairement. */}
+        <ActivityCalendar games={games} name={name} />
+      </section>
 
       <section className="wallsec">
         <div className="wallsec__head">

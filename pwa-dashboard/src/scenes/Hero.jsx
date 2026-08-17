@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
-import { Suspense } from 'react';
-import Dart from '../components/Dart.jsx';
+import { Suspense, lazy } from 'react';
+// three.js ne charge qu'ici, à la demande — sorti du bundle initial (E1).
+// Déjà sous <Suspense fallback={null}> plus bas, le lazy est transparent.
+const Dart = lazy(() => import('../components/Dart.jsx'));
 import PlayerCard from '../components/PlayerCard.jsx';
 import RankBadge from '../components/RankBadge.jsx';
 import { displayName } from '../lib/profiles.js';

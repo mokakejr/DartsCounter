@@ -58,6 +58,34 @@ function Home({ games, stats, ranked, profiles = {}, eloBoard }) {
   );
 }
 
+// Squelette de chargement de l'accueil : au lieu d'un écran noir de plusieurs
+// secondes, on montre la forme de l'accueil pendant que les parties chargent.
+function HomeSkeleton() {
+  return (
+    <main className="home-skel shell" aria-busy="true">
+      <div className="home-skel__banner sk" />
+      <div className="home-skel__rows">
+        {[0, 1, 2, 3, 4].map(i => <div key={i} className="home-skel__row sk" />)}
+      </div>
+    </main>
+  );
+}
+
+// État d'erreur de l'accueil — message + réessai, sans bloquer le reste de
+// l'application (nav et autres routes restent utilisables).
+function HomeState({ message, retry }) {
+  return (
+    <main className="home-state shell">
+      <p className="eyebrow">{message}</p>
+      {retry && (
+        <button className="home-state__retry" onClick={() => window.location.reload()}>
+          Réessayer
+        </button>
+      )}
+    </main>
+  );
+}
+
 const ORDINALS = ['1er', '2e', '3e'];
 const ordinal = (n) => ORDINALS[n - 1] ?? `${n}e`;
 
@@ -173,24 +201,15 @@ function AppInner() {
     );
   }
 
-  if (loading || !auth.ready || !leaguesReady) {
+  // Seule la lecture de l'auth et des ligues bloque la coquille — c'est rapide.
+  // Le chargement des PARTIES ne bloque plus toute l'application (fini l'écran
+  // noir de plusieurs secondes) : la nav et les routes sans données rendent tout
+  // de suite, et l'accueil gère son propre état (squelette / erreur) ci-dessous.
+  if (!auth.ready || !leaguesReady) {
     return (
       <div className="boot">
         <div className="boot__spinner" />
-        <p className="eyebrow">Chargement des parties…</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="boot">
-        <p className="eyebrow" style={{ color: 'var(--primary)' }}>
-          Impossible de charger les parties — {error.message}
-        </p>
-        <button className="nav__callout" onClick={() => window.location.reload()}>
-          Réessayer
-        </button>
+        <p className="eyebrow">Chargement…</p>
       </div>
     );
   }
@@ -199,9 +218,13 @@ function AppInner() {
   // Other routes (/login, /ligues, /profils, …) stay reachable — this is
   // onboarding, not authorization.
   const onboardingDone = Boolean(auth.player && leagues.length > 0);
-  const home = onboardingDone
-    ? <Home games={games} stats={stats} ranked={ranked} profiles={profiles} eloBoard={eloBoard} />
-    : <Welcome hasAccount={!!auth.player} />;
+  const home = !onboardingDone
+    ? <Welcome hasAccount={!!auth.player} />
+    : error
+      ? <HomeState message={`Impossible de charger les parties — ${error.message}`} retry />
+      : loading
+        ? <HomeSkeleton />
+        : <Home games={games} stats={stats} ranked={ranked} profiles={profiles} eloBoard={eloBoard} />;
 
   const knownPlayers = allGames
     ? [...new Set(allGames.flatMap(g => g.players ?? []))].sort((a, b) => a.localeCompare(b, 'fr'))

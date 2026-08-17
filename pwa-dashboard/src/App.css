@@ -1,5 +1,33 @@
 :root { --nav-h: 56px; --tabbar-h: 64px; }
 
+/* États de chargement / erreur de l'accueil — plus d'écran noir bloquant : la
+   coquille rend tout de suite, l'accueil montre sa forme pendant le chargement. */
+.home-skel { display: flex; flex-direction: column; gap: var(--sp-5); padding-top: var(--sp-6); }
+.home-skel__banner { height: 150px; border-radius: var(--r-lg); }
+.home-skel__rows { display: flex; flex-direction: column; gap: var(--sp-2); }
+.home-skel__row { height: 72px; border-radius: var(--r-md); }
+
+.sk { background: var(--surface); animation: sk-pulse 1.4s ease-in-out infinite; }
+@keyframes sk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+[data-reduce-animations] .sk { animation: none; }
+
+.home-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  padding-top: var(--sp-8);
+}
+.home-state__retry {
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--accent-ink);
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .nav {
   position: fixed;
   top: 0; left: 0; right: 0;

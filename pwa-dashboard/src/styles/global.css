@@ -16,6 +16,12 @@ body {
   padding-top: var(--nav-h);
 }
 
+/* Barre d'onglets mobile : on réserve sa hauteur (+ safe-area) en bas pour que
+   le contenu ne passe jamais dessous. Appliqué une fois dans l'enveloppe. */
+@media (max-width: 768px) {
+  body { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
+}
+
 a { color: inherit; text-decoration: none; }
 
 ::selection { background: var(--primary); color: var(--accent-ink); }

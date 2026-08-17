@@ -1,4 +1,4 @@
-:root { --nav-h: 56px; }
+:root { --nav-h: 56px; --tabbar-h: 64px; }
 
 .nav {
   position: fixed;
@@ -65,10 +65,11 @@
 }
 .nav__drawer-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Sous 768px : les onglets passent dans le tiroir « Plus ». */
+/* Sous 768px : les onglets du header disparaissent — les 5 destinations
+   principales vivent dans la barre d'onglets du bas (BottomTabs). Le tiroir
+   « Plus » ne garde que l'overflow (Palmarès, XP, Rangs, Admin, Défier). */
 @media (max-width: 768px) {
   .nav__tabs { display: none; }
-  .nav__drawer-main { display: block; }
 }
 
 .nav__burger {

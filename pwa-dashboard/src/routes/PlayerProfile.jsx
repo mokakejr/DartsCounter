@@ -7,7 +7,9 @@ import { rivalries, bestBob27Result, bestRoundTheClockTime } from '../lib/derive
 import { displayName } from '../lib/profiles.js';
 import { fetchPlayerRatings, fetchPlayerEloHistory, fetchPlayerEloExtremes } from '../api/players.js';
 import { fetchAchievements } from '../api/stats.js';
+import { fetchSeasons } from '../api/seasons.js';
 import { SERIES, GRID, TICK, ChartTooltip } from '../components/ChartTheme.jsx';
+import SeasonSelector from '../components/SeasonSelector.jsx';
 import TrophyModal from '../components/TrophyModal.jsx';
 import Dart from '../components/Dart.jsx';
 import RankBadge from '../components/RankBadge.jsx';
@@ -37,17 +39,23 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
   // unlocked/rareté/progression relatifs à ce joueur — le front ne calcule
   // plus. my_value → myValue pour rester compatible avec TrophyModal.
   const [trophies, setTrophies] = useState([]);
+  const [seasons, setSeasons] = useState([]);
+  // Saison du mur (C6). Défaut « depuis toujours » : toute la carrière.
+  const [season, setSeason] = useState('all');
 
   useEffect(() => {
     fetchPlayerRatings(name).then(setRatings).catch(() => setRatings([]));
     fetchPlayerEloHistory(name, 'global').then(setEloHistory).catch(() => setEloHistory([]));
     fetchPlayerEloExtremes(name, 'global').then(setEloExtremes).catch(() => setEloExtremes(null));
-    // Défaut « depuis toujours » : le mur montre les trophées de toute la
-    // carrière du joueur. Le sélecteur de saison (à venir) rescopera.
-    fetchAchievements({ player: name, season: 'all' })
+    fetchSeasons().then(setSeasons).catch(() => setSeasons([]));
+  }, [name]);
+
+  // Le mur se recharge quand la saison change (rescope backend, C6).
+  useEffect(() => {
+    fetchAchievements({ player: name, season })
       .then(rows => setTrophies(rows.map(t => ({ ...t, myValue: t.my_value }))))
       .catch(() => setTrophies([]));
-  }, [name]);
+  }, [name, season]);
 
   // eloHistory comes back newest-first; the chart reads left-to-right.
   const eloChartData = useMemo(
@@ -234,31 +242,6 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
         </section>
 
         <section>
-          <h2 className="profile__h2 eyebrow">Mur à trophées · {earned.length}/{trophies.length}</h2>
-          <div className="wall">
-            {trophies.map(t => {
-              const prog = !t.unlocked && t.progress
-                ? Math.round((t.progress[0] / t.progress[1]) * 100)
-                : 0;
-              return (
-                <button
-                  key={t.id}
-                  className={`wall__pin${t.unlocked ? ' is-earned' : ' is-locked'}`}
-                  style={t.unlocked && t.rarity ? { '--rar': t.rarity.color } : undefined}
-                  title={t.unlocked ? `${t.name} — ${t.desc}` : `Verrouillé — ${t.desc}`}
-                  onClick={() => setSelectedTrophy(t)}
-                >
-                  <span className="wall__ico">{t.ico}</span>
-                  <span className="wall__name">{t.name}</span>
-                  {t.unlocked && t.rarity && <span className="wall__rarity">{t.rarity.label}</span>}
-                  {!t.unlocked && t.progress && (
-                    <span className="wall__prog"><span style={{ width: `${prog}%` }} /></span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
           <h2 className="profile__h2 eyebrow">Dernières parties</h2>
           <ul className="profile__games">
             {recent.map((g, i) => {
@@ -332,6 +315,39 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
           )}
         </section>
       </div>
+
+      <section className="wallsec">
+        <div className="wallsec__head">
+          <h2 className="wallsec__title">Mur à trophées</h2>
+          <span className="wallsec__count">{earned.length} / {trophies.length}</span>
+          {seasons.length > 0 && (
+            <SeasonSelector seasons={seasons} value={season} onChange={setSeason} />
+          )}
+        </div>
+        <div className="wall">
+          {trophies.map(t => {
+            const prog = !t.unlocked && t.progress
+              ? Math.round((t.progress[0] / t.progress[1]) * 100)
+              : 0;
+            return (
+              <button
+                key={t.id}
+                className={`wall__pin${t.unlocked ? ' is-earned' : ' is-locked'}`}
+                style={t.unlocked && t.rarity ? { '--rar': t.rarity.color } : undefined}
+                title={t.unlocked ? `${t.name} — ${t.desc}` : `Verrouillé — ${t.desc}`}
+                onClick={() => setSelectedTrophy(t)}
+              >
+                <span className="wall__ico">{t.ico}</span>
+                <span className="wall__name">{t.name}</span>
+                {t.unlocked && t.rarity && <span className="wall__rarity">{t.rarity.label}</span>}
+                {!t.unlocked && t.progress && (
+                  <span className="wall__prog"><span style={{ width: `${prog}%` }} /></span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       <TrophyModal trophy={selectedTrophy} onClose={() => setSelectedTrophy(null)} profiles={profiles} />
     </div>

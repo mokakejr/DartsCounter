@@ -12,6 +12,8 @@
   flex: none;
   border-radius: var(--r-pill);
 }
+/* Le nom vit dans le corps du bandeau (grand) : pas de label sous l'avatar. */
+.champ__avatar .player-card__meta { display: none; }
 
 .champ__body {
   flex: 1 1 auto;

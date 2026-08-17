@@ -37,13 +37,13 @@
 
 .ladder__row {
   display: grid;
-  grid-template-columns: 44px 1fr auto auto auto;
+  grid-template-columns: 44px 1fr auto auto;
   align-items: center;
-  gap: 18px;
-  padding: 16px 22px;
+  gap: var(--sp-5);
+  padding: var(--sp-4) var(--sp-5);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   transition: transform 0.2s, border-color 0.2s;
 }
 .ladder__row:hover { transform: translateX(4px); border-color: var(--muted); }
@@ -108,9 +108,8 @@
 }
 .ladder__divider span { text-transform: none; letter-spacing: normal; font-weight: 400; }
 
-@media (max-width: 720px) {
-  .ladder__row { grid-template-columns: 34px 1fr auto auto; gap: 12px; padding: 14px 16px; }
-  .ladder__stat--hide { display: none; }
+@media (max-width: 768px) {
+  .ladder__row { grid-template-columns: 34px 1fr auto auto; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); }
 }
 
 @media (max-width: 480px) {

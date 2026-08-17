@@ -195,9 +195,6 @@ function LadderRow({ s, i, filter, profiles, playerElo, isRanked }) {
           </>
         )}
       </span>
-      <span className="ladder__stat ladder__stat--hide">
-        <b>{games}</b><em>{games === 1 ? 'partie' : 'parties'}</em>
-      </span>
     </motion.li>
   );
 }

@@ -18,6 +18,7 @@ import Trophies from './scenes/Trophies.jsx';
 import LiveTicker from './components/LiveTicker.jsx';
 import LobbyDrawer from './components/LobbyDrawer.jsx';
 import NemesisWall from './components/NemesisWall.jsx';
+import BottomTabs from './components/BottomTabs.jsx';
 import { fetchTournaments } from './api/tournaments.js';
 import './App.css';
 
@@ -324,6 +325,8 @@ function AppInner() {
           GitHub ↗
         </a>
       </footer>
+
+      <BottomTabs tournamentsBadge={openTournaments} />
     </>
   );
 }

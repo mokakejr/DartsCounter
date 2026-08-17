@@ -90,6 +90,25 @@
 .h2h { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 15px; }
 .h2h__score { font-variant-numeric: tabular-nums; color: var(--muted); }
 
+/* Section dédiée du mur (pleine largeur, sous les colonnes) — il respire et se
+   lit comme un mur, plus coincé à côté des stats par mode. */
+.wallsec { margin-top: var(--sp-7); }
+.wallsec__head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+.wallsec__title {
+  font-family: var(--font-display, inherit);
+  font-size: clamp(24px, 4vw, 40px);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.wallsec__count { color: var(--muted-2); font-variant-numeric: tabular-nums; }
+.wallsec .seasonsel { margin-left: auto; }
+
 /* Mur à trophées (F5) : liège = surface chaude ; chaque trophée épinglé.
    Obtenu = coloré + punaise de rareté ; verrouillé = grisé mais nommé, avec
    sa barre de progression. La couleur de rareté arrive via --rar (inline). */

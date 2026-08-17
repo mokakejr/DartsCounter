@@ -1,5 +1,5 @@
 import { Routes, Route, Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { useLenis } from './lib/useLenis.js';
 import { useGames } from './lib/useGames.js';
 import { LeagueProvider, useLeague } from './lib/useLeague.jsx';
@@ -9,29 +9,33 @@ import { fetchPlayers } from './api/players.js';
 import { fetchLeaderboard } from './api/stats.js';
 import CalloutModal from './components/CalloutModal.jsx';
 import OnboardingModal from './components/OnboardingModal.jsx';
+// Landing "/" : le Hero + le hub (drawer) sont montés d'emblée → statiques.
 import Hero from './scenes/Hero.jsx';
 import Standings from './scenes/Standings.jsx';
 import Feed from './scenes/Feed.jsx';
 import Trends from './scenes/Trends.jsx';
 import Trophies from './scenes/Trophies.jsx';
-import PlayerProfile from './routes/PlayerProfile.jsx';
-import PlayersIndex from './routes/PlayersIndex.jsx';
-import TrophiesPage from './routes/TrophiesPage.jsx';
-import XpGuide from './routes/XpGuide.jsx';
-import RankGuide from './routes/RankGuide.jsx';
-import Leagues from './routes/Leagues.jsx';
-import Palmares from './routes/Palmares.jsx';
-import Welcome from './routes/Welcome.jsx';
-import Login from './routes/Login.jsx';
-import MyProfile from './routes/MyProfile.jsx';
-import Admin from './routes/Admin.jsx';
 import LiveTicker from './components/LiveTicker.jsx';
 import LobbyDrawer from './components/LobbyDrawer.jsx';
 import NemesisWall from './components/NemesisWall.jsx';
-import Tournois from './routes/Tournois.jsx';
-import Styleguide from './routes/Styleguide.jsx';
 import { fetchTournaments } from './api/tournaments.js';
 import './App.css';
+
+// Routes secondaires chargées à la demande — sorties du bundle initial (E1) :
+// profils, trophées, ligues, guides, admin… ne sont tirés qu'à la navigation.
+const PlayerProfile = lazy(() => import('./routes/PlayerProfile.jsx'));
+const PlayersIndex = lazy(() => import('./routes/PlayersIndex.jsx'));
+const TrophiesPage = lazy(() => import('./routes/TrophiesPage.jsx'));
+const XpGuide = lazy(() => import('./routes/XpGuide.jsx'));
+const RankGuide = lazy(() => import('./routes/RankGuide.jsx'));
+const Leagues = lazy(() => import('./routes/Leagues.jsx'));
+const Palmares = lazy(() => import('./routes/Palmares.jsx'));
+const Welcome = lazy(() => import('./routes/Welcome.jsx'));
+const Login = lazy(() => import('./routes/Login.jsx'));
+const MyProfile = lazy(() => import('./routes/MyProfile.jsx'));
+const Admin = lazy(() => import('./routes/Admin.jsx'));
+const Tournois = lazy(() => import('./routes/Tournois.jsx'));
+const Styleguide = lazy(() => import('./routes/Styleguide.jsx'));
 
 // Le Lobby Cinématique (Epic 5) : le premier écran = le Hero, rien d'autre.
 // Le hub (classement, feed, tendances, trophées) suit dans la page — on y
@@ -84,6 +88,16 @@ function ScrollTop() {
   const { pathname } = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   return null;
+}
+
+// Fallback pendant le chargement d'un chunk de route lazy (E1). Réutilise le
+// spinner de boot — transition brève, cohérente avec l'écran de chargement.
+function RouteFallback() {
+  return (
+    <div className="boot">
+      <div className="boot__spinner" />
+    </div>
+  );
 }
 
 const COOLDOWN_MS = 15 * 60 * 1000;
@@ -150,7 +164,13 @@ function AppInner() {
   // La référence du design system ne dépend d'aucune donnée : elle reste
   // consultable backend éteint, ce qui est précisément quand on veut inspecter
   // des tokens. Elle passe donc AVANT le verrou de chargement ci-dessous.
-  if (location.pathname === '/styleguide') return <Styleguide />;
+  if (location.pathname === '/styleguide') {
+    return (
+      <Suspense fallback={<RouteFallback />}>
+        <Styleguide />
+      </Suspense>
+    );
+  }
 
   if (loading || !auth.ready || !leaguesReady) {
     return (
@@ -261,23 +281,25 @@ function AppInner() {
         name={auth.player?.display_name || auth.player?.name}
       />
 
-      <Routes>
-        <Route path="/" element={home} />
-        <Route path="/joueur/:name" element={<PlayerProfile games={games} stats={stats} profiles={profiles} />} />
-        <Route path="/profils" element={<PlayersIndex ranked={ranked} profiles={profiles} />} />
-        <Route path="/trophees" element={<TrophiesPage stats={stats} profiles={profiles} />} />
-        <Route path="/xp" element={<XpGuide />} />
-        <Route path="/rangs" element={<RankGuide />} />
-        <Route path="/tournois" element={<Tournois profiles={profiles} />} />
-        <Route path="/ligues" element={<Leagues knownPlayers={knownPlayers} />} />
-        <Route path="/palmares" element={<Palmares />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/profile" element={<MyProfile />} />
-        <Route path="/admin" element={<Admin />} />
-        {/* Référence interne du design system : non listée dans la navigation. */}
-        <Route path="/styleguide" element={<Styleguide />} />
-        <Route path="*" element={home} />
-      </Routes>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={home} />
+          <Route path="/joueur/:name" element={<PlayerProfile games={games} stats={stats} profiles={profiles} />} />
+          <Route path="/profils" element={<PlayersIndex ranked={ranked} profiles={profiles} />} />
+          <Route path="/trophees" element={<TrophiesPage stats={stats} profiles={profiles} />} />
+          <Route path="/xp" element={<XpGuide />} />
+          <Route path="/rangs" element={<RankGuide />} />
+          <Route path="/tournois" element={<Tournois profiles={profiles} />} />
+          <Route path="/ligues" element={<Leagues knownPlayers={knownPlayers} />} />
+          <Route path="/palmares" element={<Palmares />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/profile" element={<MyProfile />} />
+          <Route path="/admin" element={<Admin />} />
+          {/* Référence interne du design system : non listée dans la navigation. */}
+          <Route path="/styleguide" element={<Styleguide />} />
+          <Route path="*" element={home} />
+        </Routes>
+      </Suspense>
 
       <footer className="footer shell">
         <span>DartsCounter — La Ligue</span>

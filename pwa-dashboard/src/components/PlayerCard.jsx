@@ -8,15 +8,9 @@ import './PlayerCard.css';
  * équipé en dessous. Remplace les mentions textuelles inline.
  *
  * props: name (clé canonique), label (nom affiché), avatarUrl, rank (ELO),
- * title (titre équipé), streak (🔥 n si >= 2), size (px), to (Link) ou span.
+ * title (titre équipé), streak (🔥 n = victoires consécutives, si >= 2),
+ * size (px), to (Link) ou span.
  */
-// Aversion à la perte (Epic 7.5): vendredi après 14h, la flamme clignote —
-// dernière fenêtre avant le gel du week-end.
-function isStreakAtRisk() {
-  const now = new Date();
-  return now.getDay() === 5 && now.getHours() >= 14;
-}
-
 export default function PlayerCard({
   name, label, avatarUrl, rank, title, streak = 0, size = 48, to, className = '',
 }) {
@@ -41,8 +35,8 @@ export default function PlayerCard({
           {label || name}
           {streak >= 2 && (
             <span
-              className={`player-card__flame${isStreakAtRisk() ? ' player-card__flame--warn' : ''}`}
-              title={`${streak} jours de streak`}
+              className="player-card__flame"
+              title={`${streak} victoires d'affilée`}
             >
               🔥{streak}
             </span>

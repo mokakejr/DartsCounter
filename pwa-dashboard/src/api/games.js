@@ -1,9 +1,12 @@
 import { apiGet } from './client.js';
 
-// The legacy games.json was capped at the 200 most recent entries; mirror
-// that here so the existing stats/achievements code (which assumes it sees
-// the full visible history) keeps working unchanged.
-const GAMES_LIMIT = 200;
+// Le backend plafonne `limit` à 200 par requête : on pagine donc pour ramener
+// tout l'historique (le calendrier d'activité et les stats de profil le veulent
+// « depuis le début », pas seulement les 200 dernières parties). PAGE_SIZE est
+// une taille de page, pas un plafond de résultats.
+const PAGE_SIZE = 200;
+// Garde-fou anti-boucle infinie (offset qui n'avance pas, backend en erreur…).
+const MAX_GAMES = 10000;
 
 // The backend's GameRead nests per-player score/position. Flatten it back
 // into the legacy {players: [name], scores: [int]} shape that
@@ -24,6 +27,11 @@ function toLegacyShape(game) {
 }
 
 export async function fetchGames() {
-  const games = await apiGet('/games', { limit: GAMES_LIMIT });
-  return games.map(toLegacyShape);
+  const all = [];
+  for (let offset = 0; offset < MAX_GAMES; offset += PAGE_SIZE) {
+    const page = await apiGet('/games', { limit: PAGE_SIZE, offset });
+    all.push(...page);
+    if (page.length < PAGE_SIZE) break; // dernière page atteinte
+  }
+  return all.map(toLegacyShape);
 }

@@ -38,7 +38,7 @@ export default function Hero({ ranked, profiles = {}, eloBoard = [], seasonLabel
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <span className={`champ__avatar${streak >= 3 ? ' on-fire' : ''}`}>
+      <span className="champ__avatar">
         <PlayerCard
           name={champName}
           label=""

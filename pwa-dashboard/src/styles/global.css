@@ -42,6 +42,17 @@ html.lenis, html.lenis body { height: auto; }
   font-weight: 600;
 }
 
+/* En-tête de section (surtitre + titre + éventuel sous-texte) : de l'air entre
+   les lignes, sinon le surtitre et le titre se collent au contenu (retour
+   utilisateur). */
+.sec-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-6);
+}
+.sec-head > * { margin: 0; }
+
 .display {
   font-family: var(--font-display);
   font-weight: 400;

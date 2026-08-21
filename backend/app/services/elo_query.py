@@ -6,7 +6,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import EloHistory, Game, PlayerRating
+from app.models import EloHistory, Game, Player, PlayerRating
 from app.models.elo import GLOBAL_SCOPE
 from app.services import elo_config
 from app.services.elo import rank_for_rating
@@ -130,3 +130,31 @@ async def get_player_elo_history(
         }
         for h, date, mode in rows
     ]
+
+
+async def get_multi_player_elo_history(
+    session: AsyncSession,
+    names: list[str],
+    scope: str = GLOBAL_SCOPE,
+    season_id: uuid.UUID | None = None,
+) -> list[dict]:
+    """Historique Elo de PLUSIEURS joueurs en une requête, pour la « Course à
+    l'Elo » du dashboard. Remplace le fan-out de N GET séquentiels (un par
+    joueur du top) que faisait le front. Optionnellement scopé à une saison via
+    la jointure Game.season_id.
+
+    Renvoie des lignes plates {name, game_date, elo_after} triées par date : le
+    client pivote par date pour tracer une courbe par joueur."""
+    if not names:
+        return []
+    stmt = (
+        select(Player.name, Game.date, EloHistory.elo_after)
+        .join(EloHistory, EloHistory.player_id == Player.id)
+        .join(Game, Game.id == EloHistory.game_id)
+        .where(Player.name.in_(names), EloHistory.scope == scope)
+        .order_by(Game.date)
+    )
+    if season_id is not None:
+        stmt = stmt.where(Game.season_id == season_id)
+    rows = (await session.execute(stmt)).all()
+    return [{"name": name, "game_date": date, "elo_after": elo_after} for name, date, elo_after in rows]

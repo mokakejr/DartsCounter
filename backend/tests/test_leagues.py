@@ -8,7 +8,7 @@ async def _mine(client, headers):
     """/leagues/mine minus the auto-assigned Taverne (every account gets it)."""
     from app.services.leagues import TAVERNE_NAME
     rows = (await client.get("/leagues/mine", headers=headers)).json()
-    return [l for l in rows if l["name"] != TAVERNE_NAME]
+    return [lg for lg in rows if lg["name"] != TAVERNE_NAME]
 
 
 async def _create_league(client, headers, name="Ligue du Bureau"):

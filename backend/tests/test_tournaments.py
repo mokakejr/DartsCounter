@@ -51,7 +51,7 @@ async def test_tournament_lifecycle_tickets_and_best(client):
 
 async def test_tournament_tie_first_submitter_wins(client):
     alice = await _signup(client, "Alice")
-    bob = await _signup(client, "Bob")
+    _bob = await _signup(client, "Bob")  # crée le joueur ; ajouté à la ligue par son nom
     league = (await client.post("/leagues", json={"name": "Bureau"}, headers=alice)).json()
     await client.post(
         f"/leagues/{league['id']}/members", json={"name": "Bob"}, headers=alice

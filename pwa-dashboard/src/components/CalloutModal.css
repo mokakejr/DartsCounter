@@ -69,6 +69,6 @@
 .callout-modal__confirm {
   background: var(--primary);
   border: none;
-  color: #fff;
+  color: var(--accent-ink);
 }
 .callout-modal__confirm:hover:not(:disabled) { opacity: 0.88; }

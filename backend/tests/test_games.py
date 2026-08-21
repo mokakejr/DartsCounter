@@ -156,3 +156,57 @@ async def test_aberrant_score_is_a_normal_game(client):
     after = {row["name"]: row for row in (await client.get("/stats/leaderboard")).json()}
     assert after["Alice"]["games"] == before["Alice"]["games"] + 1
     assert after["Alice"]["elo"] != before["Alice"]["elo"]
+
+
+# ─── Rattachement à la saison (C2) ────────────────────────────────────────────
+
+async def test_season_for_date_picks_containing_window():
+    """season_for_date rattache d'après la date, pas d'après la saison active :
+    une partie antidatée doit retomber sur SA saison."""
+    from datetime import date
+
+    from app.core.db import async_session
+    from app.models import Season
+    from app.services.seasons import season_for_date
+
+    async with async_session() as session:
+        july = Season(name="Juillet", start_date=date(2026, 7, 1), end_date=date(2026, 7, 31))
+        august = Season(name="Août", start_date=date(2026, 8, 1), end_date=None, is_active=True)
+        session.add_all([july, august])
+        await session.commit()
+
+        assert (await season_for_date(session, date(2026, 7, 15))).name == "Juillet"
+        assert (await season_for_date(session, date(2026, 7, 31))).name == "Juillet"  # borne incluse
+        assert (await season_for_date(session, date(2026, 8, 20))).name == "Août"
+        assert await season_for_date(session, date(2026, 6, 1)) is None  # avant toute saison
+
+
+async def test_created_game_carries_active_season(client):
+    """Une partie créée pendant une saison ouverte porte son season_id — la
+    colonne n'était jamais écrite jusqu'ici."""
+    from datetime import date, timedelta
+
+    from sqlalchemy import select
+
+    from app.core.db import async_session
+    from app.models import Game, Season
+
+    async with async_session() as session:
+        season = Season(
+            name="Courante",
+            start_date=date.today() - timedelta(days=10),
+            end_date=None,
+            is_active=True,
+        )
+        session.add(season)
+        await session.commit()
+        season_id = season.id
+
+    resp = await client.post("/games", json=BASE_GAME | {"date": "2026-08-16T10:00:00Z"})
+    # BASE_GAME est daté 2026-01-01 : on force une date dans la fenêtre ouverte.
+    assert resp.status_code == 201
+    game_id = resp.json()["id"]
+
+    async with async_session() as session:
+        game = (await session.execute(select(Game).where(Game.id == game_id))).scalar_one()
+        assert game.season_id == season_id

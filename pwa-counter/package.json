@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "lint": "eslint src",
     "preview": "vite preview",
-    "test": "node src/modes/models.test.mjs && node src/modes/board.test.mjs && node src/censor.test.mjs"
+    "test": "node src/modes/models.test.mjs && node src/modes/board.test.mjs && node src/censor.test.mjs",
+    "lint:css": "stylelint \"src/**/*.css\" --config ../.stylelintrc.json"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
@@ -17,6 +19,9 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.3",
+    "eslint": "^10.6.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "stylelint": "^16.10.0",
     "vite": "^5.4.10",
     "vite-plugin-pwa": "^0.21.1",
     "workbox-core": "^7.1.0",

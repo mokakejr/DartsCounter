@@ -1,0 +1,139 @@
+name: PR
+
+# Première porte de contrôle du dépôt. Jusqu'ici rien ne tournait avant un
+# merge : les 231 tests backend n'étaient jamais exécutés par la CI, et un
+# build front cassé n'était découvert qu'au déploiement, sur le VPS.
+#
+# Deux étages : les vérifications rapides (ruff, lint, build front) et les
+# lentes (pytest sur un vrai Postgres, build des images Docker). Les lentes
+# sont ce qui manquait le plus : les 231 tests backend existaient sans jamais
+# être exécutés, et un contexte de build cassé n'apparaissait qu'au déploiement.
+
+on:
+  pull_request:
+
+# Une PR poussée trois fois de suite n'occupe pas trois fois les runners.
+concurrency:
+  group: pr-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  backend-lint:
+    name: ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --frozen
+      - name: ruff check
+        working-directory: backend
+        run: uv run ruff check .
+
+  frontend:
+    name: ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    strategy:
+      # On veut voir l'état des deux applications d'un coup, pas s'arrêter
+      # à la première qui casse.
+      fail-fast: false
+      matrix:
+        app: [pwa-dashboard, pwa-counter]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - name: Install dependencies
+        working-directory: ${{ matrix.app }}
+        run: npm ci
+      - name: Lint
+        working-directory: ${{ matrix.app }}
+        run: npm run lint
+      - name: Unit tests
+        working-directory: ${{ matrix.app }}
+        # pwa-dashboard n'a pas encore de tests ; --if-present évite un faux rouge.
+        run: npm test --if-present
+      - name: Lint CSS
+        working-directory: ${{ matrix.app }}
+        # Contrat de tokens. En avertissement pour l'instant : il mesure la
+        # dérive pendant que les surfaces migrent, sans bloquer la refonte
+        # qu'il est censé garder. Passé en erreur en H2.
+        run: npm run lint:css
+        continue-on-error: true
+      - name: Build
+        working-directory: ${{ matrix.app }}
+        # Les VITE_* ne sont pas fournis : le client retombe sur ses valeurs
+        # par défaut (voir src/api/client.js). On valide que ça compile, pas
+        # que ça pointe sur le bon environnement — c'est le rôle du déploiement.
+        run: npm run build
+
+  backend-tests:
+    name: pytest
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # Les tests tournent sur un vrai Postgres : JSONB, UUID natif et les
+        # fonctions de fenêtrage du classement n'ont pas d'équivalent SQLite
+        # (cf. l'en-tête de backend/tests/conftest.py).
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dartscounter
+          POSTGRES_PASSWORD: dartscounter
+          POSTGRES_DB: dartscounter
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    # Pas de service Redis : app/core/redis.py utilise redis.from_url, qui ne
+    # se connecte pas à l'import, et les tests qui touchent au cooldown passent
+    # par la fixture fake_redis (dictionnaire en mémoire).
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --frozen
+      - name: pytest
+        working-directory: backend
+        env:
+          POSTGRES_HOST: localhost
+          # POSTGRES_DB est volontairement absent : conftest.py le pose lui-même
+          # à « dartscounter_test » via os.environ.setdefault. Le définir ici
+          # ferait tourner la suite sur la base principale — qu'elle vide entre
+          # chaque test.
+          POSTGRES_USER: dartscounter
+          POSTGRES_PASSWORD: dartscounter
+          POSTGRES_PORT: 5432
+        run: uv run pytest -q
+
+  docker-build:
+    name: docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare compose environment
+        # docker-compose.yml déclare `env_file: [.env.main]` sur le backend :
+        # compose refuse de parser le fichier si l'env_file est absent, même
+        # quand on ne construit que les deux images de front.
+        run: |
+          touch .env.main
+          echo "DOMAIN=example.test" >> "$GITHUB_ENV"
+      - name: Build frontend images
+        # Le seul contrôle qui attrape une régression de contexte de build.
+        # `npm run build` passe quel que soit le contexte Docker : c'est ici,
+        # et nulle part ailleurs, qu'on voit qu'une image ne sait plus
+        # atteindre shared/.
+        run: docker compose build dashboard counter

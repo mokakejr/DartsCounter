@@ -1,0 +1,66 @@
+/* Barre d'onglets mobile (E3). Masquée en desktop — les destinations y sont
+   des onglets dans le header. Hauteur + safe-area réservés une fois sur body
+   (App.css), donc le contenu ne passe jamais dessous. */
+.tabbar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .tabbar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 50;
+    height: var(--tabbar-h);
+    padding-bottom: env(safe-area-inset-bottom);
+    display: flex;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+
+  .tabbar__tab {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-1);
+    min-width: 0;
+    color: var(--muted-2);
+    font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+  .tabbar__tab.is-active { color: var(--text); }
+
+  .tabbar__icon {
+    position: relative;
+    font-size: 20px;
+    line-height: 1;
+  }
+  .tabbar__tab.is-active .tabbar__icon {
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--primary) 60%, transparent));
+  }
+
+  .tabbar__label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tabbar__badge {
+    position: absolute;
+    top: calc(-1 * var(--sp-1));
+    right: calc(-1 * var(--sp-2));
+    min-width: 16px;
+    height: 16px;
+    padding: 0 var(--sp-1);
+    border-radius: var(--r-pill);
+    background: var(--primary);
+    color: var(--accent-ink);
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

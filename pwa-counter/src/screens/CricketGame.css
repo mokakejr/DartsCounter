@@ -50,7 +50,8 @@
   background: transparent;
   transition: background 0.15s, border-color 0.15s;
 }
-.cg__dart-slot--used { background: var(--primary); border-color: var(--primary); }
+.cg__dart-slot--used { background: var(--primary);
+  color: var(--accent-ink); border-color: var(--primary); }
 
 /* ── Player ─────────────────────────────────────────── */
 .cg__player {
@@ -233,7 +234,7 @@
   cursor: pointer;
   transition: opacity 0.15s;
 }
-.cg__btn--primary { background: var(--primary); color: #fff; }
+.cg__btn--primary { background: var(--primary); color: var(--accent-ink); }
 .cg__btn--secondary {
   background: var(--surface);
   border: 1px solid var(--border);

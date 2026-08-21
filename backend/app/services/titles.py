@@ -12,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import GamePlayer, League, Player, PlayerRating, PlayerTitle
 from app.models.elo import GLOBAL_SCOPE
-from app.models.title import TITLES
 from app.services.elo import rank_for_rating
 from app.services.elo_config import get_engine_config
 from app.services.players import live_streak

@@ -83,3 +83,61 @@ async def test_leaderboard_mode_filter_aggregates_shanghai_family(client):
     assert shanghai["Alice"]["games"] == 4
     assert shanghai["Alice"]["wins"] == 4
     assert shanghai["Bob"]["games"] == 4
+
+
+# ─── Paramètre season (C4) ────────────────────────────────────────────────────
+
+async def test_leaderboard_season_all_counts_everything(client):
+    """season=all retire la borne de saison : tout l'historique compte, même
+    hors de la fenêtre de la saison active."""
+    from datetime import date
+
+    from app.core.db import async_session
+    from app.models import Season
+
+    # Saison active récente : par défaut, elle bornerait le comptage.
+    async with async_session() as session:
+        session.add(Season(name="Active", start_date=date(2026, 8, 1), end_date=None, is_active=True))
+        await session.commit()
+
+    await _play(client, 1, "Alice", "Bob")   # janvier — hors saison active
+    await _play(client, 2, "Alice", "Bob")
+
+    # Par défaut (saison active) : les parties de janvier ne comptent pas.
+    default = {r["name"]: r for r in (await client.get("/stats/leaderboard")).json()}
+    assert default.get("Alice", {}).get("games", 0) == 0
+
+    # season=all : elles comptent.
+    all_rows = {r["name"]: r for r in (await client.get("/stats/leaderboard?season=all")).json()}
+    assert all_rows["Alice"]["games"] == 2
+
+
+async def test_leaderboard_past_season_window(client):
+    """season=<id d'une saison close> scope les comptages à sa fenêtre."""
+    from datetime import date
+
+    from app.core.db import async_session
+    from app.models import Season
+
+    async with async_session() as session:
+        past = Season(name="Janvier", start_date=date(2026, 1, 1), end_date=date(2026, 1, 31))
+        session.add(past)
+        await session.commit()
+        past_id = str(past.id)
+
+    await _play(client, 5, "Alice", "Bob")    # dans la fenêtre de janvier
+    await _play(client, 10, "Alice", "Bob")   # dans la fenêtre
+
+    rows = {r["name"]: r for r in (await client.get(f"/stats/leaderboard?season={past_id}")).json()}
+    assert rows["Alice"]["games"] == 2
+    assert rows["Alice"]["wins"] == 2
+
+
+async def test_leaderboard_season_invalid_and_unknown(client):
+    import uuid
+
+    bad = await client.get("/stats/leaderboard?season=pas-un-uuid")
+    assert bad.status_code == 422
+
+    unknown = await client.get(f"/stats/leaderboard?season={uuid.uuid4()}")
+    assert unknown.status_code == 404

@@ -21,7 +21,7 @@
 
 .onboarding__cta--primary {
   background: var(--primary);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 .onboarding__cta--secondary {

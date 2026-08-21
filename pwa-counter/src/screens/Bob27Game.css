@@ -117,6 +117,6 @@
   font-family: var(--font-display); font-size: 18px; letter-spacing: 0.06em;
   cursor: pointer; text-align: center; transition: opacity 0.15s;
 }
-.bob27__btn--primary { background: var(--primary); color: #fff; }
+.bob27__btn--primary { background: var(--primary); color: var(--accent-ink); }
 .bob27__btn--secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
 .bob27__btn:hover { opacity: 0.85; }

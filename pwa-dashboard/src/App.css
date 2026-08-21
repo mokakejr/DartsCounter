@@ -1,19 +1,108 @@
+:root { --nav-h: 56px; --tabbar-h: 64px; }
+
+/* États de chargement / erreur de l'accueil — plus d'écran noir bloquant : la
+   coquille rend tout de suite, l'accueil montre sa forme pendant le chargement. */
+.home-skel { display: flex; flex-direction: column; gap: var(--sp-5); padding-top: var(--sp-6); }
+.home-skel__banner { height: 150px; border-radius: var(--r-lg); }
+.home-skel__rows { display: flex; flex-direction: column; gap: var(--sp-2); }
+.home-skel__row { height: 72px; border-radius: var(--r-md); }
+
+.sk { background: var(--surface); animation: sk-pulse 1.4s ease-in-out infinite; }
+@keyframes sk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+[data-reduce-animations] .sk { animation: none; }
+
+.home-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  padding-top: var(--sp-8);
+}
+.home-state__retry {
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--accent-ink);
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .nav {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 50;
+  height: var(--nav-h);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px var(--gutter);
-  mix-blend-mode: difference;
-  /* La barre est surtout du vide : sans ça, ses 68px pleine largeur avalent
-     les clics du contenu en dessous (chevron du tiroir, barre LIVE). */
-  pointer-events: none;
+  padding: 0 var(--gutter);
+  /* Barre opaque : le contenu ne défile plus dessous en s'inversant
+     (fini mix-blend-mode: difference et le chevauchement de 11 px). Le
+     décalage réel du contenu se fait via --nav-h côté écrans. */
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
-.nav > * { pointer-events: auto; }
 .nav__brand { font-size: 22px; letter-spacing: 0.04em; }
-.nav__right { display: flex; align-items: center; gap: 8px; }
+.nav__right { display: flex; align-items: center; gap: var(--sp-3); }
+
+/* Destinations en onglets (desktop) — soulignées quand actives (E2/E3). */
+.nav__tabs { display: flex; align-items: center; gap: var(--sp-5); }
+.nav__tab {
+  position: relative;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--muted-2);
+  padding: var(--sp-2) 0;
+  white-space: nowrap;
+}
+.nav__tab:hover { color: var(--text); }
+.nav__tab.is-active { color: var(--text); font-weight: 700; }
+.nav__tab.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: calc(-1 * var(--sp-1));
+  height: 2px;
+  background: var(--primary);
+}
+
+/* « Plus » : l'overflow (Palmarès, XP, Rangs, Admin, Défier). Remplace le
+   burger — sur mobile il porte aussi les destinations principales. */
+.nav__more {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  color: var(--muted-2);
+  font-size: 13px;
+  padding: var(--sp-1) var(--sp-3);
+  cursor: pointer;
+  /* Largeur figée : « Plus » et « ✕ » occupent la même place, sinon basculer
+     le menu décale le rang à sa gauche. */
+  min-width: 4rem;
+  text-align: center;
+}
+.nav__more:hover { color: var(--text); border-color: var(--muted); }
+
+.nav__drawer-main { display: none; }
+.nav__drawer-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--hot);
+  font: inherit;
+  cursor: pointer;
+  padding: var(--sp-2) 0;
+}
+.nav__drawer-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Sous 768px : les onglets du header disparaissent — les 5 destinations
+   principales vivent dans la barre d'onglets du bas (BottomTabs). Le tiroir
+   « Plus » ne garde que l'overflow (Palmarès, XP, Rangs, Admin, Défier). */
+@media (max-width: 768px) {
+  .nav__tabs { display: none; }
+}
 
 .nav__burger {
   width: 36px; height: 36px;
@@ -165,7 +254,7 @@
   padding: 1px 5px;
   border-radius: 999px;
   background: var(--primary);
-  color: #fff;
+  color: var(--accent-ink);
   font-size: 11px;
   font-weight: 800;
   text-align: center;

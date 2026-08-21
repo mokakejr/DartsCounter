@@ -1,0 +1,45 @@
+/* Sélecteur de saison (C6) — rangée de chips, largeur constante. */
+.seasonsel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.seasonsel__opt {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  color: var(--muted-2);
+  font-size: 13px;
+  padding: var(--sp-1) var(--sp-3);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.seasonsel__opt:hover { color: var(--text); border-color: var(--muted); }
+.seasonsel__opt.is-on {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
+/* Menu « Mois précédents » — natif via <details>, positionné en dessous. */
+.seasonsel__more { position: relative; }
+.seasonsel__more > summary { list-style: none; }
+.seasonsel__more > summary::-webkit-details-marker { display: none; }
+.seasonsel__menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + var(--sp-1));
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 160px;
+  padding: var(--sp-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.seasonsel__menu .seasonsel__opt { text-align: left; border: none; background: transparent; }

@@ -130,7 +130,7 @@
 .admin__btn--primary {
   background: var(--primary);
   border-color: var(--primary);
-  color: #fff;
+  color: var(--accent-ink);
 }
 .admin__btn--primary:hover:not(:disabled) { opacity: 0.88; }
 
@@ -160,7 +160,7 @@
   cursor: pointer;
 }
 .admin__status--ok { background: color-mix(in srgb, var(--win) 12%, transparent); color: var(--win); border: 1px solid color-mix(in srgb, var(--win) 30%, transparent); }
-.admin__status--err { background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); }
+.admin__status--err { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent); }
 .admin__status--loading { background: color-mix(in srgb, var(--muted) 10%, transparent); color: var(--muted); border: 1px solid var(--border); }
 .admin__status-close { font-size: 16px; opacity: 0.6; }
 

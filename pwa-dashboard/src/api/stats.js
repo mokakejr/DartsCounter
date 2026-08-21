@@ -10,3 +10,15 @@ export function fetchLeaderboard(mode, leagueId) {
     ...(leagueId ? { league_id: leagueId } : {}),
   });
 }
+
+// Mur à trophées calculé côté backend (D4). player: omis = vue globale (tous
+// les trophées, earners = détenteurs) ; un nom = vue profil (unlocked/progress
+// relatifs à ce joueur). season: omis = saison active, un id, ou 'all'.
+// Réponse par trophée : {id, cat, ico, name, desc, earners, unlocked, rarity,
+// progress, my_value}.
+export function fetchAchievements({ player, season } = {}) {
+  return apiGet('/stats/achievements', {
+    ...(player ? { player } : {}),
+    ...(season ? { season } : {}),
+  });
+}

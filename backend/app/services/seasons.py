@@ -54,6 +54,29 @@ async def get_active_season(session: AsyncSession) -> Season | None:
     return (await session.execute(stmt)).scalar_one_or_none()
 
 
+async def list_seasons(session: AsyncSession) -> list[Season]:
+    """Toutes les saisons, la plus récente en tête. Sert au sélecteur de
+    période du dashboard : la saison active, puis les mois passés."""
+    stmt = select(Season).order_by(Season.start_date.desc().nullslast())
+    return list((await session.execute(stmt)).scalars().all())
+
+
+async def season_for_date(session: AsyncSession, day: date) -> Season | None:
+    """La saison qui contient `day`. Rattache une partie à SA saison d'après sa
+    date, pas d'après la saison active : une partie peut être antidatée (import,
+    saisie tardive), auquel cas la saison courante serait la mauvaise. La borne
+    haute est inclusive et tolère une end_date nulle (saison ouverte)."""
+    stmt = (
+        select(Season)
+        .where(Season.start_date.is_not(None))
+        .where(Season.start_date <= day)
+        .where((Season.end_date.is_(None)) | (Season.end_date >= day))
+        .order_by(Season.start_date.desc())
+        .limit(1)
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
 async def _start_new_season(session: AsyncSession, start: date | None = None) -> Season:
     """Ouvre la saison du mois contenant `start` (aujourd'hui par défaut).
 

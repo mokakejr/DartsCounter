@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +13,7 @@ from app.services.elo import recompute_elo
 from app.services.elo_config import get_engine_config, get_score_direction_map
 from app.services.players import get_or_create_player
 from app.services.progression import apply_game_to_player
+from app.services.seasons import season_for_date
 from app.services.titles import evaluate_titles
 
 _EAGER = (selectinload(Game.players).selectinload(GamePlayer.player), selectinload(Game.winner))
@@ -53,6 +54,12 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
     # winner_id persisté, pas de bonus XP de victoire, pas de série de victoires.
     solo = payload.mode in SOLO_MODES
 
+    # Rattache la partie à sa saison d'après sa date. La colonne existait dans
+    # le schéma depuis le début mais n'était jamais écrite (colonne morte) : le
+    # scoping par saison se faisait entièrement par comparaison de dates. La
+    # peupler rend les requêtes par saison indexables et robustes aux imports.
+    season = await season_for_date(session, payload.date.date())
+
     game = Game(
         id=game_id,
         date=payload.date,
@@ -60,6 +67,7 @@ async def create_game(session: AsyncSession, payload: GameCreate) -> tuple[GameR
         variant=payload.variant,
         duration=payload.duration,
         is_casual=payload.is_casual,
+        season_id=season.id if season else None,
         raw_data=payload.model_dump(mode="json"),
     )
     session.add(game)
@@ -181,11 +189,21 @@ async def list_games(session: AsyncSession, limit: int = 50, offset: int = 0) ->
     return [_to_game_read(g) for g in rows]
 
 
-async def list_all_games_raw(session: AsyncSession) -> list[dict]:
-    """All games as plain dicts for the achievement engine, ascending chronological order."""
-    rows = (
-        await session.execute(select(Game).options(*_EAGER).order_by(Game.date))
-    ).scalars().all()
+async def list_all_games_raw(
+    session: AsyncSession,
+    since: date | None = None,
+    until_exclusive: date | None = None,
+) -> list[dict]:
+    """Games as plain dicts for the achievement engine, ascending chronological
+    order. `since` / `until_exclusive` bornent la fenêtre de saison — mêmes
+    bornes que get_leaderboard : Game.date >= since et Game.date < until_exclusive.
+    Sans bornes : tout l'historique."""
+    query = select(Game).options(*_EAGER).order_by(Game.date)
+    if since is not None:
+        query = query.where(Game.date >= since)
+    if until_exclusive is not None:
+        query = query.where(Game.date < until_exclusive)
+    rows = (await session.execute(query)).scalars().all()
     return [_to_achievement_dict(g) for g in rows]
 
 

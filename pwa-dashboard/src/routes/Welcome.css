@@ -1,5 +1,6 @@
 /* Onboarding wall — fills the viewport, never scrolls, no dashboard behind it. */
 .welcome {
+  position: relative;
   height: 100svh;
   overflow: hidden;
   display: flex;
@@ -7,9 +8,29 @@
 }
 
 .welcome__inner {
+  position: relative;
+  z-index: 1;
   width: 100%;
   display: flex;
   flex-direction: column;
+}
+
+/* Deux grappes d'objets plats (fléchettes SVG), en fond — pas de three.js. */
+.welcome__deco {
+  position: absolute;
+  z-index: 0;
+  display: flex;
+  gap: var(--sp-4);
+  pointer-events: none;
+  color: color-mix(in srgb, var(--primary) 55%, var(--surface));
+}
+.welcome__deco--tr { top: 9%; right: 7%; }
+.welcome__deco--bl { bottom: 11%; left: 4%; }
+.welcome__dart { width: clamp(26px, 3.6vw, 48px); height: auto; display: block; }
+
+@media (max-width: 768px) {
+  .welcome__deco--tr { top: 5%; right: -1%; }
+  .welcome__deco--bl { display: none; }
 }
 
 .welcome__title {
@@ -48,7 +69,7 @@
   font-family: var(--font-display);
   font-size: 17px;
   letter-spacing: 0.04em;
-  color: #fff;
+  color: var(--accent-ink);
   text-decoration: none;
   transition: opacity 0.15s, transform 0.15s;
 }

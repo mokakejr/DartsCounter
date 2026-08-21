@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.security import hash_password
-from app.models import EloHistory, Game, Player, Season, WebhookTarget
+from app.models import EloHistory, Game, Player, Season
 from app.models.admin_log import AdminLog
 from app.services import elo_recompute
 

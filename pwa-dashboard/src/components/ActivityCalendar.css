@@ -1,0 +1,99 @@
+/* Calendrier d'activité (F4) — style contributions GitHub. Cases de 14px,
+   intensité en ivoire (plus c'est clair, plus on a joué). Scroll horizontal
+   sous les petites largeurs : la grille garde sa taille, elle ne se comprime
+   pas (sinon elle ne se lit plus). */
+.cal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+/* Le graphe entier (étiquettes + grille) scrolle d'un bloc → mois et colonnes
+   restent alignés. */
+.cal__chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  overflow-x: auto;
+  padding-bottom: var(--sp-1);
+}
+
+/* Mois en abscisse : une case par semaine (14px), le libellé déborde à droite
+   comme sur GitHub. Décalés du même retrait que la colonne des jours. */
+.cal__months { display: flex; gap: var(--sp-1); }
+.cal__days-spacer { flex: none; width: 30px; }
+.cal__month {
+  flex: none;
+  width: 14px;
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: visible;
+}
+
+/* Jours en ordonnée : une étiquette par ligne, alignée aux cases (14px). */
+.cal__rows { display: flex; gap: var(--sp-1); }
+.cal__days {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  flex: none;
+  width: 30px;
+}
+.cal__day {
+  height: 14px;
+  line-height: 14px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.cal__grid { display: flex; gap: var(--sp-1); }
+.cal__week {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.cal__cell {
+  width: 14px;
+  height: 14px;
+  border: none;
+  padding: 0;
+  /* Carré à coins doux, pas un rond (les cases GitHub) — hors échelle de rayon,
+     propre au calendrier. */
+  border-radius: 3px;
+  background: var(--surface-2);
+}
+.cal__cell--l0 { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.cal__cell--l1 { background: color-mix(in srgb, var(--primary) 25%, var(--surface-2)); }
+.cal__cell--l2 { background: color-mix(in srgb, var(--primary) 45%, var(--surface-2)); }
+.cal__cell--l3 { background: color-mix(in srgb, var(--primary) 70%, var(--surface-2)); }
+.cal__cell--l4 { background: var(--primary); }
+.cal__cell--future { visibility: hidden; }
+button.cal__cell:not(:disabled) { cursor: pointer; }
+button.cal__cell:not(:disabled):hover { outline: 2px solid var(--text); outline-offset: 1px; }
+
+.cal__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3) var(--sp-5);
+}
+.cal__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-5);
+  color: var(--muted-2);
+  font-size: 13px;
+}
+.cal__stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+.cal__legend {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  color: var(--muted);
+  font-size: 11px;
+}
+.cal__legend .cal__cell { width: 12px; height: 12px; }

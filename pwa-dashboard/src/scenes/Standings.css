@@ -1,15 +1,23 @@
-.standings { padding: clamp(80px, 12vh, 160px) var(--gutter); }
+.standings { padding: var(--sp-6) var(--gutter) var(--sp-8); }
 
-.sec-head { margin-bottom: 48px; }
-.sec-note { margin-top: 14px; font-size: 13px; color: var(--muted-2); }
-.sec-note b { color: var(--text); font-variant-numeric: tabular-nums; }
-.sec-title {
-  font-size: clamp(40px, 7vw, 96px);
-  margin: 20px 0 28px;
-  padding-top: 0.18em;
+/* Titre sobre + chips sur la même ligne (F2), le classement remonte près du
+   bandeau au lieu du grand « QUI DOMINE ? » plein écran. */
+.standings__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+.standings__title {
+  font-family: var(--font-display, inherit);
+  font-size: clamp(24px, 4vw, 40px);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
-.standings__filters { display: flex; flex-wrap: wrap; gap: 10px; }
+.standings__filters { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .chip {
   background: var(--surface-2);
   border: 1px solid var(--muted);
@@ -23,19 +31,19 @@
   transition: color 0.2s, border-color 0.2s, background 0.2s;
 }
 .chip:hover { color: var(--text); border-color: var(--text); }
-.chip--on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.chip--on { background: var(--primary); border-color: var(--primary); color: var(--accent-ink); }
 
 .ladder { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 
 .ladder__row {
   display: grid;
-  grid-template-columns: 44px 1fr auto auto auto;
+  grid-template-columns: 44px 1fr auto auto;
   align-items: center;
-  gap: 18px;
-  padding: 16px 22px;
+  gap: var(--sp-5);
+  padding: var(--sp-4) var(--sp-5);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   transition: transform 0.2s, border-color 0.2s;
 }
 .ladder__row:hover { transform: translateX(4px); border-color: var(--muted); }
@@ -100,9 +108,8 @@
 }
 .ladder__divider span { text-transform: none; letter-spacing: normal; font-weight: 400; }
 
-@media (max-width: 720px) {
-  .ladder__row { grid-template-columns: 34px 1fr auto auto; gap: 12px; padding: 14px 16px; }
-  .ladder__stat--hide { display: none; }
+@media (max-width: 768px) {
+  .ladder__row { grid-template-columns: 34px 1fr auto auto; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); }
 }
 
 @media (max-width: 480px) {
@@ -137,8 +144,11 @@
   display: block;
   height: 100%;
   border-radius: 3px;
+  background: var(--win);
   transition: width 0.6s ease;
 }
+/* Perdre n'est pas une erreur : sous 50 %, gris (--loss), jamais rouge. */
+.winrate-bar__fill--low { background: var(--loss); }
 .ladder__stat--bar em {
   font-size: 11px;
   color: var(--muted);

@@ -5,6 +5,7 @@ unlocked by the latest game. all_games must include the new game already.
 """
 
 from datetime import datetime, timedelta
+from typing import Callable
 
 ALL_MODES = ["Cricket", "SuperCricket", "Shanghai", "FiftyOne"]
 
@@ -59,7 +60,8 @@ def _ensure(S: dict, name: str) -> dict:
             "name": name, "wins": 0, "games": 0, "total_duration": 0, "xp": 0,
             "cur_streak": 0, "max_streak": 0, "loss_streak": 0, "max_loss_streak": 0,
             "underdog": False, "comeback": False, "phoenix": False,
-            "mode_wins": {}, "mode_games": {}, "modes_played": set(), "opponents": set(),
+            "mode_wins": {}, "mode_games": {}, "mode_scores": {}, "modes_played": set(), "opponents": set(),
+            "mode_max_score": {}, "mode_min_score": {},
             "shanghai_kill_wins": 0, "cut_throat_wins": 0, "max_cut_throat_score": 0,
             "speed_win": False, "speed_win_count": 0, "marathon": False, "long_win": False,
             "night_owl": False, "day_keys": set(), "friday13": False,
@@ -106,6 +108,9 @@ def compute_player_stats(games: list[dict]) -> dict[str, dict]:
             # Cut Throat : le score le plus bas gagne, donc un gros total = une
             # bonne branlée. On garde le pire (= le plus haut) pour « Thomas ».
             raw_score = scores[idx] if idx < len(scores) else None
+            if raw_score is not None:
+                # Score brut par mode, base des records/planchers de score.
+                s["mode_scores"].setdefault(g["mode"], []).append(raw_score)
             if is_cut_throat(g.get("variant")) and isinstance(raw_score, (int, float)):
                 s["max_cut_throat_score"] = max(s["max_cut_throat_score"], int(raw_score))
 
@@ -201,6 +206,12 @@ def compute_player_stats(games: list[dict]) -> dict[str, dict]:
                 fav = m
         s["favorite_mode"] = fav
 
+        # Meilleur/pire score par mode (records et planchers).
+        for m, arr in s["mode_scores"].items():
+            if arr:
+                s["mode_max_score"][m] = max(arr)
+                s["mode_min_score"][m] = min(arr)
+
         s["level"] = level_for_xp(s["xp"])
 
         # day-based derived stats
@@ -242,6 +253,38 @@ def _is_giant_slayer(s: dict, all_stats: dict) -> bool:
 def _is_stakhanoviste(s: dict, all_stats: dict) -> bool:
     ranked = sorted(all_stats.values(), key=lambda x: -x["games"])
     return bool(ranked) and ranked[0]["name"] == s["name"] and s["games"] > 0
+
+
+def _is_mode_champion(s: dict, all_stats: dict, mode: str) -> bool:
+    """Détenteur du plus grand nombre de victoires dans `mode` (au moins une)."""
+    best = max(
+        (x for x in all_stats.values() if x["mode_wins"].get(mode, 0) > 0),
+        key=lambda x: x["mode_wins"].get(mode, 0),
+        default=None,
+    )
+    return best is not None and best["name"] == s["name"]
+
+
+def _has_mode_high_score(s: dict, all_stats: dict, mode: str) -> bool:
+    """Détenteur du meilleur score en une partie dans `mode`."""
+    if mode not in s["mode_max_score"]:
+        return False
+    best = max(
+        (x["mode_max_score"][mode] for x in all_stats.values() if mode in x["mode_max_score"]),
+        default=None,
+    )
+    return best is not None and s["mode_max_score"][mode] == best
+
+
+def _has_mode_low_score(s: dict, all_stats: dict, mode: str) -> bool:
+    """Détenteur du score le plus bas en une partie dans `mode`."""
+    if mode not in s["mode_min_score"]:
+        return False
+    worst = min(
+        (x["mode_min_score"][mode] for x in all_stats.values() if mode in x["mode_min_score"]),
+        default=None,
+    )
+    return worst is not None and s["mode_min_score"][mode] == worst
 
 
 # XP rank trophies — one per level; lv=l["lv"] default-captures to avoid closure trap
@@ -324,8 +367,93 @@ ACHIEVEMENTS: list[dict] = [
     {"id": "pi_day",          "cat": "special", "ico": "🥧", "name": "Pi Day",              "desc": "Jouer un 14 mars (3.14)",                       "cond": lambda s, _: "03-14" in s["day_keys"]},
     {"id": "friday_13",       "cat": "special", "ico": "🃏", "name": "Vendredi 13",         "desc": "Jouer un vendredi 13",                          "cond": lambda s, _: s["friday13"]},
     {"id": "weekend_warrior", "cat": "special", "ico": "🍻", "name": "Guerrier du Week-end", "desc": "Jouer un samedi et un dimanche",               "cond": lambda s, _: s["played_sat"] and s["played_sun"]},
+    # ── Champions par mode (un seul détenteur) ──
+    {"id": "cricket_champ",   "cat": "modes", "ico": "🏆", "name": "Champion Cricket",       "desc": "Le plus de victoires en Cricket",       "cond": lambda s, a: _is_mode_champion(s, a, "Cricket")},
+    {"id": "sc_champ",        "cat": "modes", "ico": "🏆", "name": "Champion Super Cricket", "desc": "Le plus de victoires en Super Cricket", "cond": lambda s, a: _is_mode_champion(s, a, "SuperCricket")},
+    {"id": "shanghai_champ",  "cat": "modes", "ico": "🏆", "name": "Champion Shanghai",      "desc": "Le plus de victoires en Shanghai",      "cond": lambda s, a: _is_mode_champion(s, a, "Shanghai")},
+    {"id": "fiftyone_champ",  "cat": "modes", "ico": "🏆", "name": "Champion Fifty-One",     "desc": "Le plus de victoires en Fifty-One",     "cond": lambda s, a: _is_mode_champion(s, a, "FiftyOne")},
+    # ── Records de score par mode (un seul détenteur) ──
+    {"id": "cricket_top_score",  "cat": "perf", "ico": "📈", "name": "Record Cricket",        "desc": "Meilleur score en une partie de Cricket",       "cond": lambda s, a: _has_mode_high_score(s, a, "Cricket")},
+    {"id": "sc_top_score",       "cat": "perf", "ico": "📈", "name": "Record Super Cricket",  "desc": "Meilleur score en une partie de Super Cricket", "cond": lambda s, a: _has_mode_high_score(s, a, "SuperCricket")},
+    {"id": "shanghai_top_score", "cat": "perf", "ico": "📈", "name": "Record Shanghai",       "desc": "Meilleur score en une partie de Shanghai",      "cond": lambda s, a: _has_mode_high_score(s, a, "Shanghai")},
+    {"id": "fiftyone_top_score", "cat": "perf", "ico": "📈", "name": "Record Fifty-One",      "desc": "Meilleur score en une partie de Fifty-One",     "cond": lambda s, a: _has_mode_high_score(s, a, "FiftyOne")},
+    # ── Scores plancher par mode (un seul détenteur) ──
+    {"id": "cricket_low_score",  "cat": "loss", "ico": "📉", "name": "Score Plancher Cricket",       "desc": "Score le plus bas en une partie de Cricket",       "cond": lambda s, a: _has_mode_low_score(s, a, "Cricket")},
+    {"id": "sc_low_score",       "cat": "loss", "ico": "📉", "name": "Score Plancher Super Cricket", "desc": "Score le plus bas en une partie de Super Cricket", "cond": lambda s, a: _has_mode_low_score(s, a, "SuperCricket")},
+    {"id": "shanghai_low_score", "cat": "loss", "ico": "📉", "name": "Score Plancher Shanghai",      "desc": "Score le plus bas en une partie de Shanghai",      "cond": lambda s, a: _has_mode_low_score(s, a, "Shanghai")},
+    {"id": "fiftyone_low_score", "cat": "loss", "ico": "📉", "name": "Score Plancher Fifty-One",     "desc": "Score le plus bas en une partie de Fifty-One",     "cond": lambda s, a: _has_mode_low_score(s, a, "FiftyOne")},
     *_XP_RANKS,
 ]
+
+
+# ── prog / value — parité stricte avec shared/achievements-core.mjs ──────────
+# prog(s) -> [courant, cible] pour la barre de progression (trophées verrouillés
+# comme débloqués) ; value(s) -> str pour la valeur affichée sur un trophée
+# obtenu. Mêmes formules que le JS, lues sur le dict de stats snake_case.
+# Attachés après coup pour garder la liste ACHIEVEMENTS lisible — le mur (F5) et
+# l'endpoint (D4) liront a.get("prog") / a.get("value").
+def _mode_champ_value(mode: str) -> Callable[[dict], str]:
+    def _value(s: dict) -> str:
+        n = s["mode_wins"].get(mode, 0)
+        return f"{n} victoire{'s' if n > 1 else ''}"
+
+    return _value
+
+
+_PROG: dict[str, Callable[[dict], list[int]]] = {
+    "first_blood":       lambda s: [s["wins"], 1],
+    "hat_trick":         lambda s: [s["max_streak"], 3],
+    "on_fire":           lambda s: [s["max_streak"], 5],
+    "unstoppable":       lambda s: [s["max_streak"], 10],
+    "triple_threat":     lambda s: [s["max_wins_in_day"], 3],
+    "legend_week":       lambda s: [s["max_wins_in_week"], 5],
+    "quarter_century":   lambda s: [s["wins"], 25],
+    "rough_patch":       lambda s: [s["max_loss_streak"], 3],
+    "punching_ball":     lambda s: [s["max_loss_streak"], 5],
+    "desert_crossing":   lambda s: [s["max_loss_streak"], 7],
+    "cursed":            lambda s: [s["max_loss_streak"], 10],
+    "bottomless_pit":    lambda s: [s["max_loss_streak"], 12],
+    "are_you_serious":   lambda s: [s["max_loss_streak"], 20],
+    "thomas":            lambda s: [s["max_cut_throat_score"], 1001],
+    "cricket_master":    lambda s: [s["mode_wins"].get("Cricket", 0), 10],
+    "shanghai_hunter":   lambda s: [s["shanghai_kill_wins"], 5],
+    "cricket_tactician": lambda s: [s["cut_throat_wins"], 5],
+    "fifty":             lambda s: [s["games"], 50],
+    "centurion":         lambda s: [s["games"], 100],
+    "veteran":           lambda s: [s["games"], 250],
+    "social":            lambda s: [len(s["opponents"]), 3],
+    "perfectionist":     lambda s: [s["games"] if s["wins"] == s["games"] else 0, 10],
+    "nemesis":           lambda s: [max([0, *s["beat"].values()]), 5],
+    "half_century":      lambda s: [s["wins"], 50],
+    "double_mode":       lambda s: [s["max_modes_won_in_day"], 2],
+    "master_of_four":    lambda s: [sum(1 for m in ALL_MODES if s["mode_wins"].get(m, 0) >= 5), 4],
+    "sniper":            lambda s: [s["speed_win_count"], 3],
+    "regular":           lambda s: [s["distinct_days"], 10],
+    "consistency":       lambda s: [s["max_day_streak"], 3],
+}
+
+_VALUE: dict[str, Callable[[dict], str]] = {
+    "thomas":             lambda s: f"{s['max_cut_throat_score']} pts encaissés",
+    "cricket_champ":      _mode_champ_value("Cricket"),
+    "sc_champ":           _mode_champ_value("SuperCricket"),
+    "shanghai_champ":     _mode_champ_value("Shanghai"),
+    "fiftyone_champ":     _mode_champ_value("FiftyOne"),
+    # NBSP ( ) avant le « : » — typographie française, à l'identique du JS.
+    "cricket_top_score":  lambda s: f"Score : {s['mode_max_score'].get('Cricket')}",
+    "sc_top_score":       lambda s: f"Score : {s['mode_max_score'].get('SuperCricket')}",
+    "shanghai_top_score": lambda s: f"Score : {s['mode_max_score'].get('Shanghai')}",
+    "fiftyone_top_score": lambda s: f"Score : {s['mode_max_score'].get('FiftyOne')}",
+    "cricket_low_score":  lambda s: f"Score : {s['mode_min_score'].get('Cricket')}",
+    "sc_low_score":       lambda s: f"Score : {s['mode_min_score'].get('SuperCricket')}",
+    "shanghai_low_score": lambda s: f"Score : {s['mode_min_score'].get('Shanghai')}",
+    "fiftyone_low_score": lambda s: f"Score : {s['mode_min_score'].get('FiftyOne')}",
+}
+
+for _a in ACHIEVEMENTS:
+    if _a["id"] in _PROG:
+        _a["prog"] = _PROG[_a["id"]]
+    if _a["id"] in _VALUE:
+        _a["value"] = _VALUE[_a["id"]]
 
 
 def compute_achievements(stats: dict[str, dict]) -> dict[str, list[str]]:
@@ -334,6 +462,82 @@ def compute_achievements(stats: dict[str, dict]) -> dict[str, list[str]]:
     for a in ACHIEVEMENTS:
         earned[a["id"]] = [s["name"] for s in stats.values() if a["cond"](s, stats)]
     return earned
+
+
+# ── Mur à trophées — port de pwa-dashboard/src/lib/{rarity,trophies}.js ───────
+_RARITY_TIERS = {
+    "legendary": {"key": "legendary", "label": "Légendaire", "color": "var(--rar-legendary)"},
+    "epic":      {"key": "epic",      "label": "Épique",     "color": "var(--rar-epic)"},
+    "rare":      {"key": "rare",      "label": "Rare",       "color": "var(--rar-rare)"},
+    "common":    {"key": "common",    "label": "Commun",     "color": "var(--rar-common)"},
+}
+
+
+def rarity_tier(earners_count: int, total_players: int) -> dict | None:
+    """Rareté d'un trophée selon la part du roster qui le détient — parité avec
+    rarity.js. None = verrouillé."""
+    if not earners_count:
+        return None
+    ratio = earners_count / total_players if total_players else 1
+    if earners_count == 1 or ratio <= 0.2:
+        return _RARITY_TIERS["legendary"]
+    if ratio <= 0.4:
+        return _RARITY_TIERS["epic"]
+    if ratio <= 0.7:
+        return _RARITY_TIERS["rare"]
+    return _RARITY_TIERS["common"]
+
+
+def build_trophies(stats: dict[str, dict], player_name: str | None = None) -> list[dict]:
+    """Liste enrichie des trophées — parité avec buildTrophies (trophies.js) :
+    détenteurs, état de déverrouillage, rareté et progression des trophées
+    verrouillés. `player_name` : vue profil (progression = celle du joueur) ;
+    sinon vue globale (progression = le plus proche du roster)."""
+    players = list(stats.values())
+    total = len(players)
+    result: list[dict] = []
+    for a in ACHIEVEMENTS:
+        earners: list[dict] = []
+        for s in players:
+            if a["cond"](s, stats):
+                earner = {"name": s["name"], "wins": s["wins"]}
+                if "value" in a:
+                    earner["value"] = a["value"](s)
+                earners.append(earner)
+
+        if player_name is not None:
+            unlocked = any(e["name"] == player_name for e in earners)
+        else:
+            unlocked = len(earners) > 0
+
+        progress = None
+        if not unlocked and "prog" in a:
+            if player_name is not None and player_name in stats:
+                c, t = a["prog"](stats[player_name])
+                progress = [max(0, min(c, t)), t]
+            else:
+                best_cur, target = -1, None
+                for s in players:
+                    c, t = a["prog"](s)
+                    if c > best_cur:
+                        best_cur, target = c, t
+                if target is not None:
+                    progress = [max(0, min(best_cur, target)), target]
+
+        my_earner = (
+            next((e for e in earners if e["name"] == player_name), None)
+            if player_name is not None else None
+        )
+        result.append({
+            "id": a["id"], "cat": a["cat"], "ico": a["ico"],
+            "name": a["name"], "desc": a["desc"],
+            "earners": earners,
+            "unlocked": unlocked,
+            "rarity": rarity_tier(len(earners), total),
+            "progress": progress,
+            "my_value": my_earner.get("value") if my_earner else None,
+        })
+    return result
 
 
 def newly_unlocked_per_player(

@@ -169,7 +169,7 @@ function LadderRow({ s, i, filter, profiles, playerElo, isRanked }) {
         avatarUrl={profile?.avatar_url}
         rank={playerElo?.rank}
         title={profile?.title ?? `niv. ${s.level.lv} · ${s.level.name}`}
-        streak={profile?.current_streak ?? 0}
+        streak={s.curStreak ?? 0}
         size={40}
         to={`/joueur/${encodeURIComponent(s.name)}`}
       />

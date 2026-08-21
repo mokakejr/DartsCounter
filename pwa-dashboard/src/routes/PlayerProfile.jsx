@@ -21,31 +21,25 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-// Parse une DATE backend (YYYY-MM-DD) en date LOCALE minuit — cohérent avec le
-// bucketing local du reste du client (cf. ActivityCalendar / data.js).
-function localDate(ymd) {
-  const [y, m, d] = String(ymd).split('-').map(Number);
-  return new Date(y, m - 1, d);
+// Clé de mois LOCALE (YYYY-MM) d'une partie — cohérent avec le bucketing local
+// du reste du client (cf. ActivityCalendar / data.js). Le décompte « par mois »
+// du profil se fait sur la vraie date des parties, pas sur les fenêtres de
+// saison du backend (qui démarrent au jour d'ouverture, pas le 1er) : c'est la
+// seule façon fiable de ne jamais afficher « 0 » pour un mois réellement joué.
+function monthKey(dateLike) {
+  const d = new Date(dateLike);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-// Fenêtre [début, fin[ d'une saison pour le décompte du profil. Les saisons
-// mensuelles (issues du rollover) sont élargies au mois calendaire entier pour
-// rattraper les parties de début de mois / importées ; une saison couvrant
-// plusieurs mois garde ses bornes brutes (fin incluse → +1 jour, exclusif).
-function seasonWindow(sd) {
-  const start = sd.start_date ? localDate(sd.start_date) : null;
-  const end = sd.end_date ? localDate(sd.end_date) : null;
-  if (
-    start && end &&
-    start.getFullYear() === end.getFullYear() &&
-    start.getMonth() === end.getMonth()
-  ) {
-    return [
-      new Date(end.getFullYear(), end.getMonth(), 1),
-      new Date(end.getFullYear(), end.getMonth() + 1, 1),
-    ];
-  }
-  return [start, end ? new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1) : null];
+const MONTHS_FR = [
+  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+];
+
+// 'YYYY-MM' → « Août 2026 » (français, 1ʳᵉ lettre capitale).
+function monthLabel(key) {
+  const [y, m] = key.split('-').map(Number);
+  return `${MONTHS_FR[m - 1]} ${y}`;
 }
 
 // win/loss/draw — a tie has no `winner` at all (Shanghai allows it), and
@@ -68,8 +62,11 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
   // plus. my_value → myValue pour rester compatible avec TrophyModal.
   const [trophies, setTrophies] = useState([]);
   const [seasons, setSeasons] = useState([]);
-  // Saison du mur (C6). Défaut « depuis toujours » : toute la carrière.
+  // Saison du mur de trophées (C6, scoping serveur). Défaut « depuis toujours ».
   const [season, setSeason] = useState('all');
+  // Filtre de mois de la vue perso (tuiles + par mode). Dérivé des vraies dates
+  // de partie, indépendant des saisons backend. Défaut « depuis toujours ».
+  const [monthFilter, setMonthFilter] = useState('all');
   // Onglet du profil (F3) — structure seule, contenus déplacés tels quels.
   const [ptab, setPtab] = useState('overview');
 
@@ -113,37 +110,36 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
     [games, name]
   );
 
-  // Fenêtre de la saison sélectionnée (C6, côté client) : on rescope les stats
-  // comptables du profil (tuiles + barres par mode) sur les parties de la
-  // saison choisie. 'all' → carrière. Les concepts non-saison (XP/niveau, ELO,
-  // forme récente, calendrier) restent volontairement carrière.
-  //
-  // ⚠️ Un profil se compte par MOIS CALENDAIRE. Les saisons mensuelles du
-  // backend démarrent au jour réel d'ouverture (start_date = date.today() à la
-  // création, borne du replay ELO), pas le 1er : les parties de début de mois
-  // et l'historique importé avant l'ouverture tomberaient hors saison (ex. un
-  // « Juillet » à 0). On élargit donc au mois calendaire quand la saison tient
-  // dans un seul mois ; on garde les bornes brutes pour une saison multi-mois.
-  const seasonGames = useMemo(() => {
-    if (season === 'all') return games;
-    const sd = seasons.find(x => x.id === season);
-    if (!sd) return games;
-    const [winStart, winEnd] = seasonWindow(sd);
-    return games.filter(g => {
-      const d = new Date(g.date);
-      if (winStart && d < winStart) return false;
-      if (winEnd && d >= winEnd) return false;
-      return true;
-    });
-  }, [games, season, seasons]);
+  // Mois réellement joués par le joueur, du plus récent au plus ancien, au
+  // format attendu par SeasonSelector. Dérivés des vraies dates de partie (pas
+  // des saisons backend) → un mois listé contient forcément des parties.
+  const monthOptions = useMemo(() => {
+    const nowKey = monthKey(new Date());
+    const keys = new Set();
+    for (const g of games) {
+      if ((g.players || []).includes(name)) keys.add(monthKey(g.date));
+    }
+    return [...keys]
+      .sort((a, b) => b.localeCompare(a))
+      .map(k => ({ id: k, name: monthLabel(k), start_date: `${k}-01`, is_active: k === nowKey }));
+  }, [games, name]);
+
+  // On rescope les stats comptables du profil (tuiles + barres par mode) sur le
+  // mois sélectionné, calculé sur la vraie date des parties. 'all' → carrière.
+  // Les concepts non-saison (XP/niveau, ELO, forme récente, calendrier) restent
+  // volontairement carrière.
+  const monthGames = useMemo(() => {
+    if (monthFilter === 'all') return games;
+    return games.filter(g => monthKey(g.date) === monthFilter);
+  }, [games, monthFilter]);
 
   const scoped = useMemo(() => {
-    if (season === 'all') return s;
+    if (monthFilter === 'all') return s;
     return (
-      computePlayerStats(seasonGames)[name]
+      computePlayerStats(monthGames)[name]
       ?? { wins: 0, games: 0, maxStreak: 0, totalDuration: 0, favoriteMode: null, modeWins: {}, modeGames: {} }
     );
-  }, [season, seasonGames, s, name]);
+  }, [monthFilter, monthGames, s, name]);
 
   if (!s) {
     return (
@@ -173,7 +169,7 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
 
   // Solo/training modes — best-ever result, only shown once the player has
   // actually attempted that mode (scopé à la saison sélectionnée).
-  const bob27 = bestBob27Result(seasonGames, name);
+  const bob27 = bestBob27Result(monthGames, name);
   if (bob27) {
     tiles.push(
       bob27.type === 'score'
@@ -181,7 +177,7 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
         : { k: "Meilleur round Bob's 27", v: `Round ${bob27.value}` }
     );
   }
-  const rtcBest = bestRoundTheClockTime(seasonGames, name);
+  const rtcBest = bestRoundTheClockTime(monthGames, name);
   if (rtcBest != null) {
     tiles.push({ k: 'Meilleur temps Round the Clock', v: fmtDuration(rtcBest), accent: 'var(--win)' });
   }
@@ -264,11 +260,11 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
               {s.level.isMax && <span>Niveau max atteint 🍾</span>}
             </div>
           </div>
-          {/* Filtre de saison (C6) : rescope les stats comptables ci-dessous,
-              comme le mur de trophées. XP/rang/calendrier restent carrière. */}
-          {seasons.length > 0 && (
+          {/* Filtre par mois (dérivé des vraies dates de partie) : rescope les
+              stats comptables ci-dessous. XP/rang/calendrier restent carrière. */}
+          {monthOptions.length > 0 && (
             <div className="profile__seasonbar">
-              <SeasonSelector seasons={seasons} value={season} onChange={setSeason} />
+              <SeasonSelector seasons={monthOptions} value={monthFilter} onChange={setMonthFilter} />
             </div>
           )}
           <div className="tiles">
@@ -295,11 +291,11 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
       {ptab === 'permode' && (
         <div className="ptab-panel">
           <h2 className="profile__h2 eyebrow">Par mode</h2>
-          {/* Même filtre de saison que la vue d'ensemble (état partagé) : les
+          {/* Même filtre par mois que la vue d'ensemble (état partagé) : les
               barres ci-dessous sont scopées, on rend le périmètre explicite. */}
-          {seasons.length > 0 && (
+          {monthOptions.length > 0 && (
             <div className="profile__seasonbar">
-              <SeasonSelector seasons={seasons} value={season} onChange={setSeason} />
+              <SeasonSelector seasons={monthOptions} value={monthFilter} onChange={setMonthFilter} />
             </div>
           )}
           <div className="modebars">

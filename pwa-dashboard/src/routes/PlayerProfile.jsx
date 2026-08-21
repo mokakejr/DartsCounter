@@ -21,6 +21,33 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+// Parse une DATE backend (YYYY-MM-DD) en date LOCALE minuit — cohérent avec le
+// bucketing local du reste du client (cf. ActivityCalendar / data.js).
+function localDate(ymd) {
+  const [y, m, d] = String(ymd).split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// Fenêtre [début, fin[ d'une saison pour le décompte du profil. Les saisons
+// mensuelles (issues du rollover) sont élargies au mois calendaire entier pour
+// rattraper les parties de début de mois / importées ; une saison couvrant
+// plusieurs mois garde ses bornes brutes (fin incluse → +1 jour, exclusif).
+function seasonWindow(sd) {
+  const start = sd.start_date ? localDate(sd.start_date) : null;
+  const end = sd.end_date ? localDate(sd.end_date) : null;
+  if (
+    start && end &&
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth()
+  ) {
+    return [
+      new Date(end.getFullYear(), end.getMonth(), 1),
+      new Date(end.getFullYear(), end.getMonth() + 1, 1),
+    ];
+  }
+  return [start, end ? new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1) : null];
+}
+
 // win/loss/draw — a tie has no `winner` at all (Shanghai allows it), and
 // is its own outcome, not just "not a win".
 function outcome(game, name) {
@@ -90,17 +117,22 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
   // comptables du profil (tuiles + barres par mode) sur les parties de la
   // saison choisie. 'all' → carrière. Les concepts non-saison (XP/niveau, ELO,
   // forme récente, calendrier) restent volontairement carrière.
+  //
+  // ⚠️ Un profil se compte par MOIS CALENDAIRE. Les saisons mensuelles du
+  // backend démarrent au jour réel d'ouverture (start_date = date.today() à la
+  // création, borne du replay ELO), pas le 1er : les parties de début de mois
+  // et l'historique importé avant l'ouverture tomberaient hors saison (ex. un
+  // « Juillet » à 0). On élargit donc au mois calendaire quand la saison tient
+  // dans un seul mois ; on garde les bornes brutes pour une saison multi-mois.
   const seasonGames = useMemo(() => {
     if (season === 'all') return games;
     const sd = seasons.find(x => x.id === season);
     if (!sd) return games;
-    const start = sd.start_date ? new Date(sd.start_date) : null;
-    // Fin de saison incluse : jusqu'à la fin de la journée end_date.
-    const end = sd.end_date ? new Date(new Date(sd.end_date).getTime() + 86400000) : null;
+    const [winStart, winEnd] = seasonWindow(sd);
     return games.filter(g => {
       const d = new Date(g.date);
-      if (start && d < start) return false;
-      if (end && d >= end) return false;
+      if (winStart && d < winStart) return false;
+      if (winEnd && d >= winEnd) return false;
       return true;
     });
   }, [games, season, seasons]);

@@ -2,7 +2,10 @@ import { useMemo } from 'react';
 import './ActivityCalendar.css';
 
 const DAY_MS = 86400000;
-const WEEKS = 53;
+// Fenêtre minimale (52 semaines + la semaine courante = une année pleine) :
+// même un joueur récent a une grille au format « GitHub ». Au-delà, la grille
+// remonte jusqu'à sa toute première partie.
+const MIN_WEEKS = 53;
 const WEEKDAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 const MONTH_ABBR = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'];
 
@@ -22,23 +25,37 @@ function level(count) {
 }
 
 function buildCalendar(games, name) {
-  // Comptage par jour des parties du joueur.
+  // Comptage par jour des parties du joueur, en gardant la plus ancienne pour
+  // faire remonter la grille jusqu'à la 1ère partie.
   const perDay = {};
   const perWeekday = [0, 0, 0, 0, 0, 0, 0];
+  let firstMs = null;
   for (const g of games) {
     if (!(g.players || []).includes(name)) continue;
     const d = new Date(g.date);
     const k = dayKey(d);
     perDay[k] = (perDay[k] || 0) + 1;
     perWeekday[d.getDay()] += 1;
+    const ms = d.getTime();
+    if (firstMs === null || ms < firstMs) firstMs = ms;
   }
 
-  // Grille : 53 semaines glissantes, colonnes = semaines, lignes = jours
-  // (dim→sam). On finit sur la semaine courante (à droite), alignée au dimanche.
+  // Grille : colonnes = semaines, lignes = jours (dim→sam). On finit sur la
+  // semaine courante (à droite), alignée au dimanche, et on remonte au moins
+  // une année — davantage si la 1ère partie est plus ancienne (« depuis le
+  // début »). La grille défile horizontalement (cf. .cal__chart).
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const end = new Date(today.getTime() - today.getDay() * DAY_MS); // dimanche de cette semaine
-  const start = new Date(end.getTime() - (WEEKS - 1) * 7 * DAY_MS);
+  const defaultStart = new Date(end.getTime() - (MIN_WEEKS - 1) * 7 * DAY_MS);
+  let start = defaultStart;
+  if (firstMs !== null) {
+    const first = new Date(firstMs);
+    first.setHours(0, 0, 0, 0);
+    const firstSunday = new Date(first.getTime() - first.getDay() * DAY_MS);
+    if (firstSunday < start) start = firstSunday;
+  }
+  const WEEKS = Math.round((end.getTime() - start.getTime()) / (7 * DAY_MS)) + 1;
 
   const weeks = [];
   const activeWeeks = []; // semaine (index) → a joué au moins une fois
@@ -89,13 +106,13 @@ function fmtDay(date) {
 
 /**
  * Calendrier d'activité (F4) — style « contributions GitHub ». Un carré par
- * jour sur 12 mois glissants, intensité = parties jouées ce jour-là.
+ * jour, intensité = parties jouées ce jour-là. La grille remonte jusqu'à la
+ * 1ère partie du joueur (au moins une année pleine) et défile horizontalement.
  *
- * INVARIANT : indépendant du filtre de saison. Il montre toujours les 12
- * derniers mois — jamais la fenêtre de la saison sélectionnée. Le prochain
- * mainteneur voudra le câbler au contexte de saison : ne pas le faire (cf. le
- * test activity-calendar). C'est la régularité de jeu qui se lit ici, pas la
- * performance d'une saison.
+ * INVARIANT : indépendant du filtre de saison. Il montre TOUTE la carrière —
+ * jamais la fenêtre de la saison sélectionnée. Le prochain mainteneur voudra
+ * le câbler au contexte de saison : ne pas le faire. C'est la régularité de
+ * jeu depuis le début qui se lit ici, pas la performance d'une saison.
  */
 export default function ActivityCalendar({ games, name, onPickDay }) {
   const { weeks, monthLabels, stats } = useMemo(() => buildCalendar(games, name), [games, name]);
@@ -117,7 +134,7 @@ export default function ActivityCalendar({ games, name, onPickDay }) {
               <span key={i} className="cal__day">{i % 2 === 1 ? d : ''}</span>
             ))}
           </div>
-          <div className="cal__grid" role="img" aria-label="Calendrier d'activité sur 12 mois">
+          <div className="cal__grid" role="img" aria-label="Calendrier d'activité depuis la première partie">
             {weeks.map((col, w) => (
               <div key={w} className="cal__week">
                 {col.map(cell => (

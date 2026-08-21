@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { ALL_MODES } from '../lib/stats.js';
+import { ALL_MODES, computePlayerStats } from '../lib/stats.js';
 import { MODE_LABEL, fmtDuration } from '../lib/data.js';
 import { rivalries, bestBob27Result, bestRoundTheClockTime } from '../lib/derive.js';
 import { displayName } from '../lib/profiles.js';
@@ -86,6 +86,33 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
     [games, name]
   );
 
+  // Fenêtre de la saison sélectionnée (C6, côté client) : on rescope les stats
+  // comptables du profil (tuiles + barres par mode) sur les parties de la
+  // saison choisie. 'all' → carrière. Les concepts non-saison (XP/niveau, ELO,
+  // forme récente, calendrier) restent volontairement carrière.
+  const seasonGames = useMemo(() => {
+    if (season === 'all') return games;
+    const sd = seasons.find(x => x.id === season);
+    if (!sd) return games;
+    const start = sd.start_date ? new Date(sd.start_date) : null;
+    // Fin de saison incluse : jusqu'à la fin de la journée end_date.
+    const end = sd.end_date ? new Date(new Date(sd.end_date).getTime() + 86400000) : null;
+    return games.filter(g => {
+      const d = new Date(g.date);
+      if (start && d < start) return false;
+      if (end && d >= end) return false;
+      return true;
+    });
+  }, [games, season, seasons]);
+
+  const scoped = useMemo(() => {
+    if (season === 'all') return s;
+    return (
+      computePlayerStats(seasonGames)[name]
+      ?? { wins: 0, games: 0, maxStreak: 0, totalDuration: 0, favoriteMode: null, modeWins: {}, modeGames: {} }
+    );
+  }, [season, seasonGames, s, name]);
+
   if (!s) {
     return (
       <div className="profile shell">
@@ -97,24 +124,24 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
 
   const maxWins = Math.max(...Object.values(stats).map(p => p.wins));
   const isGoat  = s.wins === maxWins && maxWins > 0;
-  const winrate = s.games ? Math.round((s.wins / s.games) * 100) : 0;
-  const maxModeWins = Math.max(1, ...ALL_MODES.map(m => s.modeWins[m] || 0));
+  const winrate = scoped.games ? Math.round((scoped.wins / scoped.games) * 100) : 0;
+  const maxModeWins = Math.max(1, ...ALL_MODES.map(m => scoped.modeWins[m] || 0));
 
-  const avgDuration = s.games ? s.totalDuration / s.games : 0;
+  const avgDuration = scoped.games ? scoped.totalDuration / scoped.games : 0;
 
   const tiles = [
-    { k: 'Victoires', v: s.wins },
-    { k: s.games === 1 ? 'Partie' : 'Parties', v: s.games },
+    { k: 'Victoires', v: scoped.wins },
+    { k: scoped.games === 1 ? 'Partie' : 'Parties', v: scoped.games },
     { k: 'Winrate', v: `${winrate}%`, accent: 'var(--win)' },
-    { k: 'Victoires d’affilée', v: s.maxStreak },
-    { k: 'Temps de jeu', v: fmtDuration(s.totalDuration) },
+    { k: 'Victoires d’affilée', v: scoped.maxStreak },
+    { k: 'Temps de jeu', v: fmtDuration(scoped.totalDuration) },
     { k: 'Durée moy.', v: fmtDuration(avgDuration) },
-    { k: 'Mode favori', v: MODE_LABEL[s.favoriteMode] || '—' },
+    { k: 'Mode favori', v: MODE_LABEL[scoped.favoriteMode] || '—' },
   ];
 
   // Solo/training modes — best-ever result, only shown once the player has
-  // actually attempted that mode.
-  const bob27 = bestBob27Result(games, name);
+  // actually attempted that mode (scopé à la saison sélectionnée).
+  const bob27 = bestBob27Result(seasonGames, name);
   if (bob27) {
     tiles.push(
       bob27.type === 'score'
@@ -122,7 +149,7 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
         : { k: "Meilleur round Bob's 27", v: `Round ${bob27.value}` }
     );
   }
-  const rtcBest = bestRoundTheClockTime(games, name);
+  const rtcBest = bestRoundTheClockTime(seasonGames, name);
   if (rtcBest != null) {
     tiles.push({ k: 'Meilleur temps Round the Clock', v: fmtDuration(rtcBest), accent: 'var(--win)' });
   }
@@ -205,6 +232,13 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
               {s.level.isMax && <span>Niveau max atteint 🍾</span>}
             </div>
           </div>
+          {/* Filtre de saison (C6) : rescope les stats comptables ci-dessous,
+              comme le mur de trophées. XP/rang/calendrier restent carrière. */}
+          {seasons.length > 0 && (
+            <div className="profile__seasonbar">
+              <SeasonSelector seasons={seasons} value={season} onChange={setSeason} />
+            </div>
+          )}
           <div className="tiles">
             {tiles.map(t => (
               <div key={t.k} className="tile">
@@ -231,8 +265,8 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
           <h2 className="profile__h2 eyebrow">Par mode</h2>
           <div className="modebars">
             {ALL_MODES.map(m => {
-              const w = s.modeWins[m] || 0;
-              const g = s.modeGames[m] || 0;
+              const w = scoped.modeWins[m] || 0;
+              const g = scoped.modeGames[m] || 0;
               return (
                 <div key={m} className="modebar">
                   <span className="modebar__label">{MODE_LABEL[m]}</span>

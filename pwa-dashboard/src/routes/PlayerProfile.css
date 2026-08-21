@@ -53,6 +53,9 @@
 .formdot--draw { color: var(--muted-2); }
 
 .xpbar { margin: 8px 0 40px; }
+
+/* Filtre de saison de la vue d'ensemble (C6) : posé au-dessus des tuiles. */
+.profile__seasonbar { margin: 0 0 var(--sp-5); }
 .xpbar__track { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
 .xpbar__track span { display: block; height: 100%; background: var(--player-accent, var(--primary)); }
 .xpbar__meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px; color: var(--muted); }

@@ -295,6 +295,13 @@ export default function PlayerProfile({ games, stats, profiles = {} }) {
       {ptab === 'permode' && (
         <div className="ptab-panel">
           <h2 className="profile__h2 eyebrow">Par mode</h2>
+          {/* Même filtre de saison que la vue d'ensemble (état partagé) : les
+              barres ci-dessous sont scopées, on rend le périmètre explicite. */}
+          {seasons.length > 0 && (
+            <div className="profile__seasonbar">
+              <SeasonSelector seasons={seasons} value={season} onChange={setSeason} />
+            </div>
+          )}
           <div className="modebars">
             {ALL_MODES.map(m => {
               const w = scoped.modeWins[m] || 0;
